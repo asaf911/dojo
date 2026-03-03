@@ -839,14 +839,6 @@ export const postMeditations = functions.runWith({
           }
         }
 
-        const deepLink = generateDeepLink({
-          duration: meditation.duration,
-          backgroundSoundId: bg.id,
-          binauralBeatId: binauralBeat?.id ?? null,
-          cues: resolvedCues,
-          title: meditation.title,
-        });
-
         const response = {
           id: randomUUID(),
           title: meditation.title,

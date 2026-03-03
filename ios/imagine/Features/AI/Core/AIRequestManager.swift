@@ -448,25 +448,45 @@ class AIRequestManager: ObservableObject {
                         effectivePrompt = "Please APPLY EDITS to existing timer. \(lastSummary). USER_EDIT: \(trimmedPromptCopy). Only change what is requested. Keep other cues intact. Ensure total duration remains reasonable and BS cue exists with requested minutes if specified. Respond with valid JSON per schema."
                         logger.aiChat("🧠 AI_DEBUG EDIT_GUIDE id=\(ctx.request_id) \(lastSummary)")
                     }
-                    let med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
+                    let historyItems = historyCopy.map { msg in
+                        ConversationHistoryItem(
+                            role: msg.isUser ? "user" : "assistant",
+                            content: msg.meditation?.description ?? msg.content
+                        )
+                    }
+                    let med: AIMeditationResult
+                    let meditationFromServer: Bool
+                    if ConnectivityHelper.isConnectedToInternet() {
+                        print("[Server][Meditations-AI] AIRequestManager: using server path trigger=generateMeditation promptLen=\(effectivePrompt.count) historyLen=\(historyCopy.count)")
+                        do {
+                            let package = try await MeditationsService.shared.createMeditationAI(
+                                effectivePrompt,
+                                historyItems,
+                                maxDurationCopy,
+                                "AIRequestManager|generateMeditation"
+                            )
+                            med = .meditation(package.toAITimerResponse())
+                            meditationFromServer = true
+                            print("[Server][Meditations-AI] AIRequestManager: server success id=\(package.id) duration=\(package.duration)")
+                        } catch {
+                            print("[Server][Meditations-AI] AIRequestManager: server failed fallback=client error=\(error.localizedDescription)")
+                            med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
+                            meditationFromServer = false
+                        }
+                    } else {
+                        print("[Server][Meditations-AI] AIRequestManager: offline using client path trigger=generateMeditation")
+                        med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
+                        meditationFromServer = false
+                    }
                     logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (simplified) id=\(ctx.request_id)")
                     let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
                     let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
                     logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
                     // Generate acknowledgment text separately (displayed above the card)
-                    // Keep the original description (element-focused) in the meditation
+                    // When meditation comes from server, skip generateMeditationPrefix (avoids extra client OpenAI call)
                     if case .meditation(let timerResponse) = med {
                         var acknowledgment: String
-                        do {
-                            acknowledgment = try await strongSelf.simplifiedService.generateMeditationPrefix(
-                                userPrompt: trimmedPromptCopy,
-                                conversationHistory: historyCopy,
-                                response: timerResponse
-                            )
-                            logger.aiChat("🧠 AI_DEBUG ACKNOWLEDGMENT generated len=\(acknowledgment.count)")
-                        } catch {
-                            logger.aiChatError("🧠 AI_DEBUG ACKNOWLEDGMENT fallback msg=\(error.localizedDescription)")
-                            // Provide a contextual fallback acknowledgment
+                        if meditationFromServer {
                             let l = trimmedPromptCopy.lowercased()
                             if l.contains("scatter") || l.contains("focus") {
                                 acknowledgment = "I've designed a meditation to help steady your attention."
@@ -479,8 +499,30 @@ class AIRequestManager: ObservableObject {
                             } else {
                                 acknowledgment = "I've put together a meditation tailored for you."
                             }
+                        } else {
+                            do {
+                                acknowledgment = try await strongSelf.simplifiedService.generateMeditationPrefix(
+                                    userPrompt: trimmedPromptCopy,
+                                    conversationHistory: historyCopy,
+                                    response: timerResponse
+                                )
+                                logger.aiChat("🧠 AI_DEBUG ACKNOWLEDGMENT generated len=\(acknowledgment.count)")
+                            } catch {
+                                logger.aiChatError("🧠 AI_DEBUG ACKNOWLEDGMENT fallback msg=\(error.localizedDescription)")
+                                let l = trimmedPromptCopy.lowercased()
+                                if l.contains("scatter") || l.contains("focus") {
+                                    acknowledgment = "I've designed a meditation to help steady your attention."
+                                } else if l.contains("anxiety") || l.contains("stress") {
+                                    acknowledgment = "Here's a practice to help calm your nervous system."
+                                } else if l.contains("sleep") {
+                                    acknowledgment = "I've crafted a meditation to help you wind down for rest."
+                                } else if l.contains("meeting") || l.contains("presentation") {
+                                    acknowledgment = "Here's a practice to help you feel grounded and focused."
+                                } else {
+                                    acknowledgment = "I've put together a meditation tailored for you."
+                                }
+                            }
                         }
-                        // Store acknowledgment separately and keep original meditation with its element-focused description
                         let acknowledgmentToStore = acknowledgment
                         await MainActor.run {
                             strongSelf.generatedMeditationAcknowledgment = acknowledgmentToStore

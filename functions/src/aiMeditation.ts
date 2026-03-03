@@ -35,18 +35,6 @@ export interface LoadedCatalogs {
 const TAG_AI = "[Server][Meditations-AI]";
 
 function buildSystemPrompt(catalogs: LoadedCatalogs): string {
-  const triggerCueIds =
-    guidelines?.module_type_classifications?.trigger_cue?.modules ?? [
-      "OH",
-      "VC",
-      "RT",
-    ];
-  const durations = catalogs.bodyScanDurations;
-  const triggerDuration =
-    triggerCueIds
-      .map((id: string) => durations[id])
-      .find((d: number | undefined) => d != null) ?? 1;
-
   const soundsList =
     catalogs.backgroundSounds.length > 0
       ? catalogs.backgroundSounds
