@@ -1,0 +1,243 @@
+[
+    {
+        "id": "learn_001",
+        "premium": false,
+        "title": "Introduction",
+        "category": "learn",
+        "tags": [],
+        "description": "Begin your journey with Imagine, enhancing your life by unlocking the transformative power of imagination for personal growth.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Night 1 (1).png",
+        "durations": [
+            {
+                "length": 8,
+                "fileName": "gs://imagine-c6162.appspot.com/learn/Session_1-Spark_Your_Imagination.mp3"
+            }
+        ]
+    },
+    {
+        "id": "learn_002",
+        "premium": false,
+        "title": "Art of Relaxation",
+        "category": "learn",
+        "tags": [],
+        "description": "Learn the essential skill of relaxation to improve your life, handle situations better, and lay the foundation for effective meditation.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Night 2 (1).png",
+        "durations": [
+            {
+                "length": 9,
+                "fileName": "gs://imagine-c6162.appspot.com/learn/Session_2-Art_Of_Relaxation.mp3"
+            }
+        ]
+    },
+    {
+        "id": "learn_003",
+        "premium": true,
+        "title": "Focus Factor",
+        "category": "learn",
+        "tags": [],
+        "description": "Learn the importance of focus for imagination and daily life. Develop concentration skills through relaxation and targeted exercises to enhance mental clarity.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Night 3.png",
+        "durations": [
+            {
+                "length": 14,
+                "fileName": "gs://imagine-c6162.appspot.com/learn/Session_3-The_Focus_Factor.mp3"
+            }
+        ]
+    },
+    {
+        "id": "learn_004",
+        "premium": true,
+        "title": "Deeper Imagination",
+        "category": "learn",
+        "tags": [],
+        "description": "Go deeper into imagination and connect with deeper sources of knowledge through your subconscious mind. Practice finding misplaced objects in your mental landscape to uncover hidden insights and symbols.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Night 4.png",
+        "durations": [
+            {
+                "length": 13,
+                "fileName": "gs://imagine-c6162.appspot.com/learn/Session_4-Deeper_Imagination.mp3"
+            }
+        ]
+    },
+    {
+        "id": "practice_003",
+        "premium": false,
+        "title": "Quick Reflection",
+        "category": "deepdive",
+        "tags": ["Breath work", "Restrospection"],
+        "description": "A 10-minute session with breathwork and retrospection to enhance your visualization and sharpen your moment-to-moment awareness.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Night 3.png",
+        "durations": [
+            {
+                "length": 10,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/Quick_Refresh.mp3"
+            }
+        ]
+    },
+        {
+        "id": "practice_002",
+        "premium": false,
+        "title": "Balanced Practice",
+        "category": "deepdive",
+        "tags": ["Breath work", "Restrospection", "Relaxation", "Focus"],
+        "description": "Experience a Balanced Practice session that blends breathwork, relaxation, focus, and imagination. Develop your consciousness now.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Balanced Practice.png",
+        "durations": [
+            {
+                "length": 25,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/Balanced_Practice.mp3"
+            }
+        ]
+    },
+    {
+        "id": "routines_001",
+        "premium": false,
+        "title": "Good Morning",
+        "category": "routines",
+        "tags": ["Breath work", "Morning", "Visualization", "Goal setting", "Personal growth"],
+        "description": "This 10-minute morning session guides you through breathwork, full-body relaxation, and visualization to help you start your day with focus and clarity. A simple way to set the tone for your day.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Good Morning.png",
+        "durations": [
+            {
+                "length": 10,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/10m_Good_Morning.mp3"
+            }
+        ]
+    },
+    {
+        "id": "routines_005",
+        "premium": false,
+        "title": "Good Morning 2",
+        "category": "routines",
+        "tags": ["Breath work", "Morning", "Visualization", "Goal setting", "Personal growth"],
+        "description": "This morning meditation is designed to energize your body, center your mind, and set a mindful intention for the day ahead. \n\nThrough deep breathing exercises, breath retention, and a guided visualization, you’ll cultivate presence, confidence, and calmness to carry with you throughout your day.\n\nPerfect for starting your morning with focus and clarity.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Good morning 2.jpg",
+        "durations": [
+            {
+                "length": 10,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/10m_Good_Morning_2.mp3"
+            }
+        ]
+    },
+
+        {
+        "id": "routines_002",
+        "premium": true,
+        "title": "Midday Reset",
+        "category": "routines",
+        "tags": ["Breath work", "Noon", "Visualization", "Restrospection"],
+        "description": "This session starts with slow, easy breathing to calm your body and mind. Next, you’ll repeat the mantra “I AM,” helping you focus and get into a deep meditative state. Finally, you'll retrospect on your day, releasing any stress and returning to the present moment.\n\nThis practice will help you feel more relaxed and aware as you go through your day.\n\nFor the best experience, use headphones to listen to the binaural beats.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Midday Reset.png",
+        "durations": [
+            {
+                "length": 15,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/15m_Midday_Restart.mp3"
+            }
+        ]
+    },
+    {
+        "id": "routines_003",
+        "premium": true,
+        "title": "Evening Reflection",
+        "category": "routines",
+        "tags": ["Breath work", "Evening", "Relaxation", "Visualization", "Restrospection"],
+        "description": "Experience deep relaxation with our 20-minute Evening Reflection Ritual. Begin with 5 minutes of calming breathwork to center yourself, followed by 5 minutes of a soothing body scan for total relaxation. Engage in 10 minutes of reflective meditation to revisit and process the events of your day. Practicing this daily improves memory and shifts your approach from instinctive reactions to conscious awareness. Includes binaural beats for enhanced focus and relaxation. Headphones required. Find a quiet space to fully immerse yourself in this reflective and calming journey.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Evening Reflection.png",
+        "durations": [
+            {
+                "length": 20,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/Routine_2-20m-end_of_day_recap.mp3"
+            }
+        ]
+    },
+    {
+        "id": "routines_004",
+        "premium": true,
+        "title": "Goodnight Beach",
+        "category": "routines",
+        "tags": ["Breath work", "Sleep", "Relaxation", "Visualization"],
+        "description": "This session will help you relax and drift into a restful sleep.\n\nYou'll move through calming breathwork, a full body scan, focused breathing, and a peaceful beach visualization to guide you into deep relaxation.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Goodnight Beach.png",
+        "durations": [
+            {
+                "length": 20,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/20m_Good_Night.mp3"
+            }
+        ]
+    },
+    {
+        "id": "practice_001",
+        "premium": true,
+        "title": "Deep Body Scan",
+        "category": "deepdive",
+        "tags": ["Body scan", "Relaxation", "Stress relief"],
+        "description": "This session leads you through a deep body scan to release tension, achieving a state of complete relaxation and peace.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Deep Body Scan.png",
+        "durations": [
+            {
+                "length": 10,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/Deep_Bodyscan.mp3"
+            }
+        ]
+    },
+    {
+        "id": "deepdive_001",
+        "premium": true,
+        "title": "Refresh & Reflect",
+        "category": "deepdive",
+        "tags": ["Breath work", "Visualization", "Restrospection", "Personal growth"],
+        "description": "Refresh and reflect with our 45-minute breathwork and imagination meditation. Begin with breathwork to clear your mind, followed by focused attention to sharpen your mind, and end with retrospection for self-reflection. Includes binaural beats for deeper meditation. Headphones required. This is a deep exercise, so ensure you have enough time and space to complete it",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Reflect and Refresh.png",
+        "durations": [
+            {
+                "length": 45,
+                "fileName": "gs://imagine-c6162.appspot.com/deepdive/Deepdive_1-45m-refresh_and_reflect.mp3"
+            }
+        ]
+    },
+    {
+        "id": "deepdive_002",
+        "premium": true,
+        "title": "Transform Anger",
+        "category": "deepdive",
+        "tags": ["Breath work", "Visualization", "Restrospection", "Personal growth"],
+        "description": "Experience a profound transformation with our 30-minute Anger Release meditation. Designed to help you manage and transform your anger, this session will guide you toward a more conscious and calm response to life's challenges. Begin with slow rhythmic breathwork to relax your body and mind, followed by deep breath retention to reach an ultra-relaxed state. Enjoy deep relaxation exercises, including a body scan to release physical, emotional, and mental tension. Engage in focused visualization to address and transform anger. Includes binaural beats for enhanced relaxation and focus. Headphones required. Ensure you have a quiet space to fully immerse in this transformative journey.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Anger Transform.png",
+        "durations": [
+            {
+                "length": 30,
+                "fileName": "gs://imagine-c6162.appspot.com/deepdive/Deepdive_2-30m-anger_transformation.mp3"
+            }
+        ]
+    },
+    {
+        "id": "deepdive_003",
+        "premium": true,
+        "title": "Future Vision",
+        "category": "deepdive",
+        "tags": ["Breath work", "Visualization", "Goal setting", "Personal growth"],
+        "description": "Ready to create a clear vision of your future?\n\nThis 30-minute session will guide you through powerful breathwork, deep relaxation, and a focused visualization exercise to help you connect with your deepest desires. By imagining your ideal life in vivid detail, you’ll set your mind on a path toward achieving it.\n\nThis isn't magic-it's about aligning your focus and energy with your goals, planting the seeds for real transformation.\n\nDive in, relax fully, and let your imagination shape the future you want to create.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/Future Vision.png",
+        "durations": [
+            {
+                "length": 30,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/30m_Future_Vision.mp3"
+            }
+        ]
+    },
+    {
+        "id": "deepdive_004",
+        "premium": true,
+        "title": "Spinal & Mantra",
+        "category": "deepdive",
+        "tags": ["Breath work", "Focus", "Personal growth"],
+        "description": "This advanced practice combines spinal breathing, a pranayama technique, with mantra repetition to boost focus and attention.\n\nThe session starts with spinal breathing, moving energy up and down your spine for clarity and balance. You’ll then transition to the 'I AM' mantra, refining your focus and bringing mindfulness into daily tasks and deeper inner work.\n\nRegular practice will greatly improve concentration, presence, and self-awareness. Binaural beats are used, so headphones are recommended for the best experience.",
+        "imageFile": "gs://imagine-c6162.appspot.com/practice_images/spinal.jpg",
+        "durations": [
+            {
+                "length": 25,
+                "fileName": "gs://imagine-c6162.appspot.com/routines/25m_Prana_and_Mantra.mp3"
+            }
+        ]
+    },
+]

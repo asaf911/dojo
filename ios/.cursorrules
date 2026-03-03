@@ -1,0 +1,218 @@
+# iOS Architecture Rules (Enforced)
+
+These rules apply to **all generated, modified, or refactored code**.
+If a change would violate a rule, **do not proceed** — ask first.
+
+---
+
+## 1. Architecture
+
+### Default Architecture
+- Use **MVVM** only.
+- Layers:
+  - **Screen (View)** → SwiftUI UI only
+  - **ViewModel** → state, business logic, navigation, analytics
+  - **Model** → pure data structures
+
+### Forbidden
+- Business logic in views
+- Networking in views
+- Direct service or repository access from views
+- UIKit / ViewControllers
+
+---
+
+## 2. Feature Structure & Namespacing
+
+Each feature must live under a **single namespace**:
+
+```swift
+enum Feature {}
+```
+
+Standard files (as needed):
+- `Feature+Screen.swift`
+- `Feature+ViewModel.swift`
+- `Feature+Analytics.swift`
+- `Feature+Dependencies.swift`
+- `Feature+Action.swift`
+- `Feature+Destination.swift`
+
+### Rules
+- One primary type per file
+- File name must match the primary type
+- Do not mix Screen + ViewModel + Services in one file
+- No cross-feature internal access
+
+---
+
+## 3. Screen (View) Rules
+
+Screens:
+- Must be SwiftUI only
+- Must receive a ViewModel via initializer
+- Must forward all user events to the ViewModel
+- Must render navigation based on `Destination`
+
+Screens must NOT:
+- Contain business logic
+- Access services or repositories
+- Decide navigation flow
+
+---
+
+## 4. ViewModel Rules
+
+ViewModels:
+- Must be marked `@MainActor` and `@Observable`
+- Own all feature state
+- Perform validation and business logic
+- Trigger navigation via `Destination`
+- Emit results via `Action`
+- Trigger analytics
+
+ViewModels must NOT:
+- Import `SwiftUI`
+- Create dependencies internally
+- Contain UI rendering logic
+
+---
+
+## 5. Navigation Rules
+
+- Navigation is **ViewModel-driven**
+- Each feature defines a `Destination` enum
+- Views react to `Destination` to present navigation
+
+Allowed:
+- Small, feature-local navigators for complex or runtime-dependent flows
+
+Forbidden:
+- Global routers
+- Navigation managers
+- Navigation logic inside views
+
+---
+
+## 6. Actions & Destinations
+
+- `Action`
+  - Used for **upward communication only**
+  - Represents completion, dismissal, or data output
+
+- `Destination`
+  - Used for **downward navigation only**
+  - May carry child ViewModels
+
+Never combine both concerns in a single enum.
+
+---
+
+## 7. Services Pattern
+
+### Shape
+- Services are **structs of closures**
+- No protocols
+- No inheritance
+- No classes
+
+Each service must provide:
+- `.live` — real side effects
+- `.preview` — deterministic, offline-safe behavior
+
+### Rules
+- ViewModels talk only to services
+- `.live` contains all real side effects
+- `.preview` must never touch the network
+- No global singletons
+- No service locators
+
+Forbidden:
+- Calling API clients directly from ViewModels
+- Randomized preview behavior
+- Leaking transport/client errors into ViewModels
+
+---
+
+## 8. Dependency Injection
+
+Each feature defines a `Dependencies` struct containing **only what it uses**.
+
+### Rules
+- Dependencies are injected, never created internally
+- Default initializers may point to `.live`
+- `.preview` must be deterministic and safe
+- No runtime switching between `.live` and `.preview`
+- Dependencies are immutable after construction
+
+Forbidden:
+- Global dependency registries
+- Static mutable dependencies
+- Service locators
+
+---
+
+## 9. Analytics
+
+- Analytics is feature-local
+- Triggered only from ViewModels
+- Wired via injected `AnalyticsRecorder`
+
+Forbidden:
+- Analytics calls in views
+- Analytics calls inside services
+
+---
+
+## 10. Code Style & API Design
+
+Follow the **Swift API Design Guidelines** as the single source of truth for:
+- Naming and labeling
+- Function and method signatures
+- Error handling style
+- Mutability and value semantics
+- Concurrency (`async/await`, `Sendable`, actors)
+
+Conflict resolution:
+- API shape → Swift guidelines
+- Architecture / structure → these rules
+
+---
+
+## 11. Hard Prohibitions (AI + Human)
+
+Do NOT introduce:
+- UIKit / ViewControllers
+- Protocol-based service mocks
+- Global routers
+- Factory pyramids
+- God coordinators
+- Hidden indirection
+- Cross-feature singletons
+
+Prefer:
+- Explicit wiring
+- Small, obvious types
+- Local reasoning over reuse
+
+---
+
+## 12. Decision Rule
+
+If multiple solutions exist:
+
+> Choose the **simplest** solution that keeps boundaries explicit,  
+> logic discoverable, and dependencies visible.
+
+If uncertain:
+
+> Ask before inventing new patterns.
+
+---
+
+## Success Criteria
+
+A correct solution:
+- Looks like it belongs in this system
+- Is explicit rather than clever
+- Can be understood by opening **one feature folder**

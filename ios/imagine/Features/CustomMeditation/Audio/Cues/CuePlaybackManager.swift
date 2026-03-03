@@ -1,0 +1,399 @@
+//
+//  CuePlaybackManager.swift
+//  Dojo
+//
+//  Created by Asaf Shamir on 2025-02-24
+//
+
+import Foundation
+import AVFoundation
+
+class CuePlaybackManager {
+    static let shared = CuePlaybackManager()
+    
+    // MARK: - AVAudioEngine Playback
+    
+    private let engine = AVAudioEngine()
+    private let playerNode = AVAudioPlayerNode()
+    private var currentAudioFile: AVAudioFile?
+    private var currentBoostGain: Float = 1.0
+    private var playbackFinished = true
+    
+    private var volume: Float = 1.0
+    
+    // MARK: - Per-Module Volume Boost
+    
+    /// Per-module-prefix volume boost in dB. Positive = louder.
+    /// Used to compensate for modules recorded at lower levels.
+    private static let moduleVolumeBoostDB: [String: Float] = [
+        "IM": 18.0,  // I AM Mantra: +18dB to match other module levels
+        "NF": 18.0   // Nostril Focus: +18dB to match other module levels
+    ]
+    
+    /// Converts a dB value to a linear gain multiplier.
+    private static func linearGain(forDB db: Float) -> Float {
+        pow(10.0, db / 20.0)
+    }
+    
+    /// Returns the linear gain boost for a given module ID based on its prefix.
+    private static func boostGain(for moduleId: String) -> Float {
+        for (prefix, db) in moduleVolumeBoostDB {
+            if moduleId.hasPrefix(prefix) {
+                return linearGain(forDB: db)
+            }
+        }
+        return 1.0  // No boost for other modules
+    }
+    
+    /// Applies the current user volume multiplied by the per-module boost to the engine mixer.
+    private func updateEngineVolume() {
+        engine.mainMixerNode.outputVolume = volume * currentBoostGain
+    }
+    
+    // MARK: - State Tracking for Skip/Seek
+    
+    /// ID of the currently playing cue
+    private(set) var currentCueId: String?
+    
+    /// When the current cue started playing (session elapsed time in seconds)
+    private(set) var cueStartSessionTime: TimeInterval = 0
+    
+    /// Whether a cue is currently playing
+    var isPlaying: Bool {
+        playerNode.isPlaying && !playbackFinished
+    }
+    
+    /// Duration of the currently loaded cue audio
+    var cueDuration: TimeInterval {
+        guard let audioFile = currentAudioFile else { return 0 }
+        return Double(audioFile.length) / audioFile.processingFormat.sampleRate
+    }
+    
+    /// Current playback position within the cue
+    var currentPosition: TimeInterval {
+        guard currentCueId != nil,
+              let nodeTime = playerNode.lastRenderTime,
+              nodeTime.isSampleTimeValid,
+              let playerTime = playerNode.playerTime(forNodeTime: nodeTime) else { return 0 }
+        return max(0, Double(playerTime.sampleTime) / playerTime.sampleRate)
+    }
+    
+    // MARK: - Preloading System
+    
+    /// Preloaded cue data: local file URL and exact duration
+    private var preloadedCues: [String: (localURL: URL, duration: TimeInterval)] = [:]
+    
+    // MARK: - Init
+    
+    private init() {
+        engine.attach(playerNode)
+        engine.connect(playerNode, to: engine.mainMixerNode, format: nil)
+    }
+    
+    // MARK: - Volume
+    
+    /// Updates the instructions/cues volume (0.0 - 1.0)
+    func setVolume(_ value: Float) {
+        volume = max(0.0, min(1.0, value))
+        updateEngineVolume()
+        logger.eventMessage("🧠 AI_DEBUG volumes instructions_update=\(volume)")
+    }
+    
+    // MARK: - Preloading Methods
+    
+    /// Preloads a single cue file and calculates its exact duration.
+    /// - Parameters:
+    ///   - cue: The Cue to preload.
+    ///   - completion: Called with the duration if successful, nil otherwise.
+    func preloadCue(_ cue: Cue, completion: @escaping (TimeInterval?) -> Void) {
+        // Skip "None" cues
+        if cue.id == "None" || cue.name == "None" || cue.url.isEmpty {
+            completion(nil)
+            return
+        }
+        
+        // Check if already preloaded
+        if let cached = preloadedCues[cue.id] {
+            print("🧠 AI_DEBUG [CUE] Already preloaded \(cue.id): duration=\(String(format: "%.1f", cached.duration))s")
+            completion(cached.duration)
+            return
+        }
+        
+        guard let remoteURL = URL(string: cue.url) else {
+            print("🧠 AI_DEBUG [CUE] Invalid URL for cue preload: \(cue.url)")
+            completion(nil)
+            return
+        }
+        
+        print("🧠 AI_DEBUG [CUE] Preloading cue \(cue.id) (\(cue.name))...")
+        
+        FileManagerHelper.shared.ensureLocalFile(for: remoteURL, setDownloading: { _ in }, completion: { [weak self] localURL in
+            guard let self = self, let localURL = localURL else {
+                print("🧠 AI_DEBUG [CUE] Failed to download cue \(cue.id)")
+                completion(nil)
+                return
+            }
+            
+            // Read exact duration from AVAudioFile
+            do {
+                let audioFile = try AVAudioFile(forReading: localURL)
+                let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+                print("🧠 AI_DEBUG [CUE] Preloaded \(cue.id): duration=\(String(format: "%.1f", duration))s")
+                completion(duration)
+            } catch {
+                print("🧠 AI_DEBUG [CUE] Error preloading cue \(cue.id): \(error.localizedDescription)")
+                completion(nil)
+            }
+        })
+    }
+    
+    /// Preloads multiple cues in parallel.
+    /// - Parameters:
+    ///   - cues: Array of Cues to preload.
+    ///   - completion: Called when all cues have been processed.
+    func preloadCues(_ cues: [Cue], completion: @escaping () -> Void) {
+        // Filter out "None" cues and duplicates
+        let validCues = cues.filter { $0.id != "None" && $0.name != "None" && !$0.url.isEmpty }
+        let uniqueCues = Array(Set(validCues.map { $0.id })).compactMap { id in validCues.first { $0.id == id } }
+        
+        guard !uniqueCues.isEmpty else {
+            completion()
+            return
+        }
+        
+        let group = DispatchGroup()
+        
+        for cue in uniqueCues {
+            group.enter()
+            preloadCue(cue) { _ in
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) {
+            print("[DEBUG] Finished preloading \(uniqueCues.count) cues")
+            completion()
+        }
+    }
+    
+    /// Gets the preloaded duration for a cue if available.
+    func getPreloadedDuration(for cueId: String) -> TimeInterval? {
+        preloadedCues[cueId]?.duration
+    }
+    
+    // MARK: - Playback Methods
+    
+    /// Plays the given cue sound once (or loads it paused for later resume).
+    /// - Parameters:
+    ///   - cue: The Cue model containing name and URL.
+    ///   - sessionElapsedTime: The elapsed time in the session when this cue is triggered.
+    ///   - startPaused: If true, load the cue but don't start playing (ready for resume).
+    func play(cue: Cue, sessionElapsedTime: TimeInterval = 0, startPaused: Bool = false) {
+        // If cue is "None", do nothing.
+        if cue.id == "None" || cue.name == "None" || cue.url.isEmpty {
+            print("[DEBUG] No cue selected.")
+            return
+        }
+        
+        // Check if we have preloaded data
+        if let preloaded = preloadedCues[cue.id] {
+            playFromLocalURL(preloaded.localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+            return
+        }
+        
+        // Fallback to download if not preloaded
+        guard ConnectivityHelper.isConnectedToInternet() else {
+            print("[DEBUG] No internet connection. Cannot play cue.")
+            return
+        }
+        
+        guard let remoteURL = URL(string: cue.url) else {
+            print("[DEBUG] Invalid URL for cue: \(cue.url)")
+            return
+        }
+        
+        // Ensure local cache using FileManagerHelper.
+        FileManagerHelper.shared.ensureLocalFile(for: remoteURL, setDownloading: { downloading in
+            print("[DEBUG] Cue ensureLocalFile downloading: \(downloading)")
+        }, completion: { [weak self] localURL in
+            guard let self = self, let localURL = localURL else {
+                print("[DEBUG] Failed to download cue file.")
+                return
+            }
+            self.playFromLocalURL(localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+            
+            // Cache for future use
+            if let audioFile = self.currentAudioFile {
+                let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+            }
+        })
+    }
+    
+    /// Internal method to play from a local URL using AVAudioEngine.
+    private func playFromLocalURL(_ localURL: URL, cueId: String, cueName: String, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
+        do {
+            // Stop any current playback
+            playerNode.stop()
+            
+            let audioFile = try AVAudioFile(forReading: localURL)
+            currentAudioFile = audioFile
+            
+            // Reconnect with this file's format to handle varying sample rates/channels
+            engine.disconnectNodeOutput(playerNode)
+            engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
+            
+            // Calculate and apply per-module volume boost
+            currentBoostGain = Self.boostGain(for: cueId)
+            updateEngineVolume()
+            
+            if currentBoostGain > 1.0 {
+                let db = Self.moduleVolumeBoostDB.first { cueId.hasPrefix($0.key) }?.value ?? 0
+                print("🧠 AI_DEBUG [CUE] Volume boost for \(cueId): +\(String(format: "%.0f", db))dB (x\(String(format: "%.2f", currentBoostGain)))")
+            }
+            
+            // Start engine if needed
+            if !engine.isRunning {
+                try engine.start()
+            }
+            
+            // Track cue state
+            currentCueId = cueId
+            cueStartSessionTime = sessionElapsedTime
+            playbackFinished = false
+            
+            let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+            
+            // Schedule the audio file and mark playback finished on completion
+            playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
+                DispatchQueue.main.async {
+                    self?.playbackFinished = true
+                }
+            }
+            
+            if startPaused {
+                // Don't start playing - just load and prepare (ready for resume)
+                print("🧠 AI_DEBUG [CUE] Loaded \(cueId) (\(cueName)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+            } else {
+                playerNode.play()
+                print("🧠 AI_DEBUG [CUE] Playing \(cueId) (\(cueName)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+            }
+        } catch {
+            print("🧠 AI_DEBUG [CUE] Error playing cue: \(error.localizedDescription)")
+            clearCueState()
+        }
+    }
+    
+    // MARK: - Seeking Methods
+    
+    /// Seeks within the currently playing cue to a specific position.
+    /// - Parameter time: The position within the cue to seek to (in seconds).
+    func seek(to time: TimeInterval) {
+        guard let audioFile = currentAudioFile else {
+            print("🧠 AI_DEBUG [CUE] Cannot seek - no cue loaded")
+            return
+        }
+        
+        let sampleRate = audioFile.processingFormat.sampleRate
+        let totalFrames = audioFile.length
+        let targetFrame = AVAudioFramePosition(time * sampleRate)
+        let clampedFrame = max(0, min(targetFrame, totalFrames))
+        let remainingFrames = AVAudioFrameCount(totalFrames - clampedFrame)
+        
+        let wasPlaying = playerNode.isPlaying && !playbackFinished
+        playerNode.stop()
+        playbackFinished = false
+        
+        // Reschedule from the target frame offset
+        playerNode.scheduleSegment(audioFile, startingFrame: clampedFrame, frameCount: remainingFrames, at: nil) { [weak self] in
+            DispatchQueue.main.async {
+                self?.playbackFinished = true
+            }
+        }
+        
+        if wasPlaying {
+            playerNode.play()
+        }
+        
+        let clampedTime = Double(clampedFrame) / sampleRate
+        let totalDuration = Double(totalFrames) / sampleRate
+        print("🧠 AI_DEBUG [CUE] Seeked to \(String(format: "%.2f", clampedTime))s / \(String(format: "%.2f", totalDuration))s")
+    }
+    
+    /// Stops the current cue and clears tracking state.
+    func stop() {
+        let wasPlaying = currentCueId
+        playerNode.stop()
+        currentAudioFile = nil
+        playbackFinished = true
+        clearCueState()
+        print("🧠 AI_DEBUG [CUE] Stopped cue \(wasPlaying ?? "none")")
+    }
+    
+    /// Gets info about the currently playing cue.
+    /// - Returns: Tuple with cue ID, start time, and duration, or nil if no cue is playing.
+    func getCurrentCueInfo() -> (id: String, startTime: TimeInterval, duration: TimeInterval)? {
+        guard let cueId = currentCueId, let audioFile = currentAudioFile else {
+            return nil
+        }
+        let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+        return (id: cueId, startTime: cueStartSessionTime, duration: duration)
+    }
+    
+    /// Clears the cue state tracking.
+    private func clearCueState() {
+        currentCueId = nil
+        cueStartSessionTime = 0
+    }
+    
+    // MARK: - Existing Methods
+    
+    /// Fades out the currently playing cue sound over the specified duration.
+    /// - Parameter fadeDuration: The duration over which to fade out the cue.
+    func fadeOutCurrentCue(withDuration fadeDuration: TimeInterval = 1.0) {
+        guard playerNode.isPlaying, !playbackFinished else { return }
+        let fadeSteps = Int(fadeDuration / 0.1)
+        let startVolume = engine.mainMixerNode.outputVolume
+        let stepVolume = startVolume / Float(fadeSteps)
+        var currentStep = 0
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
+            guard let self = self else { timer.invalidate(); return }
+            if currentStep >= fadeSteps {
+                self.playerNode.stop()
+                self.playbackFinished = true
+                self.clearCueState()
+                self.updateEngineVolume() // Restore proper volume for next cue
+                timer.invalidate()
+                print("[DEBUG] Cue faded out and stopped.")
+            } else {
+                self.engine.mainMixerNode.outputVolume = max(startVolume - stepVolume * Float(currentStep + 1), 0)
+                currentStep += 1
+            }
+        }
+        timer.fire() // Start fading immediately.
+    }
+    
+    /// Pauses the currently playing cue sound.
+    func pause() {
+        print("🧠 AI_DEBUG [CUE] pause() called - isPlaying=\(playerNode.isPlaying), cueId=\(currentCueId ?? "none")")
+        if playerNode.isPlaying && !playbackFinished {
+            playerNode.pause()
+            print("🧠 AI_DEBUG [CUE] Paused \(currentCueId ?? "unknown") at \(String(format: "%.1f", currentPosition))s")
+        }
+    }
+    
+    /// Resumes the cue sound from where it was paused.
+    func resume() {
+        print("🧠 AI_DEBUG [CUE] resume() called - cueId=\(currentCueId ?? "none"), position=\(String(format: "%.1f", currentPosition))s")
+        if currentAudioFile != nil && !playbackFinished {
+            if !engine.isRunning {
+                try? engine.start()
+            }
+            playerNode.play()
+            print("🧠 AI_DEBUG [CUE] Resumed \(currentCueId ?? "unknown") from \(String(format: "%.1f", currentPosition))s")
+        } else {
+            print("🧠 AI_DEBUG [CUE] Cannot resume - no audio file loaded")
+        }
+    }
+}

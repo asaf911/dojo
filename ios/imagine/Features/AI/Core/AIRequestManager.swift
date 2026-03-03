@@ -1,0 +1,1071 @@
+import Foundation
+import SwiftUI
+
+@MainActor
+class AIRequestManager: ObservableObject {
+    @Published var isLoading = false
+    @Published var generatedMeditation: AITimerResponse?
+    /// Acknowledgment text to display above the meditation card (e.g., "I've designed a meditation to help you relax...")
+    @Published var generatedMeditationAcknowledgment: String?
+    @Published var conversationalResponse: String?
+    @Published var error: String?
+    @Published var showResult = false
+    
+    // Classified intent for context-aware thinking animation
+    @Published var classifiedIntent: String? = nil
+    
+    struct AIRequestContext {
+        let request_id: String
+        let user_prompt: String
+        let prompt_length: Int
+        let request_type: String // meditation | conversation | explain | history
+        let history_len: Int
+    }
+    
+    @Published private(set) var lastRequestContext: AIRequestContext?
+    
+    // Use simplified OpenAI path only for meditation JSON; use Assistants for explain
+    private let useAssistantsService = false
+    private let simplifiedService = SimplifiedAIService()
+    private let unifiedGenerator = AIMeditationGenerator()
+    private let assistantsExplainService = AssistantsAIService()
+    // History query router for handling meditation history questions
+    private let historyQueryRouter = HistoryQueryRouter.shared
+    // Rotate alternative suggestions to avoid repetition on "another idea"
+    private var lastAlternativeSuggestionIndex: Int? = nil
+    // Persist the last concrete idea we proposed so a "Yes" reply produces that exact session
+    private var lastSuggestedIdea: String? = nil
+    private let alternativeSuggestions: [String] = [
+        "How about a 8 min relaxation with a short body scan?",
+        "How about a 10 min calm-breathing session with gentle bell?",
+        "How about a 12 min mantra focus to reset attention?",
+        "How about a 15 min visualization for clarity and motivation?",
+        "How about a 9 min open-heart compassion practice?",
+        "How about a 11 min mindfulness with nature background?",
+        "How about a 13 min retrospection to reflect on your day?",
+        "How about a 10 min relaxation with body scan and mantra?",
+        "How about a 14 min focus reset with breathwork and visualization?",
+        "How about a 7 min quick calm with body scan?"
+    ]
+    
+    // Download/preload state for play button gating
+    @Published var isPreparingPlayback: Bool = false
+    @Published var preparationProgress: Double = 0.0 // 0.0 - 1.0
+    // Awaiting user confirmation to generate a contextual meditation after an explain/conversation reply
+    @Published var awaitingMeditationConfirmation: Bool = false
+    // Persist last meditation so short follow-ups can modify it even across new prompts
+    private var lastMeditation: AITimerResponse?
+    
+    func generateMeditation(prompt: String, conversationHistory: [ChatMessage] = [], variationSeed: Int? = nil, maxDuration: Int? = nil) {
+        var trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Log max duration constraint if provided (currently unused - duration parsed from prompt)
+        if let max = maxDuration {
+            logger.aiChat("🧠 AI_DEBUG REQ maxDuration=\(max)")
+        }
+        
+        logger.eventMessage("🤖 AI_MEDITATION_UI: === USER INITIATED MEDITATION GENERATION ===")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Raw prompt: '\(prompt)'")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Trimmed prompt: '\(trimmedPrompt)'")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Conversation context: \(conversationHistory.count) messages")
+        
+        guard !trimmedPrompt.isEmpty else {
+            logger.errorMessage("🤖 AI_MEDITATION_UI: Empty prompt provided")
+            error = "Please enter a meditation request"
+            return
+        }
+        
+        // Handle quick yes/no in response to a conversational CTA
+        if awaitingMeditationConfirmation {
+            let lower = trimmedPrompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            // Normalize basic punctuation (keep words for regex contains checks)
+            let normalized = lower.trimmingCharacters(in: CharacterSet(charactersIn: ".!?,;:"))
+            let positiveSet: [String] = [
+                "y","yes","yeah","yea","yep","yup","sure","sure thing","ok","okay","okey","ok then","do it","go ahead","please do","sounds good","sounds great","sounds perfect","please","proceed","make it","create it","start it","start now","let's do it","let’s do it","let's go","let’s go","go for it","absolutely","definitely","works for me","fine","great"
+            ]
+            let negativeSet: [String] = [
+                "no","n","nope","not now","later","another idea","something else","other idea","pass","maybe later"
+            ]
+            var positive = positiveSet.contains { normalized == $0 }
+            let negative = negativeSet.contains { normalized == $0 }
+            // Also treat phrases like "yeah make something", "make one", "create something" as affirmative creation intents
+            if !positive {
+                let affirmRegex = try? NSRegularExpression(pattern: #"\b(yeah|yea|yep|yup|sure|ok|okay|absolutely|definitely)\b"#, options: .caseInsensitive)
+                let verbRegex = try? NSRegularExpression(pattern: #"\b(make|create|do|start|begin)\b"#, options: .caseInsensitive)
+                let hasAffirm = affirmRegex?.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: (lower as NSString).length)) != nil
+                let hasVerb = verbRegex?.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: (lower as NSString).length)) != nil
+                positive = hasAffirm || hasVerb
+            }
+            if positive {
+                logger.aiChat("🧠 AI_DEBUG CTA affirmative detected awaitingConfirm=true raw=\(trimmedPrompt)")
+                // Transform into an explicit creation request so the assistant routes to meditation
+                if let idea = self.lastSuggestedIdea?.trimmingCharacters(in: .whitespacesAndNewlines), !idea.isEmpty {
+                    // Structured idea tags: extend_by:NN, extend_to:NN, create_duration:NN
+                    if let by = parseTaggedValue(prefix: "extend_by:", in: idea) {
+                        trimmedPrompt = "Extend the last meditation by \(by) minutes and regenerate accordingly. Keep modules contiguous."
+                    } else if let to = parseTaggedValue(prefix: "extend_to:", in: idea) {
+                        trimmedPrompt = "Set the last meditation duration to \(to) minutes and regenerate accordingly. Keep modules contiguous."
+                    } else if let dur = parseTaggedValue(prefix: "create_duration:", in: idea) {
+                        trimmedPrompt = "Create a \(dur)-minute meditation based on our last exchange."
+                    } else {
+                        // Heuristic fallback for natural-language ideas
+                        let s = idea.lowercased()
+                        if let num = extractFirstNumber(in: s), s.contains("extend") || s.contains("+") {
+                            trimmedPrompt = "Extend the last meditation by \(num) minutes and regenerate accordingly. Keep modules contiguous."
+                        } else if s.contains("meditation") || s.contains("session") || s.contains("minute") || s.contains("min") {
+                            trimmedPrompt = "Create a meditation matching this idea: \(idea). Use that idea directly, including any mentioned duration, focus, or background."
+                        } else {
+                            trimmedPrompt = "Create a 10-minute relaxation meditation based on our last exchange."
+                        }
+                    }
+                } else {
+                    // Provide a concrete default aligned to the last explain/clarify context
+                    trimmedPrompt = "Create a 10-minute meditation based on our last exchange, targeting anxiety relief with breath and grounding."
+                }
+                awaitingMeditationConfirmation = false
+            } else if negative {
+                logger.aiChat("🧠 AI_DEBUG CTA negative detected awaitingConfirm=true raw=\(trimmedPrompt)")
+                self.isLoading = false
+                self.error = nil
+                // Single follow-up suggestion UX with rotation to avoid repetition
+                self.conversationalResponse = nextAlternativeSuggestion()
+                self.showResult = false
+                awaitingMeditationConfirmation = false
+                return
+            }
+        }
+
+        // History queries are now handled via AI classification (intent == "history")
+
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Setting UI state to loading...")
+        isLoading = true
+        error = nil
+        conversationalResponse = nil
+        showResult = false
+        classifiedIntent = nil  // Reset intent for new request
+        
+        let turnStart = Date()
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Starting meditation generation for: '\(trimmedPrompt)'")
+        logger.aiChat("🧠 AI_DEBUG FLOW start route=simplified request_type=pending history=\(conversationHistory.count)")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Prompt length: \(trimmedPrompt.count) characters")
+        
+        // Log analytics event
+        // Build request context for unified analytics
+        let ctx = AIRequestContext(
+            request_id: UUID().uuidString,
+            user_prompt: trimmedPrompt,
+            prompt_length: trimmedPrompt.count,
+            request_type: "pending",
+            history_len: conversationHistory.count
+        )
+        self.lastRequestContext = ctx
+        // Set skip/steps state before marking complete (for direct chat path)
+        if !SenseiOnboardingState.shared.isComplete {
+            let totalSteps = 6
+            let currentStepIndex = SenseiOnboardingState.shared.currentStepIndex(totalSteps: totalSteps)
+            SenseiOnboardingState.shared.stepsCompletedBeforeExit = currentStepIndex + 1
+            SenseiOnboardingState.shared.didSkipEarly = SenseiOnboardingState.shared.arrivedAtFinalViaSkip
+        }
+        // Flip Sensei onboarding completion when the first prompt is submitted
+        SenseiOnboardingState.shared.markCompleted(source: "chat", requestId: ctx.request_id, userPrompt: trimmedPrompt)
+        // AI chat debug: request start
+        logger.aiChat("🧠 AI_DEBUG REQ id=\(ctx.request_id) type=pending hist=\(ctx.history_len) prompt=\(trimmedPrompt)")
+        logger.aiChat("🧠 AI_DEBUG STATE before_call loading=\(self.isLoading) showResult=\(self.showResult) awaitingConfirm=\(self.awaitingMeditationConfirmation)")
+        // Unified analytics: request stage
+        var reqParams: [String: Any] = baseParams(from: ctx)
+        reqParams["stage"] = "request"
+        AnalyticsManager.shared.logEvent("ai_interaction", parameters: reqParams)
+        
+        // Fire the request analytics asynchronously so it never blocks UI
+        let requestParamsForAnalytics: [String: Any] = {
+            var p = baseParams(from: ctx)
+            p["stage"] = "request"
+            return p
+        }()
+        Task.detached(priority: .background) {
+            AnalyticsManager.shared.logEvent("ai_interaction", parameters: requestParamsForAnalytics)
+        }
+
+        // Run AI work off the main actor for immediate responsiveness
+        let trimmedPromptCopy = trimmedPrompt
+        let historyCopy = conversationHistory
+        let lastMeditationSnapshot = self.lastMeditation
+        let maxDurationCopy = maxDuration
+        let historyRouter = self.historyQueryRouter
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let strongSelf = self else { return }
+            do {
+                logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
+                logger.eventMessage("🤖 AI_MEDITATION_UI: Using simplified service (v3.0)")
+                let openAIStart = Date()
+                let preCallMs = Int(openAIStart.timeIntervalSince(turnStart) * 1000)
+                logger.aiChat("🧠 AI_DEBUG TIMING pre_call_ms=\(preCallMs)")
+                // 1) Classify intent via OpenAI
+                logger.aiChat("🧠 AI_DEBUG OPENAI_CC start (intent) id=\(ctx.request_id) prompt_len=\(trimmedPromptCopy.count)")
+                let intent = try await strongSelf.simplifiedService.classifyIntent(prompt: trimmedPromptCopy, conversationHistory: historyCopy)
+                logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (intent) id=\(ctx.request_id) intent=\(intent)")
+                let updatedCtx = AIRequestContext(request_id: ctx.request_id, user_prompt: ctx.user_prompt, prompt_length: ctx.prompt_length, request_type: intent, history_len: ctx.history_len)
+                await MainActor.run { 
+                    strongSelf.lastRequestContext = updatedCtx
+                    strongSelf.classifiedIntent = intent  // Update intent for thinking animation
+                }
+                
+                // Subscription gate: block meditation generation for unsubscribed users who already created their first AI meditation
+                if intent == "meditation" {
+                    // Check both the live subscription status AND the persisted value for robustness
+                    let liveSubscribed = SubscriptionManager.shared.isUserSubscribed
+                    let persistedSubscribed = SharedUserStorage.retrieve(forKey: .isUserSubscribed, as: Bool.self) ?? false
+                    let isSubscribed = liveSubscribed || persistedSubscribed
+                    
+                    let hasCreatedFirstAIMeditation = SharedUserStorage.retrieve(forKey: .hasCreatedFirstAIMeditation, as: Bool.self) ?? false
+                    
+                    logger.aiChat("🧠 AI_DEBUG SUBSCRIPTION_CHECK live=\(liveSubscribed) persisted=\(persistedSubscribed) combined=\(isSubscribed) hasCreatedFirst=\(hasCreatedFirstAIMeditation)")
+                    
+                    if !isSubscribed && hasCreatedFirstAIMeditation {
+                        logger.aiChat("🧠 AI_DEBUG SUBSCRIPTION_GATE blocked intent=meditation subscribed=false hasCreatedFirst=true")
+                        AnalyticsManager.shared.logEvent("ai_meditation_gated", parameters: [
+                            "user_prompt": trimmedPromptCopy,
+                            "request_id": ctx.request_id
+                        ])
+                        await MainActor.run {
+                            strongSelf.isLoading = false
+                            NotificationCenter.default.post(name: .aiTriggerSubscription, object: nil)
+                        }
+                        return
+                    }
+                }
+                
+                // Handle history queries locally - no additional API call needed
+                if intent == "history" {
+                    logger.aiChat("🧠 AI_DEBUG HISTORY intent from AI: \(trimmedPromptCopy)")
+                    print("🧠 AI_DEBUG HISTORY handling history intent for prompt: '\(trimmedPromptCopy)'")
+                    
+                    let queryResult = historyRouter.executeQuery(for: trimmedPromptCopy)
+                    print("🧠 AI_DEBUG HISTORY queryResult success=\(queryResult.success) sessions=\(queryResult.sessions.count)")
+                    
+                    let formattedResponse = historyRouter.formatForAIResponse(queryResult)
+                    print("🧠 AI_DEBUG HISTORY formatted response length=\(formattedResponse.count)")
+                    
+                    AnalyticsManager.shared.logEvent("ai_history_query", parameters: [
+                        "user_prompt": trimmedPromptCopy,
+                        "success": queryResult.success,
+                        "session_count": queryResult.sessions.count,
+                        "request_id": ctx.request_id
+                    ])
+                    
+                    await MainActor.run {
+                        strongSelf.conversationalResponse = formattedResponse
+                        strongSelf.showResult = false
+                        strongSelf.awaitingMeditationConfirmation = false
+                        strongSelf.isLoading = false
+                    }
+                    return
+                }
+                
+                // Handle path guidance questions - recommend next path step
+                if intent == "path_guidance" {
+                    logger.aiChat("🧠 AI_DEBUG PATH_GUIDANCE intent: \(trimmedPromptCopy)")
+                    
+                    // Access PathProgressManager on MainActor and capture values
+                    let pathInfo: (shouldRecommend: Bool, nextStep: PathStep?, completedCount: Int, totalCount: Int, allCompleted: Bool) = await MainActor.run {
+                        let pm = PathProgressManager.shared
+                        return (pm.shouldRecommendPath(), pm.nextStep, pm.completedStepCount, pm.totalStepCount, pm.allStepsCompleted)
+                    }
+                    
+                    // Check if we can recommend a path step
+                    if pathInfo.shouldRecommend, let nextStep = pathInfo.nextStep {
+                        // Generate AI response sentence
+                        let message: String
+                        do {
+                            message = try await strongSelf.simplifiedService.generatePathGuidanceMessage(
+                                userPrompt: trimmedPromptCopy,
+                                nextStepTitle: nextStep.title,
+                                completedCount: pathInfo.completedCount,
+                                totalCount: pathInfo.totalCount
+                            )
+                        } catch {
+                            // Fallback if API fails
+                            logger.aiChat("🧠 AI_DEBUG PATH_GUIDANCE message generation failed: \(error.localizedDescription)")
+                            message = "Here's your next step."
+                        }
+                        
+                        AnalyticsManager.shared.logEvent("path_guidance_recommended", parameters: [
+                            "step_id": nextStep.id,
+                            "step_order": nextStep.order,
+                            "completed_count": pathInfo.completedCount,
+                            "user_prompt": trimmedPromptCopy
+                        ])
+                        
+                        await MainActor.run {
+                            // Post notification with path recommendation data
+                            NotificationCenter.default.post(
+                                name: .aiPathGuidanceRecommendation,
+                                object: nil,
+                                userInfo: ["message": message, "step": nextStep]
+                            )
+                            strongSelf.isLoading = false
+                        }
+                        return
+                        
+                    } else if pathInfo.allCompleted {
+                        // Path completed - offer AI meditation instead
+                        await MainActor.run {
+                            strongSelf.conversationalResponse = "You've completed the entire Path - amazing work! You now have a solid meditation foundation. Would you like me to create a personalized meditation for you?"
+                            strongSelf.isLoading = false
+                        }
+                        return
+                        
+                    } else {
+                        // Fallback to conversation if path not available
+                        let text = try await strongSelf.simplifiedService.generateConversation(
+                            prompt: trimmedPromptCopy,
+                            intent: "conversation",
+                            conversationHistory: historyCopy
+                        )
+                        await MainActor.run {
+                            strongSelf.conversationalResponse = text
+                            strongSelf.isLoading = false
+                        }
+                        return
+                    }
+                }
+                
+                // Handle explore guidance - recommend pre-recorded session
+                if intent == "explore_guidance" || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy) {
+                    logger.aiChat("🧠 AI_DEBUG [EXPLORE] intent detected: \(trimmedPromptCopy)")
+                    
+                    // Load fresh audio files and get recommendation
+                    await MainActor.run {
+                        ExploreRecommendationManager.shared.loadAudioFiles()
+                    }
+                    
+                    let exploreInfo: (shouldRecommend: Bool, session: AudioFile?, timeOfDay: String) = await MainActor.run {
+                        let em = ExploreRecommendationManager.shared
+                        // Allow explore recommendation if Path is complete OR if user explicitly asked for pre-recorded
+                        let shouldRecommend = em.shouldRecommendExplore() || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy)
+                        return (shouldRecommend, em.getTimeAppropriateSession(), em.getCurrentTimeOfDayName())
+                    }
+                    
+                    if let session = exploreInfo.session, exploreInfo.shouldRecommend {
+                        logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] session=\(session.id) title=\(session.title) time=\(exploreInfo.timeOfDay)")
+                        
+                        // Generate AI message
+                        let message: String
+                        do {
+                            message = try await strongSelf.simplifiedService.generateExploreGuidanceMessage(
+                                userPrompt: trimmedPromptCopy,
+                                sessionTitle: session.title,
+                                timeOfDay: exploreInfo.timeOfDay
+                            )
+                        } catch {
+                            logger.aiChat("🧠 AI_DEBUG [EXPLORE] message generation failed: \(error.localizedDescription)")
+                            // Use fallback message based on session tags
+                            let tagsLower = session.tags.map { $0.lowercased() }
+                            if tagsLower.contains("morning") {
+                                message = "Here's a great way to start your \(exploreInfo.timeOfDay):"
+                            } else if tagsLower.contains("noon") {
+                                message = "This is a great \(exploreInfo.timeOfDay) reset:"
+                            } else if tagsLower.contains("evening") {
+                                message = "Here's a nice way to wind down your day:"
+                            } else if tagsLower.contains("sleep") {
+                                message = "This will help you relax and prepare for rest:"
+                            } else {
+                                message = "Here's a session for you:"
+                            }
+                        }
+                        
+                        AnalyticsManager.shared.logEvent("explore_guidance_recommended", parameters: [
+                            "session_id": session.id,
+                            "session_title": session.title,
+                            "time_of_day": exploreInfo.timeOfDay,
+                            "is_premium": session.premium,
+                            "user_prompt": trimmedPromptCopy
+                        ])
+                        
+                        await MainActor.run {
+                            NotificationCenter.default.post(
+                                name: .aiExploreGuidanceRecommendation,
+                                object: nil,
+                                userInfo: ["message": message, "session": session]
+                            )
+                            strongSelf.isLoading = false
+                        }
+                        return
+                        
+                    } else {
+                        // No explore session available - fallback to conversation
+                        logger.aiChat("🧠 AI_DEBUG [EXPLORE] no session available, falling back to conversation")
+                        let text = try await strongSelf.simplifiedService.generateConversation(
+                            prompt: trimmedPromptCopy,
+                            intent: "conversation",
+                            conversationHistory: historyCopy
+                        )
+                        await MainActor.run {
+                            strongSelf.conversationalResponse = text
+                            strongSelf.isLoading = false
+                        }
+                        return
+                    }
+                }
+                
+                // 2) Generate based on intent, with modification-aware edit prompts
+                logger.aiChat("🧠 AI_DEBUG OPENAI_CC start (simplified) id=\(ctx.request_id) prompt_len=\(trimmedPromptCopy.count)")
+                var result: AIMeditationResult
+                if intent == "explain" {
+                    var text: String
+                    do {
+                        text = try await strongSelf.assistantsExplainService.generateExplainResponse(
+                            prompt: trimmedPromptCopy,
+                            conversationHistory: historyCopy
+                        )
+                        logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (assistant_explain) id=\(ctx.request_id)")
+                    } catch {
+                        logger.aiChatError("🧠 AI_DEBUG OPENAI_ASSISTANTS explain_error id=\(ctx.request_id) msg=\(error.localizedDescription)")
+                        text = try await strongSelf.simplifiedService.generateExplanation(
+                            prompt: trimmedPromptCopy,
+                            conversationHistory: historyCopy
+                        )
+                        logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (fallback_explain) id=\(ctx.request_id)")
+                    }
+                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
+                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
+                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
+                    result = .conversationalResponse(text)
+                } else if intent == "meditation" {
+                    let isModify = trimmedPromptCopy.lowercased().contains("change") || trimmedPromptCopy.lowercased().contains("set ") || trimmedPromptCopy.lowercased().contains("make ") || trimmedPromptCopy.lowercased().contains("switch") || trimmedPromptCopy.lowercased().contains("update")
+                    var effectivePrompt = trimmedPromptCopy
+                    if isModify, let last = lastMeditationSnapshot {
+                        let cuesSummary = last.meditationConfiguration.cueSettings.map { setting -> String in
+                            let trig: String
+                            switch setting.triggerType {
+                            case .minute: trig = String(setting.minute ?? 0)
+                            case .start: trig = "start"
+                            case .end: trig = "end"
+                            }
+                            return "\(setting.cue.id)@\(trig)"
+                        }.joined(separator: ",")
+                        let lastSummary = "LAST_TIMER dur=\(last.meditationConfiguration.duration) bg=\(last.meditationConfiguration.backgroundSound.id) cues=\(cuesSummary) title=\(last.meditationConfiguration.title ?? "")"
+                        effectivePrompt = "Please APPLY EDITS to existing timer. \(lastSummary). USER_EDIT: \(trimmedPromptCopy). Only change what is requested. Keep other cues intact. Ensure total duration remains reasonable and BS cue exists with requested minutes if specified. Respond with valid JSON per schema."
+                        logger.aiChat("🧠 AI_DEBUG EDIT_GUIDE id=\(ctx.request_id) \(lastSummary)")
+                    }
+                    let med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
+                    logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (simplified) id=\(ctx.request_id)")
+                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
+                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
+                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
+                    // Generate acknowledgment text separately (displayed above the card)
+                    // Keep the original description (element-focused) in the meditation
+                    if case .meditation(let timerResponse) = med {
+                        var acknowledgment: String
+                        do {
+                            acknowledgment = try await strongSelf.simplifiedService.generateMeditationPrefix(
+                                userPrompt: trimmedPromptCopy,
+                                conversationHistory: historyCopy,
+                                response: timerResponse
+                            )
+                            logger.aiChat("🧠 AI_DEBUG ACKNOWLEDGMENT generated len=\(acknowledgment.count)")
+                        } catch {
+                            logger.aiChatError("🧠 AI_DEBUG ACKNOWLEDGMENT fallback msg=\(error.localizedDescription)")
+                            // Provide a contextual fallback acknowledgment
+                            let l = trimmedPromptCopy.lowercased()
+                            if l.contains("scatter") || l.contains("focus") {
+                                acknowledgment = "I've designed a meditation to help steady your attention."
+                            } else if l.contains("anxiety") || l.contains("stress") {
+                                acknowledgment = "Here's a practice to help calm your nervous system."
+                            } else if l.contains("sleep") {
+                                acknowledgment = "I've crafted a meditation to help you wind down for rest."
+                            } else if l.contains("meeting") || l.contains("presentation") {
+                                acknowledgment = "Here's a practice to help you feel grounded and focused."
+                            } else {
+                                acknowledgment = "I've put together a meditation tailored for you."
+                            }
+                        }
+                        // Store acknowledgment separately and keep original meditation with its element-focused description
+                        let acknowledgmentToStore = acknowledgment
+                        await MainActor.run {
+                            strongSelf.generatedMeditationAcknowledgment = acknowledgmentToStore
+                        }
+                        result = med
+                    } else {
+                        result = med
+                    }
+                } else {
+                    let text = try await strongSelf.simplifiedService.generateConversation(
+                        prompt: trimmedPromptCopy,
+                        intent: intent,
+                        conversationHistory: historyCopy
+                    )
+                    logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (simplified) id=\(ctx.request_id)")
+                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
+                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
+                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
+                    result = .conversationalResponse(text)
+                }
+
+                logger.eventMessage("🤖 AI_MEDITATION_UI: AI service call completed successfully")
+                logger.aiChat("🧠 AI_DEBUG FLOW result ok id=\(ctx.request_id)")
+
+                let finalResult = result
+                await MainActor.run {
+                    strongSelf.isLoading = false
+                    
+                    switch finalResult {
+                    case .meditation(let timerResponse):
+                        logger.eventMessage("🤖 AI_MEDITATION_UI: Updating UI with meditation result")
+                        logger.aiChat("🧠 AI_DEBUG FLOW response type=meditation id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id)")
+                        let cuesSummary = timerResponse.meditationConfiguration.cueSettings.map { setting -> String in
+                            let trig: String
+                            switch setting.triggerType {
+                            case .minute: trig = String(setting.minute ?? 0)
+                            case .start: trig = "start"
+                            case .end: trig = "end"
+                            }
+                            return "\(setting.cue.id)@\(trig)"
+                        }.joined(separator: ",")
+                        logger.aiChat("🧠 AI_DEBUG RESP id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id) type=meditation dur=\(timerResponse.meditationConfiguration.duration)m cues=\(cuesSummary) bg=\(timerResponse.meditationConfiguration.backgroundSound.id)")
+                        strongSelf.generatedMeditation = timerResponse
+                        strongSelf.lastMeditation = timerResponse
+                        strongSelf.showResult = true
+                        
+                        // Unified analytics: response (meditation) with original request inline
+                        var params: [String: Any] = strongSelf.baseParams(from: strongSelf.lastRequestContext ?? ctx)
+                        params["stage"] = "response"
+                        params["response_type"] = "meditation"
+                        // Ensure JSON-safe string for meditation_id
+                        params["meditation_id"] = String(describing: timerResponse.meditationConfiguration.id)
+                        params["duration_min"] = timerResponse.meditationConfiguration.duration
+                        params["background_sound"] = timerResponse.meditationConfiguration.backgroundSound.name
+                        params["cue_count"] = timerResponse.meditationConfiguration.cueSettings.count
+                        params["title"] = timerResponse.meditationConfiguration.title ?? "Unknown"
+                        // Include assistant response text (trim to a safe length for analytics)
+                        let rawText = timerResponse.description
+                        let maxLen = 4000
+                        let trimmedText = rawText.count > maxLen ? String(rawText.prefix(maxLen)) : rawText
+                        params["response_text"] = trimmedText
+                        params["response_length"] = rawText.count
+                        // Include full module/cue timeline details
+                        params["cues_timeline"] = timerResponse.meditationConfiguration.cueSettings.map { setting -> [String: Any] in
+                            var dict: [String: Any] = [
+                                "cue_id": setting.cue.id,
+                                "cue_name": setting.cue.name,
+                                "trigger_type": setting.triggerType.rawValue
+                            ]
+                            if setting.triggerType == .minute, let m = setting.minute { dict["minute"] = m }
+                            return dict
+                        }
+                        // Include onboarding context if available
+                        let onboardingResponses = OnboardingResponseCollector.shared.responses
+                        if !onboardingResponses.isEmpty {
+                            params["onboarding_goals"] = onboardingResponses.goals
+                            params["onboarding_feeling"] = onboardingResponses.currentFeeling
+                            params["onboarding_experience"] = onboardingResponses.experience
+                            params["onboarding_guidance_style"] = onboardingResponses.guidanceStyle ?? ""
+                        }
+                        AnalyticsManager.shared.logEvent("ai_interaction", parameters: params)
+                        
+                        // Mark that the user has created their first AI meditation (used for subscription gating)
+                        if SharedUserStorage.retrieve(forKey: .hasCreatedFirstAIMeditation, as: Bool.self) != true {
+                            SharedUserStorage.save(value: true, forKey: .hasCreatedFirstAIMeditation)
+                            logger.aiChat("🧠 AI_DEBUG FIRST_AI_MEDITATION_CREATED marked hasCreatedFirstAIMeditation=true")
+                        }
+                        
+                        logger.eventMessage("🤖 AI_MEDITATION_UI: === GENERATION COMPLETED SUCCESSFULLY ===")
+                        logger.eventMessage("🤖 AI_MEDITATION_UI: Result summary: \(timerResponse.meditationConfiguration.duration)min, \(timerResponse.meditationConfiguration.backgroundSound.name), \(timerResponse.meditationConfiguration.cueSettings.count) cues")
+                        
+                    case .conversationalResponse(let response):
+                        logger.eventMessage("🤖 AI_MEDITATION_UI: Updating UI with conversational response")
+                        logger.aiChat("🧠 AI_DEBUG FLOW response type=conversation id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id)")
+                        let preview = String(response.prefix(280))
+                        logger.aiChat("🧠 AI_DEBUG RESP id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id) type=conversation text=\(preview)")
+                        strongSelf.conversationalResponse = response
+                        // Capture any concrete idea embedded in the response for the next Yes
+                        strongSelf.lastSuggestedIdea = strongSelf.extractIdea(from: response)
+                        
+                        // Unified analytics: response (conversation) with original request inline
+                        var cparams: [String: Any] = strongSelf.baseParams(from: strongSelf.lastRequestContext ?? ctx)
+                        cparams["stage"] = "response"
+                        cparams["response_type"] = "conversation"
+                        cparams["response_text"] = response
+                        cparams["response_length"] = response.count
+                        AnalyticsManager.shared.logEvent("ai_interaction", parameters: cparams)
+                        
+                        logger.eventMessage("🤖 AI_MEDITATION_UI: === CONVERSATIONAL RESPONSE COMPLETED ===")
+                    }
+                }
+            } catch {
+                guard let strongSelf = self else { return }
+                await MainActor.run {
+                    logger.errorMessage("🤖 AI_MEDITATION_UI: === GENERATION FAILED ===")
+                    logger.errorMessage("🤖 AI_MEDITATION_UI: Error: \(error)")
+                    logger.errorMessage("🤖 AI_MEDITATION_UI: Error type: \(type(of: error))")
+                    
+                    let friendlyError = strongSelf.friendlyErrorMessage(from: error)
+                    logger.eventMessage("🤖 AI_MEDITATION_UI: Friendly error message: '\(friendlyError)'")
+                    logger.aiChatError("🧠 AI_DEBUG FLOW error id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id) msg=\(friendlyError)")
+                    
+                    strongSelf.error = friendlyError
+                    logger.aiChatError("🧠 AI_DEBUG ERROR id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id) domain=\((error as NSError).domain) code=\((error as NSError).code) msg=\(friendlyError)")
+                    strongSelf.isLoading = false
+                    
+                    // Unified analytics: error, include original request inline
+                    var eparams: [String: Any] = strongSelf.baseParams(from: strongSelf.lastRequestContext ?? ctx)
+                    eparams["stage"] = "error"
+                    eparams["error_message"] = error.localizedDescription
+                    eparams["error_domain"] = (error as NSError).domain
+                    eparams["error_code"] = (error as NSError).code
+                    AnalyticsManager.shared.logEvent("ai_interaction", parameters: eparams)
+                }
+            }
+        }
+    }
+    
+    func startMeditation(with response: AITimerResponse, navigationCoordinator: NavigationCoordinator) {
+        // Do not mark onboarding completion on direct play. Only user prompt completes onboarding.
+        logger.eventMessage("🤖 AI_MEDITATION_UI: === STARTING AI-GENERATED MEDITATION ===")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Meditation details:")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: - Title: \(response.meditationConfiguration.title ?? "No title")")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: - Duration: \(response.meditationConfiguration.duration) minutes")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: - Background Sound: \(response.meditationConfiguration.backgroundSound.name)")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: - Cues: \(response.meditationConfiguration.cueSettings.count) cue(s)")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: - Deep Link: \(response.deepLink.absoluteString)")
+        
+        // Unified analytics: start, include original request inline when available
+        var sparams: [String: Any]
+        if let ctx = self.lastRequestContext {
+            sparams = baseParams(from: ctx)
+        } else {
+            sparams = [
+                "request_id": UUID().uuidString,
+                "user_prompt": "",
+                "prompt_length": 0,
+                "request_type": "meditation",
+                "history_len": 0
+            ]
+        }
+        sparams["stage"] = "start"
+        sparams["start_method"] = "customize"
+        // Ensure JSON-safe string for meditation_id
+        sparams["meditation_id"] = String(describing: response.meditationConfiguration.id)
+        sparams["duration_min"] = response.meditationConfiguration.duration
+        sparams["background_sound"] = response.meditationConfiguration.backgroundSound.name
+        sparams["cue_count"] = response.meditationConfiguration.cueSettings.count
+        sparams["title"] = response.meditationConfiguration.title ?? "Unknown"
+        AnalyticsManager.shared.logEvent("ai_interaction", parameters: sparams)
+        
+        // Ensure catalogs are loaded to resolve binaural beat, then navigate
+        // Asset download now happens on the Player screen for unified loading experience
+        // Skip network fetches if offline or if catalogs are already loaded from cache
+        let group = DispatchGroup()
+        let isOnline = NetworkMonitor.shared.isConnected
+        if isOnline && BackgroundSoundManager.shared.sounds.isEmpty {
+            group.enter(); BackgroundSoundManager.shared.fetchBackgroundSounds { _ in group.leave() }
+        }
+        if isOnline && CueManager.shared.cues.isEmpty {
+            group.enter(); CueManager.shared.fetchCues { _ in group.leave() }
+        }
+        if isOnline && BinauralBeatManager.shared.beats.isEmpty {
+            group.enter(); BinauralBeatManager.shared.fetchBinauralBeats { _ in group.leave() }
+        }
+        group.notify(queue: .main) {
+            var appliedConfig = response.meditationConfiguration
+            var forcedBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
+            var bbIdFromLink: String = "None"
+            if let components = URLComponents(url: response.deepLink, resolvingAgainstBaseURL: false),
+               let rebuilt = MeditationConfiguration(queryItems: components.queryItems ?? []) {
+                appliedConfig = rebuilt
+                // Pull bb directly from deep link and map to catalog to avoid any cross-target issues
+                if let qItems = components.queryItems, let v = qItems.first(where: { $0.name == "bb" })?.value {
+                    bbIdFromLink = v
+                }
+                if let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
+                    forcedBeat = beat
+                }
+                logger.aiChat("🧠 AI_DEBUG [BB]: rebuilt_config bb_link=\(bbIdFromLink) mapped=\(forcedBeat.name)")
+            } else {
+                logger.aiChat("🧠 AI_DEBUG [BB]: rebuild_config_failed using original config")
+            }
+            // If we have a mapped beat from the deeplink, force it into navigation coordinator
+            if forcedBeat.id != "None" {
+                navigationCoordinator.timerBinauralBeat = forcedBeat
+                logger.aiChat("🧠 AI_DEBUG [BB]: navigation_forced bb=\(forcedBeat.id) name=\(forcedBeat.name)")
+            }
+            logger.eventMessage("🤖 AI_MEDITATION_UI: Navigating to timer - assets will be prepared on Player screen...")
+            // Set up SessionContextManager for the custom meditation session (customize flow)
+            let timerConfig = TimerSessionConfig(
+                minutes: appliedConfig.duration,
+                backgroundSound: appliedConfig.backgroundSound,
+                binauralBeat: forcedBeat,
+                cueSettings: appliedConfig.cueSettings,
+                title: appliedConfig.title,
+                description: response.description
+            )
+            SessionContextManager.shared.setupCustomMeditationSession(
+                entryPoint: .aiChat,
+                timerConfig: timerConfig,
+                origin: .aiRecommended,
+                customizationLevel: .suggested
+            )
+            
+            // Log ai_onboarding_meditation_started if user came from AI onboarding
+            if SenseiOnboardingState.shared.isComplete {
+                AnalyticsManager.shared.logEvent("ai_onboarding_meditation_started", parameters: [
+                    "steps_completed": SenseiOnboardingState.shared.stepsCompletedBeforeExit,
+                    "skipped_early": SenseiOnboardingState.shared.didSkipEarly
+                ])
+            }
+            
+            navigationCoordinator.applyDeepLinkMeditationConfiguration(appliedConfig)
+            // Clear the result after starting
+            logger.eventMessage("🤖 AI_MEDITATION_UI: Clearing UI result state")
+            self.clearResult()
+            logger.eventMessage("🤖 AI_MEDITATION_UI: === MEDITATION START COMPLETED ===")
+        }
+    }
+    
+    func clearResult() {
+        generatedMeditation = nil
+        conversationalResponse = nil
+        showResult = false
+        error = nil
+    }
+    
+    func refreshRules() async {
+        // No-op: rely on cached configuration via generateMeditation path
+    }
+    
+    private func friendlyErrorMessage(from error: Error) -> String {
+        let nsError = error as NSError
+        
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Processing error - Domain: \(nsError.domain), Code: \(nsError.code)")
+        logger.eventMessage("🤖 AI_MEDITATION_UI: Error description: \(nsError.localizedDescription)")
+        
+        switch nsError.code {
+        case NSURLErrorNotConnectedToInternet:
+            return "No internet connection. Please check your network and try again."
+        case NSURLErrorTimedOut:
+            return "Request timed out. Please try again."
+        case 401:
+            if nsError.domain == "AIService" && nsError.localizedDescription.contains("quota") {
+                return "AI service quota exceeded. Please try again later or contact support."
+            }
+            return "Authentication error. Please try again."
+        case 429:
+            if nsError.domain == "AIService" {
+                // Use the specific error message from the service which now differentiates between rate limits and quota
+                return nsError.localizedDescription
+            }
+            return "Too many requests. Please wait a moment and try again."
+        case 500...599:
+            return "AI service is temporarily unavailable. Please try again later."
+        default:
+            if nsError.domain == "AIService" {
+                return nsError.localizedDescription
+            }
+            return "Unable to generate meditation. Please try again."
+        }
+    }
+    
+    // MARK: - Explore Guidance Helpers
+    
+    /// Checks if the user explicitly requested a pre-recorded session
+    /// This bypasses the normal Path-first logic for testing purposes
+    /// nonisolated to allow calling from async contexts
+    nonisolated private func isExplicitPreRecordedRequest(_ prompt: String) -> Bool {
+        let lower = prompt.lowercased()
+        let triggers = ["pre-recorded", "prerecorded", "pre recorded"]
+        let isExplicit = triggers.contains { lower.contains($0) }
+        return isExplicit
+    }
+}
+
+// MARK: - Quick Intent Helpers
+extension AIRequestManager {
+    // Minimal classifier: meditation | explain | conversation
+    // Enhanced duration detection and explain override
+    fileprivate func classifyRequestType(_ prompt: String) -> String {
+        let lower = prompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1) Explain/benefit overrides (never misclassify Q&A as meditation)
+        let isQuestion = lower.hasSuffix("?")
+        let explainStarts = ["what is","how do","how does","why","explain","tell me about"]
+        let benefitSignals = ["will this","is this","does this","can this","will it","is it","does it","help","benefit","good for","work for","reduce","improve","anxiety","stress","sleep"]
+        if isQuestion && (explainStarts.contains { lower.hasPrefix($0) } || benefitSignals.contains { lower.contains($0) }) {
+            return "explain"
+        }
+
+        // 2) Meditation intent signals
+        let hasDuration = hasDurationSignal(lower)
+        let verbs = ["create","make","build","craft","generate","start","do","guide","run","begin"]
+        let hasVerb = verbs.contains { lower.contains($0) }
+        let sessionWords = ["session","practice","timer","meditation","meditate"]
+        let hasSession = sessionWords.contains { lower.contains($0) }
+
+        if hasDuration && (hasSession || hasVerb) { return "meditation" }
+
+        // Allow very short duration-only commands (e.g., "15 minutes") to count as meditation
+        if hasDuration && lower.count <= 24 { return "meditation" }
+
+        // 3) Fallbacks
+        if hasVerb && hasSession { return "meditation" }
+        return "conversation"
+    }
+
+    /// Detects a wide variety of natural-language duration expressions
+    fileprivate func hasDurationSignal(_ s: String) -> Bool {
+        let lower = s.lowercased()
+        let fullRange = NSRange(location: 0, length: lower.utf16.count)
+
+        func match(_ pattern: String) -> Bool {
+            guard let re = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return false }
+            return re.firstMatch(in: lower, options: [], range: fullRange) != nil
+        }
+
+        // hh:mm (e.g., 1:30, 00:20)
+        if match(#"\b([0-1]?\d|2[0-3]):[0-5]\d\b"#) { return true }
+
+        // Mixed forms: 1h30, 1 h 30 m, 1hr 30min, 1.5h, 90min, 10m
+        if match(#"\b\d+(?:\.\d+)?\s*h(?:\s*\d+\s*m(?:in)?s?)?\b"#) { return true }
+        if match(#"\b\d+\s*m(?:in)?s?\b"#) { return true }
+
+        // Hyphen/space variants and symbols: 10-minute, 10‑min, 10 min., 10′ / 10'
+        if match(#"\b\d{1,3}[\s\-]*m(?:in(?:ute)?s?)?\.?\b"#) { return true }
+        if match(#"\b\d{1,3}\s*['′]\b"#) { return true }
+
+        // Hours: 1h, 1 hr, 1 hour, 2 hrs, 2 hours
+        if match(#"\b\d{1,2}\s*h(?:r)?s?\b|\b\d{1,2}\s*hours?\b"#) { return true }
+
+        // Ranges: 5–10 min, 5-10 minutes, 5 to 10 mins, 1-2h
+        if match(#"\b\d{1,3}\s*(?:-|–|—|to)\s*\d{1,3}\s*(?:m|min|mins|minutes?|h|hrs?|hours?)\b"#) { return true }
+
+        // Approximate: ~10min, approx 10 minutes, about 10 m, around 1h
+        if match(#"(?:~|about|around|approx(?:\.|imately)?)\s*\d{1,3}\s*(?:m|min|mins|minutes?|h|hrs?|hours?)\b"#) { return true }
+
+        // Spelled-out numbers + minutes
+        if match(#"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty)(?:[\-\s](one|two|three|four|five|six|seven|eight|nine))?\s*(minutes?|mins?)\b"#) { return true }
+
+        // Half / quarter hour
+        if match(#"\b(half\s+an\s+hour|half\-hour|half hour|½\s*hour)\b"#) { return true }
+        if match(#"\b(quarter\s+of\s+an\s+hour|quarter\-hour|quarter hour)\b"#) { return true }
+
+        // A couple of minutes
+        if match(#"\b(a\s+couple\s+of\s+minutes|couple\s+of\s+minutes)\b"#) { return true }
+
+        // Lightly implied phrasing: for 10 minutes, a 10‑minute session, quick 10 min
+        if match(#"\bfor\s+\d{1,3}\s*(?:m|min|mins|minutes?)\b"#) { return true }
+        if match(#"\ba\s*\d{1,3}[\-\s]*(?:m|min|mins|minute|minutes)\b"#) { return true }
+
+        return false
+    }
+
+    fileprivate func baseParams(from ctx: AIRequestContext) -> [String: Any] {
+        let p: [String: Any] = [
+            "request_id": ctx.request_id,
+            "user_prompt": ctx.user_prompt,
+            "prompt_length": ctx.prompt_length,
+            "request_type": ctx.request_type,
+            "history_len": ctx.history_len
+        ]
+        return p
+    }
+
+    /// Returns a rotated alternative suggestion and CTA, avoiding the immediate previous choice.
+    fileprivate func nextAlternativeSuggestion() -> String {
+        // Pick a random index different from the last used
+        var newIndex: Int
+        if alternativeSuggestions.isEmpty { return "No problem. Would you like me to create a short meditation now, or prefer another idea?" }
+        repeat {
+            newIndex = Int.random(in: 0..<alternativeSuggestions.count)
+        } while lastAlternativeSuggestionIndex != nil && newIndex == lastAlternativeSuggestionIndex
+        lastAlternativeSuggestionIndex = newIndex
+        let idea = alternativeSuggestions[newIndex]
+        // Save the concrete idea so a subsequent "Yes" will create this exact session
+        self.lastSuggestedIdea = idea
+        return "No problem. \(idea) Would you like me to create it now, or prefer another idea?"
+    }
+
+    /// Attempts to extract a concrete idea string from a conversational response
+    /// Examples:
+    /// - "Try this: 12 min mantra focus...\nWant me to create it now?" → returns "12 min mantra focus..."
+    /// - "No problem. How about a 13 min retrospection ...? Would you like me to create it now ..." → returns "13 min retrospection ..."
+    fileprivate func extractIdea(from response: String) -> String? {
+        let s = response.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Pattern 1: Try this: <idea> (until newline or question)
+        if let range = s.range(of: "Try this:") {
+            let after = s[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            let stopChars: [Character] = ["\n", "?", "\r"]
+            if let stop = after.firstIndex(where: { stopChars.contains($0) }) {
+                return String(after[..<stop]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            return after
+        }
+        // Pattern 1b: Normalize extend/lengthen + minutes → tag
+        do {
+            let l = s.lowercased()
+            if let match = l.range(of: #"(extend|lengthen|make).{0,40}?(\d{1,3})\s*(m|min|minutes)"#, options: .regularExpression) {
+                let slice = String(l[match])
+                if let re = try? NSRegularExpression(pattern: #"(\d{1,3})\s*(m|min|minutes)"#, options: .caseInsensitive),
+                   let r = re.firstMatch(in: slice, options: [], range: NSRange(location: 0, length: (slice as NSString).length)),
+                   r.numberOfRanges >= 2,
+                   let r1 = Range(r.range(at: 1), in: slice) {
+                    let by = String(slice[r1])
+                    return "extend_by:\(by)"
+                }
+            }
+            if let match2 = l.range(of: #"to\s*(\d{1,3})\s*(m|min|minutes)"#, options: .regularExpression) {
+                let slice = String(l[match2])
+                if let re = try? NSRegularExpression(pattern: #"(\d{1,3})\s*(m|min|minutes)"#, options: .caseInsensitive),
+                   let r = re.firstMatch(in: slice, options: [], range: NSRange(location: 0, length: (slice as NSString).length)),
+                   r.numberOfRanges >= 2,
+                   let r1 = Range(r.range(at: 1), in: slice) {
+                    let to = String(slice[r1])
+                    return "extend_to:\(to)"
+                }
+            }
+        }
+        // Pattern 2: How about a ... ?
+        if let range = s.lowercased().range(of: "how about a ") {
+            let start = s.index(s.startIndex, offsetBy: s.distance(from: s.startIndex, to: range.lowerBound) + "how about a ".count)
+            let after = s[start...]
+            if let q = after.firstIndex(of: "?") {
+                return String(after[..<q]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            // Fallback: up to CTA lead-in
+            if let w = after.range(of: "Would you like")?.lowerBound {
+                return String(after[..<w]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            return String(after).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return nil
+    }
+    /// Returns the duration for given cue id using the same mapping as AIService
+    private func cueDuration(for cueId: String) -> Int {
+        switch cueId {
+        case "PB": return 2
+        case "BS1": return 1
+        case "BS2": return 2
+        case "BS3": return 3
+        case "BS4": return 4
+        case "BS5": return 5
+        case "BS6": return 6
+        case "BS7": return 7
+        case "BS8": return 8
+        case "BS9": return 9
+        case "BS10": return 10
+        case "BS": return 3
+        case "OH", "VC", "RT": return 3
+        case "SI", "GB": return 1
+        case let id where id.hasPrefix("IM"):
+            return Int(id.dropFirst(2)) ?? 3
+        case let id where id.hasPrefix("NF"):
+            return Int(id.dropFirst(2)) ?? 3
+        default: return 2
+        }
+    }
+
+    // MARK: - Intent Parsing & Application Helpers
+
+    private func extractMinute(from text: String) -> Int? {
+        if let range = text.range(of: "minute ") {
+            let tail = text[range.upperBound...]
+            if let n = Int(tail.split(separator: " ").first ?? "") { return n }
+        }
+        if let range = text.range(of: " at ") {
+            let tail = text[range.upperBound...]
+            if let n = Int(tail.split(separator: " ").first ?? "") { return n }
+        }
+        // Also capture tags like extend_by:NN or extend_to:NN
+        let l = text.lowercased()
+        if let r = l.range(of: #"extend_by:(\d{1,3})"#, options: .regularExpression) {
+            let slice = String(l[r])
+            if let num = slice.split(separator: ":").last, let v = Int(num) { return v }
+        }
+        if let r2 = l.range(of: #"extend_to:(\d{1,3})"#, options: .regularExpression) {
+            let slice = String(l[r2])
+            if let num = slice.split(separator: ":").last, let v = Int(num) { return v }
+        }
+        return nil
+    }
+
+    // MARK: - Tagged idea helpers
+    private func parseTaggedValue(prefix: String, in text: String) -> Int? {
+        let l = text.lowercased()
+        guard let range = l.range(of: prefix) else { return nil }
+        let after = l[range.upperBound...]
+        var digits: String = ""
+        for ch in after {
+            if ch.isNumber { digits.append(ch) } else { break }
+        }
+        if let value = Int(digits), value > 0 { return value }
+        return nil
+    }
+
+    private func extractFirstNumber(in s: String) -> Int? {
+        var digits: String = ""
+        for ch in s {
+            if ch.isNumber { digits.append(ch) } else if !digits.isEmpty { break }
+        }
+        if let value = Int(digits), value > 0 { return value }
+        return nil
+    }
+
+    // Quick-intent helpers removed
+}
+
+extension AIRequestManager {
+    /// Ensures background sound, binaural beats, and all cue audio files are cached before playback.
+    func prepareAssetsIfNeeded(for config: MeditationConfiguration) async {
+        // Build list of required remote URL strings
+        var urlStrings: [String] = []
+        if !config.backgroundSound.url.isEmpty {
+            urlStrings.append(config.backgroundSound.url)
+        }
+        let bbURL: String = {
+            let mirror = Mirror(reflecting: config)
+            if let beatChild = mirror.children.first(where: { $0.label == "binauralBeat" }) {
+                let beatMirror = Mirror(reflecting: beatChild.value)
+                if let url = beatMirror.children.first(where: { $0.label == "url" })?.value as? String {
+                    return url
+                }
+            }
+            return ""
+        }()
+        if !bbURL.isEmpty {
+            urlStrings.append(bbURL)
+        }
+        for setting in config.cueSettings {
+            if !setting.cue.url.isEmpty {
+                urlStrings.append(setting.cue.url)
+            }
+        }
+        // Deduplicate
+        let unique = Array(Set(urlStrings))
+        guard !unique.isEmpty else { return }
+        
+        isPreparingPlayback = true
+        preparationProgress = 0.0
+        
+        let total = Double(unique.count)
+        var completed = 0.0
+        
+        await withTaskGroup(of: Void.self) { group in
+            for urlString in unique {
+                group.addTask {
+                    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                        FileManagerHelper.shared.ensureLocalFile(forRemoteURLString: urlString, setDownloading: { _ in }, completion: { _ in
+                            continuation.resume()
+                        })
+                    }
+                    await MainActor.run {
+                        completed += 1.0
+                        self.preparationProgress = min(1.0, completed / total)
+                    }
+                }
+            }
+            await group.waitForAll()
+        }
+        await MainActor.run {
+            isPreparingPlayback = false
+            preparationProgress = 1.0
+        }
+    }
+} 

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>312113224409-ajk8dadobo47rn18fmetql5fgrv387d8.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.312113224409-ajk8dadobo47rn18fmetql5fgrv387d8</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBW1Qv13drjzmrh_E1hoRg47k-9UtxPomg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>312113224409</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.meditationchef.imagine</string>
+	<key>PROJECT_ID</key>
+	<string>imagine-c6162</string>
+	<key>STORAGE_BUCKET</key>
+	<string>imagine-c6162.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:312113224409:ios:7167379a3ab9254320fcc8</string>
+</dict>
+</plist>

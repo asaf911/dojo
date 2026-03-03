@@ -1,0 +1,379 @@
+//
+//  TimerView.swift
+//  Dojo
+//
+//  Created by Asaf Shamir on 2025-03-01
+//
+
+import SwiftUI
+import UIKit
+
+struct TimerView: View {
+    @State private var selectedMinutes: Int = 5
+    @State private var navigateToCountdown = false
+    @State private var selectedBackgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: "")
+    @State private var cueSettings: [CueSetting] = []
+    @State private var selectedBinauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
+    @State private var isDeepLinked: Bool = false  // Only used to pass along the flag
+    @State private var isDataLoaded: Bool = false  // Track if data is loaded
+    @State private var meditationTitle: String? = nil  // Title from AI or deep link
+
+    // State for sharing
+    @State private var showShareSheet: Bool = false
+    @State private var shareLink: URL? = nil // Add a state variable to hold the current share link
+    
+
+
+
+    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.toggleMenu) private var toggleMenu
+    @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+    @StateObject private var backgroundSoundManager = BackgroundSoundManager.shared
+    @StateObject private var cueManager = CueManager.shared
+    @StateObject private var binauralBeatManager = BinauralBeatManager.shared
+
+    var body: some View {
+        DojoScreenContainer(
+            headerTitle: "Create",
+            headerSubtitle: "Design a meditation that fits you",
+            backgroundImageName: "timerBackground",
+            backAction: {
+                if isDeepLinked {
+                    // Just do nothing for deep links as we're already in the MainContainerView
+                } else {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            },
+            showBackButton: false,
+            menuAction: toggleMenu,
+            showMenuButton: true
+        ) {
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Spacer().frame(height: 5)
+                    CountdownPicker(minutes: $selectedMinutes)
+                        .frame(height: 200)
+                        .clipped()
+
+                    DividerView()
+
+                    CueConfigurationView(selectedMinutes: $selectedMinutes, cueSettings: $cueSettings)
+
+                    DividerView()
+
+                    BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
+                    BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
+                    
+                    // HStack containing the Share and Play buttons side by side.
+                    HStack(spacing: 14) {
+                        // Share Button: icon only.
+                        Button(action: {
+                            handleShareButtonTap()
+                        }) {
+                            Image(systemName: "square.and.arrow.up")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(isDataLoaded ? Color.dojoTurquoise : Color.gray)
+                                .padding()
+                        }
+                        .disabled(!isDataLoaded)
+                        
+                        // Play Button - navigates to player immediately, assets prepared on Player screen
+                        Button(action: {
+                            // Subscription gate (post-first-session, not subscribed)
+                            if SubscriptionManager.shared.shouldGatePlay {
+                                SubscriptionManager.shared.logGateState()
+                                #if DEBUG
+                                print("📊 [SUBSCRIPTION_GATE] Play blocked — source=TimerCreationView")
+                                #endif
+                                navigationCoordinator.subscriptionSource = .createScreen
+                                navigationCoordinator.navigateTo(.subscription)
+                                return
+                            }
+                            // Fade out background music before navigating to timer
+                            GeneralBackgroundMusicController.shared.fadeOutForPractice()
+                            
+                            // Set up SessionContextManager for custom meditation
+                            let timerConfig = TimerSessionConfig(
+                                minutes: selectedMinutes,
+                                backgroundSound: selectedBackgroundSound,
+                                binauralBeat: selectedBinauralBeat,
+                                cueSettings: cueSettings
+                            )
+                            
+                            // Check if AI context exists (coming from AI chat -> customize flow)
+                            if SessionContextManager.shared.isAIOriginated {
+                                // User modified an AI suggestion
+                                SessionContextManager.shared.markUserModified(timerConfig: timerConfig)
+                            } else {
+                                // User created from scratch on the Create screen
+                                SessionContextManager.shared.setupCustomMeditationSession(
+                                    entryPoint: .createScreen,
+                                    timerConfig: timerConfig,
+                                    origin: .userSelected,
+                                    customizationLevel: .none
+                                )
+                            }
+                            
+                            // Navigate to countdown immediately - assets will be prepared on Player screen
+                            navigationCoordinator.navigateToTimerCountdown(
+                                totalMinutes: selectedMinutes,
+                                backgroundSound: selectedBackgroundSound,
+                                cueSettings: cueSettings,
+                                binauralBeat: selectedBinauralBeat,
+                                isDeepLinked: isDeepLinked,
+                                title: meditationTitle
+                            )
+                        }) {
+                            Text("Timer_PlayButton")
+                                .nunitoFont(size: 16, style: .bold)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .foregroundColor(.foregroundDarkBlue)
+                            .background(Color.dojoTurquoise)
+                            .cornerRadius(25)
+                        }
+                    }
+                    
+                    .padding(.vertical, 12)
+                }
+                .padding(.horizontal, 26)
+                .padding(.bottom, 120)
+            }
+            .topFadeMask(height: 5)
+        }
+        .onAppear {
+            // Load background sounds and cues if needed
+            if backgroundSoundManager.sounds.isEmpty {
+                backgroundSoundManager.fetchBackgroundSounds { success in
+                    if success {
+                        logger.eventMessage("Background sounds loaded successfully")
+                    }
+                    checkDataLoaded()
+                }
+            }
+            
+            if cueManager.cues.isEmpty {
+                cueManager.fetchCues { success in
+                    if success {
+                        logger.eventMessage("Cues loaded successfully")
+                    }
+                    checkDataLoaded()
+                }
+            }
+            if binauralBeatManager.beats.isEmpty {
+                binauralBeatManager.fetchBinauralBeats { _ in
+                    checkDataLoaded()
+                }
+            }
+            
+            // Check for deep link settings immediately on appear
+            if let timerSetting = navigationCoordinator.deepLinkedMeditationConfiguration {
+                print("🎛️ TimerView onAppear: Found deep linked meditation configuration - duration: \(timerSetting.duration)")
+                logger.eventMessage("TimerView onAppear: Found deep linked meditation configuration")
+                processDeepLinkSettings(timerSetting)
+            } else {
+                print("🎛️ TimerView onAppear: No deep linked meditation configuration found")
+                logger.eventMessage("TimerView onAppear: No deep linked meditation configuration found")
+                // Only load saved configuration if no deep-linked setting is pending
+                loadSavedConfiguration()
+            }
+            
+            // Check if data is already loaded
+            checkDataLoaded()
+            
+            // Generate initial share link
+            updateShareLink()
+        }
+        // Re-add the onReceive handler for deepLinkedMeditationConfiguration as a backup
+        // in case the settings are set after the view appears
+        .onReceive(navigationCoordinator.$deepLinkedMeditationConfiguration) { timerSetting in
+            if let timerSetting = timerSetting {
+                logger.eventMessage("TimerView onReceive: Received deep linked meditation configuration")
+                processDeepLinkSettings(timerSetting)
+            }
+        }
+        .onDisappear {
+            saveConfiguration()
+        }
+        .navigationBarBackButtonHidden(true)
+        .swipeBackEntireScreen {
+            if isDeepLinked {
+                // Do nothing on swipe back for deep linked view
+            } else {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
+        .background(InteractivePopGestureSetter())
+        .sheet(isPresented: $showShareSheet) {
+            if let url = shareLink {
+                // Passing the URL's string representation avoids sandbox extension errors.
+                ActivityViewController(activityItems: [shareMessage, url.absoluteString])
+            } else {
+                Text("No share link generated.")
+                    .nunitoFont(size: 16, style: .medium)
+                    .padding()
+            }
+        }
+
+        .onChange(of: selectedMinutes) { _, _ in
+            updateShareLink()
+        }
+        .onChange(of: selectedBackgroundSound) { _, _ in
+            updateShareLink()
+        }
+        .onChange(of: cueSettings) { _, _ in
+            updateShareLink()
+        }
+    }
+    
+    // MARK: - Persistence Helpers
+    
+    private func processDeepLinkSettings(_ timerSetting: MeditationConfiguration) {
+        print("🎛️ TimerView: Processing deep link settings - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
+        DispatchQueue.main.async {
+            selectedMinutes = timerSetting.duration
+            selectedBackgroundSound = timerSetting.backgroundSound
+            cueSettings = timerSetting.cueSettings
+            meditationTitle = timerSetting.title
+            // Use reflection to safely access binauralBeat when available, else fallback to forced navigation beat
+            if let beat = (Mirror(reflecting: timerSetting).children.first { $0.label == "binauralBeat" }?.value as? BinauralBeat) {
+                selectedBinauralBeat = beat
+                logger.eventMessage("TimerView: Applied deep link binaural beat: \(beat.name)")
+            } else {
+                let forced = navigationCoordinator.timerBinauralBeat
+                if forced.id != "None" {
+                    selectedBinauralBeat = forced
+                    logger.eventMessage("TimerView: Applied forced navigation binaural beat: \(forced.name)")
+                } else {
+                    logger.eventMessage("TimerView: No binaural beat found in deep link; keeping current selection: \(selectedBinauralBeat.name)")
+                }
+            }
+            navigationCoordinator.deepLinkedMeditationConfiguration = nil
+            isDeepLinked = true
+            print("🎛️ TimerView: Successfully applied deep linked timer settings")
+            logger.eventMessage("TimerView: Applied deep linked timer setting - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
+
+            // Update share link after applying deep link settings
+            updateShareLink()
+        }
+    }
+    
+    private func currentTimerSetting() -> MeditationConfiguration {
+        return MeditationConfiguration(
+            duration: selectedMinutes,
+            backgroundSound: selectedBackgroundSound,
+            cueSettings: cueSettings,
+            title: nil,
+            binauralBeat: selectedBinauralBeat
+        )
+    }
+    
+    private func saveConfiguration() {
+        let setting = currentTimerSetting()
+        SharedUserStorage.save(value: setting, forKey: .timerSettings)
+        logger.eventMessage("TimerView: Saved timer configuration: \(setting)")
+        
+        // Update share link after saving configuration
+        updateShareLink()
+    }
+    
+    private func loadSavedConfiguration() {
+        if let savedSetting = SharedUserStorage.retrieve(forKey: .timerSettings, as: MeditationConfiguration.self) {
+            selectedMinutes = savedSetting.duration
+            selectedBackgroundSound = savedSetting.backgroundSound
+            cueSettings = savedSetting.cueSettings
+            // Restore binaural beat if present in saved config; otherwise keep current
+            if let beat = savedSetting.binauralBeat {
+                selectedBinauralBeat = beat
+            }
+            logger.eventMessage("TimerView: Loaded saved timer configuration: \(savedSetting)")
+            
+            // Update share link after loading configuration
+            updateShareLink()
+        }
+    }
+    
+    // MARK: - Share Link Generation and Message
+    
+    // Add a method to update the share link whenever timer settings change
+    private func updateShareLink() {
+        shareLink = generateShareLink()
+        if let link = shareLink {
+            logger.eventMessage("Share link updated: \(link.absoluteString)")
+        }
+    }
+    
+    private func generateShareLink() -> URL? {
+        let baseURL = Config.oneLinkBaseURL
+        var components = URLComponents(string: baseURL)
+        // Subtract colon and comma from allowed set so that they are percent-encoded.
+        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: ":,"))
+        let durValue = "\(selectedMinutes)".addingPercentEncoding(withAllowedCharacters: allowed)
+        let bsValue = selectedBackgroundSound.id
+        let bsEncoded = bsValue.addingPercentEncoding(withAllowedCharacters: allowed)
+        let cuRawValue = cueSettings.compactMap { cueSetting -> String? in
+            let id = cueSetting.cue.id
+            let trigger: String
+            switch cueSetting.triggerType {
+            case .start:
+                trigger = "S"
+            case .end:
+                trigger = "E"
+            case .minute:
+                if let minute = cueSetting.minute {
+                    trigger = "\(minute)"
+                } else {
+                    trigger = ""
+                }
+            }
+            return "\(id):\(trigger)"
+        }.joined(separator: ",")
+        let cuEncoded = cuRawValue.addingPercentEncoding(withAllowedCharacters: allowed)
+        let bbValue = selectedBinauralBeat.id
+        let bbEncoded = bbValue.addingPercentEncoding(withAllowedCharacters: allowed)
+        components?.queryItems = [
+            URLQueryItem(name: "dur", value: durValue),
+            URLQueryItem(name: "bs", value: bsEncoded),
+            URLQueryItem(name: "bb", value: bbEncoded),
+            URLQueryItem(name: "cu", value: cuEncoded),
+            URLQueryItem(name: "c", value: "custom"),
+            URLQueryItem(name: "af_sub1", value: "Custom Meditation")
+        ]
+        return components?.url
+    }
+    
+    private var shareMessage: String {
+        let cueNames = cueSettings.map { $0.cue.name }.joined(separator: ", ")
+        return "I just created a custom \(selectedMinutes)-minute meditation session with \"\(selectedBackgroundSound.name)\" playing in the background and sound cues (like \(cueNames)) to guide you through. Made just for you!"
+    }
+
+    // MARK: - Data Loading
+
+    private func checkDataLoaded() {
+        isDataLoaded = !backgroundSoundManager.sounds.isEmpty && !cueManager.cues.isEmpty && !binauralBeatManager.beats.isEmpty
+        logger.eventMessage("Data loaded status: \(isDataLoaded)")
+    }
+
+    // MARK: - Button Actions
+    // Add this method to handle share button action
+    private func handleShareButtonTap() {
+        // Ensure share link is up to date
+        updateShareLink()
+        
+        if let link = shareLink {
+            logger.eventMessage("Share button tapped with link: \(link.absoluteString)")
+        } else {
+            logger.errorMessage("No share link generated.")
+        }
+        showShareSheet = true
+    }
+}
+
+struct TimerView_Previews: PreviewProvider {
+    static var previews: some View {
+        TimerView()
+            .environmentObject(NavigationCoordinator())
+    }
+}
