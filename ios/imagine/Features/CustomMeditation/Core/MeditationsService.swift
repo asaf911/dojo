@@ -1,0 +1,263 @@
+//
+//  MeditationsService.swift
+//  imagine
+//
+//  POST /meditations (manual path) — creates meditation package from structured selections.
+//  QA: Filter console logs by "[Server][Meditations]" to trace server communication.
+//
+
+import Foundation
+
+// MARK: - Response Models (server JSON)
+
+/// Server response for POST /meditations
+struct MeditationPackage: Codable {
+    let id: String
+    let title: String?
+    let duration: Int
+    let description: String?
+    let backgroundSound: MeditationAsset
+    let binauralBeat: MeditationAsset?
+    let cues: [MeditationCue]
+}
+
+/// Asset with id, name, url (background sound or binaural beat)
+struct MeditationAsset: Codable {
+    let id: String
+    let name: String
+    let url: String
+    let description: String?
+}
+
+/// Cue with trigger (start | end | minute)
+struct MeditationCue: Codable {
+    let id: String
+    let name: String
+    let url: String
+    let trigger: CueTrigger
+}
+
+/// Server returns trigger as "start" | "end" | number
+enum CueTrigger: Codable {
+    case start
+    case end
+    case minute(Int)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let s = try? container.decode(String.self) {
+            switch s {
+            case "start": self = .start
+            case "end": self = .end
+            default:
+                if let n = Int(s) {
+                    self = .minute(n)
+                } else {
+                    throw DecodingError.dataCorruptedError(
+                        in: container,
+                        debugDescription: "Invalid trigger string: \(s)"
+                    )
+                }
+            }
+        } else if let n = try? container.decode(Int.self) {
+            self = .minute(n)
+        } else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Trigger must be string or number"
+            )
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .start: try container.encode("start")
+        case .end: try container.encode("end")
+        case .minute(let m): try container.encode(m)
+        }
+    }
+}
+
+// MARK: - Conversion to TimerSessionConfig
+
+extension MeditationPackage {
+    /// Converts server response to TimerSessionConfig for navigation to player.
+    func toTimerSessionConfig(isDeepLinked: Bool = false) -> TimerSessionConfig {
+        let backgroundSound = BackgroundSound(
+            id: backgroundSound.id,
+            name: backgroundSound.name,
+            url: backgroundSound.url
+        )
+        let binauralBeat: BinauralBeat
+        if let bb = self.binauralBeat {
+            binauralBeat = BinauralBeat(
+                id: bb.id,
+                name: bb.name,
+                url: bb.url,
+                description: bb.description
+            )
+        } else {
+            binauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
+        }
+        let cueSettings = cues.map { mc -> CueSetting in
+            let cue = Cue(id: mc.id, name: mc.name, url: mc.url)
+            switch mc.trigger {
+            case .start:
+                return CueSetting(triggerType: .start, minute: nil, cue: cue)
+            case .end:
+                return CueSetting(triggerType: .end, minute: nil, cue: cue)
+            case .minute(let m):
+                return CueSetting(triggerType: .minute, minute: m, cue: cue)
+            }
+        }
+        return TimerSessionConfig(
+            minutes: duration,
+            backgroundSound: backgroundSound,
+            binauralBeat: binauralBeat,
+            cueSettings: cueSettings,
+            isDeepLinked: isDeepLinked,
+            title: title,
+            description: description
+        )
+    }
+}
+
+// MARK: - Request Models
+
+private struct PostMeditationsRequestBody: Encodable {
+    let type: String = "manual"
+    let duration: Int
+    let backgroundSoundId: String
+    let binauralBeatId: String?
+    let cues: [CueRequestItem]
+}
+
+private struct CueRequestItem: Encodable {
+    let id: String
+    let trigger: CueTriggerValue
+}
+
+/// Trigger for manual meditation request: "start" | "end" | minute number
+enum CueTriggerValue: Encodable {
+    case start
+    case end
+    case minute(Int)
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .start: try container.encode("start")
+        case .end: try container.encode("end")
+        case .minute(let m): try container.encode(m)
+        }
+    }
+}
+
+// MARK: - Service (struct of closures)
+
+struct MeditationsService {
+    /// Create a meditation via POST /meditations (manual path).
+    /// Throws on network or decode error; caller handles offline fallback.
+    var createMeditationManual: (
+        _ duration: Int,
+        _ backgroundSoundId: String,
+        _ binauralBeatId: String?,
+        _ cues: [(id: String, trigger: CueTriggerValue)]
+    ) async throws -> MeditationPackage
+}
+
+// MARK: - Convenience: Create from CueSettings (caller-facing API)
+
+extension MeditationsService {
+    /// Create a meditation from app CueSettings. Converts to request format internally.
+    func createMeditationManual(
+        duration: Int,
+        backgroundSoundId: String,
+        binauralBeatId: String?,
+        cueSettings: [CueSetting]
+    ) async throws -> MeditationPackage {
+        let cues = cueSettings.map { cs -> (id: String, trigger: CueTriggerValue) in
+            let trigger: CueTriggerValue
+            switch cs.triggerType {
+            case .start: trigger = .start
+            case .end: trigger = .end
+            case .minute: trigger = .minute(cs.minute ?? 1)
+            }
+            return (cs.cue.id, trigger)
+        }
+        return try await createMeditationManual(duration, backgroundSoundId, binauralBeatId, cues)
+    }
+}
+
+// MARK: - Live
+
+extension MeditationsService {
+    static let live = MeditationsService(
+        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues in
+            let tag = "[Server][Meditations]"
+            print("\(tag) createMeditationManual: start duration=\(duration) cueCount=\(cues.count)")
+            var request = URLRequest(url: Config.meditationsURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let body = PostMeditationsRequestBody(
+                duration: duration,
+                backgroundSoundId: backgroundSoundId,
+                binauralBeatId: binauralBeatId,
+                cues: cues.map { CueRequestItem(id: $0.id, trigger: $0.trigger) }
+            )
+            request.httpBody = try JSONEncoder().encode(body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                print("\(tag) createMeditationManual: invalid response type")
+                throw NSError(domain: "MeditationsService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+            }
+            if http.statusCode != 200 {
+                let bodyStr = String(data: data, encoding: .utf8) ?? ""
+                print("\(tag) createMeditationManual: failure status=\(http.statusCode) body=\(bodyStr)")
+                throw NSError(domain: "MeditationsService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(http.statusCode)"])
+            }
+            do {
+                let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
+                print("\(tag) createMeditationManual: success id=\(package.id) duration=\(package.duration)")
+                return package
+            } catch {
+                print("\(tag) createMeditationManual: decode error - \(error.localizedDescription)")
+                throw error
+            }
+        }
+    )
+}
+
+// MARK: - Shared (production)
+
+extension MeditationsService {
+    static var shared: MeditationsService { .live }
+}
+
+// MARK: - Preview
+
+extension MeditationsService {
+    static let preview = MeditationsService(
+        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues in
+            try await Task.sleep(nanoseconds: 300_000_000)
+            return MeditationPackage(
+                id: "preview-\(UUID().uuidString.prefix(8))",
+                title: nil,
+                duration: duration,
+                description: nil,
+                backgroundSound: MeditationAsset(id: backgroundSoundId, name: "Preview Sound", url: "gs://preview", description: nil),
+                binauralBeat: binauralBeatId.map { MeditationAsset(id: $0, name: "Preview Beat", url: "gs://preview", description: nil) },
+                cues: cues.map { c in
+                    let trigger: CueTrigger
+                    switch c.trigger {
+                    case .start: trigger = .start
+                    case .end: trigger = .end
+                    case .minute(let m): trigger = .minute(m)
+                    }
+                    return MeditationCue(id: c.id, name: "Preview Cue", url: "gs://preview", trigger: trigger)
+                }
+            )
+        }
+    )
+}

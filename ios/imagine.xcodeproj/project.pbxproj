@@ -102,6 +102,7 @@
 		A514337E2D5462ED00105271 /* BackgroundSoundSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */; };
 		A51434162D554AD400105271 /* BackgroundSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434152D554AC900105271 /* BackgroundSound.swift */; };
 		C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0012F000100000001 /* CatalogsManager.swift */; };
+		C5A1B0032F000100000002 /* MeditationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0042F000100000002 /* MeditationsService.swift */; };
 		A51F61E92DDDA24300DA9CEB /* UserIdentityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */; };
 		A51F64B82DE2D36800DA9CEB /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64B62DE2D36800DA9CEB /* PlayerView.swift */; };
 		A51F64BC2DE2E5DF00DA9CEB /* PlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */; };
@@ -503,6 +504,7 @@
 		A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundSelectionView.swift; sourceTree = "<group>"; };
 		A51434152D554AC900105271 /* BackgroundSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSound.swift; sourceTree = "<group>"; };
 		C5A1B0012F000100000001 /* CatalogsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogsManager.swift; sourceTree = "<group>"; };
+		C5A1B0042F000100000002 /* MeditationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationsService.swift; sourceTree = "<group>"; };
 		A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIdentityManager.swift; sourceTree = "<group>"; };
 		A51F64B62DE2D36800DA9CEB /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsView.swift; sourceTree = "<group>"; };
@@ -1431,6 +1433,7 @@
 			children = (
 				A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */,
 				C5A1B0012F000100000001 /* CatalogsManager.swift */,
+				C5A1B0042F000100000002 /* MeditationsService.swift */,
 				A51434152D554AC900105271 /* BackgroundSound.swift */,
 				BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */,
 				BBF000042FFF000100000001 /* BinauralBeat.swift */,
@@ -2252,6 +2255,7 @@
 				A57C44052DD29965007B495B /* AccountCreationValueView.swift in Sources */,
 				A5EA2B9E2DA87E79009505D4 /* FooterView.swift in Sources */,
 				C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */,
+				C5A1B0032F000100000002 /* MeditationsService.swift in Sources */,
 				A53A05662D9CAD1600E25959 /* AuthDividerView.swift in Sources */,
 				A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */,
 				A58C21882B196127000EC608 /* AudioPlayerManager.swift in Sources */,
@@ -2952,7 +2956,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 224;
+				CURRENT_PROJECT_VERSION = 226;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PushNotificationService/Info.plist;
@@ -2978,7 +2982,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 224;
+				CURRENT_PROJECT_VERSION = 226;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PushNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PushNotificationService;

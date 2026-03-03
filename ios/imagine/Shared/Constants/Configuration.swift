@@ -25,4 +25,9 @@ struct Config {
     static var catalogsURL: URL {
         URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/getCatalogs")!
     }
+
+    // MARK: - Meditations API (POST /meditations)
+    static var meditationsURL: URL {
+        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/postMeditations")!
+    }
 }

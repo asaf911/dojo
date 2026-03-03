@@ -78,52 +78,7 @@ struct TimerView: View {
                         .disabled(!isDataLoaded)
                         
                         // Play Button - navigates to player immediately, assets prepared on Player screen
-                        Button(action: {
-                            // Subscription gate (post-first-session, not subscribed)
-                            if SubscriptionManager.shared.shouldGatePlay {
-                                SubscriptionManager.shared.logGateState()
-                                #if DEBUG
-                                print("📊 [SUBSCRIPTION_GATE] Play blocked — source=TimerCreationView")
-                                #endif
-                                navigationCoordinator.subscriptionSource = .createScreen
-                                navigationCoordinator.navigateTo(.subscription)
-                                return
-                            }
-                            // Fade out background music before navigating to timer
-                            GeneralBackgroundMusicController.shared.fadeOutForPractice()
-                            
-                            // Set up SessionContextManager for custom meditation
-                            let timerConfig = TimerSessionConfig(
-                                minutes: selectedMinutes,
-                                backgroundSound: selectedBackgroundSound,
-                                binauralBeat: selectedBinauralBeat,
-                                cueSettings: cueSettings
-                            )
-                            
-                            // Check if AI context exists (coming from AI chat -> customize flow)
-                            if SessionContextManager.shared.isAIOriginated {
-                                // User modified an AI suggestion
-                                SessionContextManager.shared.markUserModified(timerConfig: timerConfig)
-                            } else {
-                                // User created from scratch on the Create screen
-                                SessionContextManager.shared.setupCustomMeditationSession(
-                                    entryPoint: .createScreen,
-                                    timerConfig: timerConfig,
-                                    origin: .userSelected,
-                                    customizationLevel: .none
-                                )
-                            }
-                            
-                            // Navigate to countdown immediately - assets will be prepared on Player screen
-                            navigationCoordinator.navigateToTimerCountdown(
-                                totalMinutes: selectedMinutes,
-                                backgroundSound: selectedBackgroundSound,
-                                cueSettings: cueSettings,
-                                binauralBeat: selectedBinauralBeat,
-                                isDeepLinked: isDeepLinked,
-                                title: meditationTitle
-                            )
-                        }) {
+                        Button(action: handlePlayButtonTap) {
                             Text("Timer_PlayButton")
                                 .nunitoFont(size: 16, style: .bold)
                             .frame(maxWidth: .infinity)
@@ -333,6 +288,38 @@ struct TimerView: View {
         return "I just created a custom \(selectedMinutes)-minute meditation session with \"\(selectedBackgroundSound.name)\" playing in the background and sound cues (like \(cueNames)) to guide you through. Made just for you!"
     }
 
+    // MARK: - Play Flow Helpers
+
+    private func buildLocalTimerConfig() -> TimerSessionConfig {
+        TimerSessionConfig(
+            minutes: selectedMinutes,
+            backgroundSound: selectedBackgroundSound,
+            binauralBeat: selectedBinauralBeat,
+            cueSettings: cueSettings
+        )
+    }
+
+    private func performPlayWithConfig(_ timerConfig: TimerSessionConfig) {
+        if SessionContextManager.shared.isAIOriginated {
+            SessionContextManager.shared.markUserModified(timerConfig: timerConfig)
+        } else {
+            SessionContextManager.shared.setupCustomMeditationSession(
+                entryPoint: .createScreen,
+                timerConfig: timerConfig,
+                origin: .userSelected,
+                customizationLevel: .none
+            )
+        }
+        navigationCoordinator.navigateToTimerCountdown(
+            totalMinutes: timerConfig.minutes,
+            backgroundSound: timerConfig.backgroundSound,
+            cueSettings: timerConfig.cueSettings,
+            binauralBeat: timerConfig.binauralBeat,
+            isDeepLinked: isDeepLinked,
+            title: timerConfig.title ?? meditationTitle
+        )
+    }
+
     // MARK: - Data Loading
 
     private func checkDataLoaded() {
@@ -341,7 +328,42 @@ struct TimerView: View {
     }
 
     // MARK: - Button Actions
-    // Add this method to handle share button action
+
+    private func handlePlayButtonTap() {
+        if SubscriptionManager.shared.shouldGatePlay {
+            SubscriptionManager.shared.logGateState()
+            #if DEBUG
+            print("📊 [SUBSCRIPTION_GATE] Play blocked — source=TimerCreationView")
+            #endif
+            navigationCoordinator.subscriptionSource = .createScreen
+            navigationCoordinator.navigateTo(.subscription)
+            return
+        }
+        GeneralBackgroundMusicController.shared.fadeOutForPractice()
+        if !ConnectivityHelper.isConnectedToInternet() {
+            performPlayWithConfig(buildLocalTimerConfig())
+        } else {
+            Task {
+                do {
+                    let package = try await MeditationsService.shared.createMeditationManual(
+                        duration: selectedMinutes,
+                        backgroundSoundId: selectedBackgroundSound.id,
+                        binauralBeatId: selectedBinauralBeat.id == "None" ? nil : selectedBinauralBeat.id,
+                        cueSettings: cueSettings
+                    )
+                    await MainActor.run {
+                        performPlayWithConfig(package.toTimerSessionConfig(isDeepLinked: isDeepLinked))
+                    }
+                } catch {
+                    print("[Server][Meditations] createMeditationManual: offline fallback - \(error.localizedDescription)")
+                    await MainActor.run {
+                        performPlayWithConfig(buildLocalTimerConfig())
+                    }
+                }
+            }
+        }
+    }
+
     private func handleShareButtonTap() {
         // Ensure share link is up to date
         updateShareLink()

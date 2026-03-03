@@ -4,12 +4,12 @@
 //
 //  Fetches aggregated meditation catalogs from GET /catalogs server endpoint.
 //
-//  QA: Filter console logs by "[CATALOGS_SERVER]" to trace server communication.
+//  QA: Filter console logs by "[Server][Catalogs]" to trace server communication.
 //
 
 import Foundation
 
-private let kCatalogsServerTag = "[CATALOGS_SERVER]"
+private let kCatalogsServerTag = "[Server][Catalogs]"
 
 /// Server response format for GET /catalogs
 private struct CatalogsResponse: Codable {

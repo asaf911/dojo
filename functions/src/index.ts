@@ -526,6 +526,129 @@ interface CatalogFile {
 
 const DEPRECATED_CUE_IDS = new Set(["MA"]);
 
+// ---------------------------------------------------------------------------
+// Shared catalog loading (used by getCatalogs and postMeditations)
+// ---------------------------------------------------------------------------
+
+interface LoadedCatalogs {
+  backgroundSounds: Array<{ id: string; name: string; url: string }>;
+  binauralBeats: Array<{
+    id: string;
+    name: string;
+    url: string;
+    description: string | null;
+  }>;
+  cues: Array<{ id: string; name: string; url: string }>;
+  bodyScanDurations: Record<string, number>;
+}
+
+async function loadCatalogs(): Promise<LoadedCatalogs> {
+  const bucket = admin.storage().bucket();
+  const downloads = await Promise.all(
+    CATALOG_PATHS.map(async (path) => {
+      try {
+        const [contents] = await bucket.file(path).download();
+        return { path, data: contents.toString("utf8") };
+      } catch (err) {
+        functions.logger.warn(`loadCatalogs: Failed to read ${path}:`, err);
+        return { path, data: null };
+      }
+    })
+  );
+
+  const byPath = Object.fromEntries(
+    downloads.map((d) => [d.path, d.data])
+  );
+
+  // Background sounds
+  const bgPath = CATALOG_PATHS[0];
+  const bgData = byPath[bgPath];
+  const backgroundSounds: Array<{ id: string; name: string; url: string }> = [];
+  if (bgData) {
+    try {
+      const catalog = JSON.parse(bgData) as CatalogFile;
+      for (const m of catalog.models ?? []) {
+        backgroundSounds.push({
+          id: m.id,
+          name: m.name,
+          url: m.audio?.url ?? "",
+        });
+      }
+    } catch (e) {
+      functions.logger.warn("loadCatalogs: Failed to parse background music", e);
+    }
+  }
+
+  // Binaural beats
+  const bbPath = CATALOG_PATHS[1];
+  const bbData = byPath[bbPath];
+  const binauralBeats: Array<{
+    id: string;
+    name: string;
+    url: string;
+    description: string | null;
+  }> = [];
+  if (bbData) {
+    try {
+      const catalog = JSON.parse(bbData) as CatalogFile;
+      for (const m of catalog.models ?? []) {
+        binauralBeats.push({
+          id: m.id,
+          name: m.name,
+          url: m.audio?.url ?? "",
+          description: m.description ?? null,
+        });
+      }
+    } catch (e) {
+      functions.logger.warn("loadCatalogs: Failed to parse binaural beats", e);
+    }
+  }
+
+  // Cues: merge from cues + body_scan + perfect_breath + i_am_mantra + nostril_focus
+  const cuePaths = CATALOG_PATHS.slice(2);
+  const allModels: CatalogModel[] = [];
+  const bodyScanDurations: Record<string, number> = {};
+
+  for (const path of cuePaths) {
+    const data = byPath[path];
+    if (!data) continue;
+    try {
+      const catalog = JSON.parse(data) as CatalogFile;
+      for (const m of catalog.models ?? []) {
+        allModels.push(m);
+        if (m.duration_minutes != null) {
+          bodyScanDurations[m.id] = m.duration_minutes;
+        }
+      }
+    } catch (e) {
+      functions.logger.warn(`loadCatalogs: Failed to parse ${path}`, e);
+    }
+  }
+
+  const seen = new Set<string>();
+  const cues: Array<{ id: string; name: string; url: string }> = [];
+  for (const m of allModels) {
+    if (seen.has(m.id) || DEPRECATED_CUE_IDS.has(m.id)) continue;
+    seen.add(m.id);
+    cues.push({
+      id: m.id,
+      name: m.name,
+      url: m.audio?.url ?? "",
+    });
+  }
+
+  return {
+    backgroundSounds,
+    binauralBeats,
+    cues,
+    bodyScanDurations,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 5. getCatalogs — HTTP GET endpoint for aggregated meditation catalogs
+// ---------------------------------------------------------------------------
+
 export const getCatalogs = functions.https.onRequest(
   async (req, res) => {
     // CORS
@@ -542,113 +665,183 @@ export const getCatalogs = functions.https.onRequest(
     }
 
     try {
-      const bucket = admin.storage().bucket();
-      const downloads = await Promise.all(
-        CATALOG_PATHS.map(async (path) => {
-          try {
-            const [contents] = await bucket.file(path).download();
-            return { path, data: contents.toString("utf8") };
-          } catch (err) {
-            functions.logger.warn(`getCatalogs: Failed to read ${path}:`, err);
-            return { path, data: null };
-          }
-        })
-      );
-
-      const byPath = Object.fromEntries(
-        downloads.map((d) => [d.path, d.data])
-      );
-
-      // Background sounds
-      const bgPath = CATALOG_PATHS[0];
-      const bgData = byPath[bgPath];
-      const backgroundSounds: Array<{ id: string; name: string; url: string }> =
-        [];
-      if (bgData) {
-        try {
-          const catalog = JSON.parse(bgData) as CatalogFile;
-          for (const m of catalog.models ?? []) {
-            backgroundSounds.push({
-              id: m.id,
-              name: m.name,
-              url: m.audio?.url ?? "",
-            });
-          }
-        } catch (e) {
-          functions.logger.warn("getCatalogs: Failed to parse background music", e);
-        }
-      }
-
-      // Binaural beats
-      const bbPath = CATALOG_PATHS[1];
-      const bbData = byPath[bbPath];
-      const binauralBeats: Array<{
-        id: string;
-        name: string;
-        url: string;
-        description: string | null;
-      }> = [];
-      if (bbData) {
-        try {
-          const catalog = JSON.parse(bbData) as CatalogFile;
-          for (const m of catalog.models ?? []) {
-            binauralBeats.push({
-              id: m.id,
-              name: m.name,
-              url: m.audio?.url ?? "",
-              description: m.description ?? null,
-            });
-          }
-        } catch (e) {
-          functions.logger.warn("getCatalogs: Failed to parse binaural beats", e);
-        }
-      }
-
-      // Cues: merge from cues + body_scan + perfect_breath + i_am_mantra + nostril_focus
-      const cuePaths = CATALOG_PATHS.slice(2);
-      const allModels: CatalogModel[] = [];
-      const bodyScanDurations: Record<string, number> = {};
-
-      for (const path of cuePaths) {
-        const data = byPath[path];
-        if (!data) continue;
-        try {
-          const catalog = JSON.parse(data) as CatalogFile;
-          for (const m of catalog.models ?? []) {
-            allModels.push(m);
-            if (m.duration_minutes != null) {
-              bodyScanDurations[m.id] = m.duration_minutes;
-            }
-          }
-        } catch (e) {
-          functions.logger.warn(`getCatalogs: Failed to parse ${path}`, e);
-        }
-      }
-
-      const seen = new Set<string>();
-      const cues: Array<{ id: string; name: string; url: string }> = [];
-      for (const m of allModels) {
-        if (seen.has(m.id) || DEPRECATED_CUE_IDS.has(m.id)) continue;
-        seen.add(m.id);
-        cues.push({
-          id: m.id,
-          name: m.name,
-          url: m.audio?.url ?? "",
-        });
-      }
-
+      const catalogs = await loadCatalogs();
       res.set("Content-Type", "application/json");
       res.status(200).send(
         JSON.stringify({
-          backgroundSounds,
-          binauralBeats,
-          cues,
-          bodyScanDurations,
+          backgroundSounds: catalogs.backgroundSounds,
+          binauralBeats: catalogs.binauralBeats,
+          cues: catalogs.cues,
+          bodyScanDurations: catalogs.bodyScanDurations,
         })
       );
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       functions.logger.error("getCatalogs: Unexpected error:", errMsg);
+      res.status(500).send(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 6. postMeditations — HTTP POST endpoint for manual meditation creation
+// ---------------------------------------------------------------------------
+
+interface PostMeditationsRequest {
+  type: string;
+  duration?: number;
+  backgroundSoundId?: string;
+  binauralBeatId?: string;
+  cues?: Array<{ id: string; trigger: string | number }>;
+}
+
+function randomUUID(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export const postMeditations = functions.https.onRequest(
+  async (req, res) => {
+    // CORS
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const body = req.body as PostMeditationsRequest;
+      if (!body || body.type !== "manual") {
+        res.status(400).send(
+          JSON.stringify({ error: "Invalid request: type must be 'manual'" })
+        );
+        return;
+      }
+
+      const duration = body.duration ?? 0;
+      const backgroundSoundId = body.backgroundSoundId ?? "";
+      const binauralBeatId = body.binauralBeatId ?? "None";
+      const cues = body.cues ?? [];
+
+      // Validate duration (1-60)
+      if (typeof duration !== "number" || duration < 1 || duration > 60) {
+        res.status(400).send(
+          JSON.stringify({ error: "Invalid duration: must be 1-60" })
+        );
+        return;
+      }
+
+      const catalogs = await loadCatalogs();
+
+      // Validate backgroundSoundId
+      const soundMap = new Map(
+        catalogs.backgroundSounds.map((s) => [s.id, s])
+      );
+      const backgroundSound = soundMap.get(backgroundSoundId);
+      if (!backgroundSound) {
+        res.status(400).send(
+          JSON.stringify({
+            error: `Invalid backgroundSoundId: ${backgroundSoundId}`,
+          })
+        );
+        return;
+      }
+
+      // Validate binauralBeatId (optional or "None")
+      let binauralBeat: { id: string; name: string; url: string; description: string | null } | null = null;
+      if (binauralBeatId && binauralBeatId !== "None") {
+        const beatMap = new Map(
+          catalogs.binauralBeats.map((b) => [b.id, b])
+        );
+        const found = beatMap.get(binauralBeatId);
+        if (!found) {
+          res.status(400).send(
+            JSON.stringify({ error: `Invalid binauralBeatId: ${binauralBeatId}` })
+          );
+          return;
+        }
+        binauralBeat = found;
+      }
+
+      // Validate cues
+      const cueMap = new Map(catalogs.cues.map((c) => [c.id, c]));
+      const resolvedCues: Array<{
+        id: string;
+        name: string;
+        url: string;
+        trigger: string | number;
+      }> = [];
+
+      for (const c of cues) {
+        if (!c || typeof c.id !== "string" || c.trigger === undefined) {
+          res.status(400).send(
+            JSON.stringify({ error: "Invalid cue: each cue needs id and trigger" })
+          );
+          return;
+        }
+        const cueAsset = cueMap.get(c.id);
+        if (!cueAsset) {
+          res.status(400).send(
+            JSON.stringify({ error: `Invalid cue id: ${c.id}` })
+          );
+          return;
+        }
+        const trigger = c.trigger;
+        const validTrigger =
+          trigger === "start" ||
+          trigger === "end" ||
+          (typeof trigger === "number" && trigger >= 0 && trigger <= duration);
+        if (!validTrigger) {
+          res.status(400).send(
+            JSON.stringify({
+              error: `Invalid trigger for cue ${c.id}: must be 'start', 'end', or a number 0-${duration}`,
+            })
+          );
+          return;
+        }
+        resolvedCues.push({
+          id: cueAsset.id,
+          name: cueAsset.name,
+          url: cueAsset.url,
+          trigger,
+        });
+      }
+
+      const response = {
+        id: randomUUID(),
+        title: null,
+        duration,
+        description: null,
+        backgroundSound: {
+          id: backgroundSound.id,
+          name: backgroundSound.name,
+          url: backgroundSound.url,
+        },
+        binauralBeat: binauralBeat
+          ? {
+              id: binauralBeat.id,
+              name: binauralBeat.name,
+              url: binauralBeat.url,
+              description: binauralBeat.description ?? undefined,
+            }
+          : null,
+        cues: resolvedCues,
+      };
+
+      res.set("Content-Type", "application/json");
+      res.status(200).send(JSON.stringify(response));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error("postMeditations: Unexpected error:", errMsg);
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }
