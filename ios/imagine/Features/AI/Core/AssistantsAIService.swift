@@ -1068,7 +1068,7 @@ AMBIGUITY HANDLING
         // Start a single shared fetch task
         let task = Task { @MainActor in
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                CatalogsManager.shared.fetchCatalogs { _ in
+                CatalogsManager.shared.fetchCatalogs(triggerContext: "AssistantsAIService|preload for AI") { _ in
                     continuation.resume()
                 }
             }

@@ -99,7 +99,7 @@ struct TimerView: View {
         .onAppear {
             // Load catalogs if needed
             if catalogsManager.sounds.isEmpty || catalogsManager.cues.isEmpty || catalogsManager.beats.isEmpty {
-                catalogsManager.fetchCatalogs { success in
+                catalogsManager.fetchCatalogs(triggerContext: "TimerCreationView|onAppear preload") { success in
                     if success {
                         logger.eventMessage("Catalogs loaded successfully")
                     }
@@ -349,13 +349,14 @@ struct TimerView: View {
                         duration: selectedMinutes,
                         backgroundSoundId: selectedBackgroundSound.id,
                         binauralBeatId: selectedBinauralBeat.id == "None" ? nil : selectedBinauralBeat.id,
-                        cueSettings: cueSettings
+                        cueSettings: cueSettings,
+                        triggerContext: "TimerCreationView|Create tapped"
                     )
                     await MainActor.run {
                         performPlayWithConfig(package.toTimerSessionConfig(isDeepLinked: isDeepLinked))
                     }
                 } catch {
-                    print("[Server][Meditations] createMeditationManual: offline fallback - \(error.localizedDescription)")
+                    print("[Server][Meditations] createMeditationManual: failure trigger=TimerCreationView|Create tapped offline fallback - \(error.localizedDescription)")
                     await MainActor.run {
                         performPlayWithConfig(buildLocalTimerConfig())
                     }

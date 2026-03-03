@@ -2,8 +2,8 @@
 //  MeditationsService.swift
 //  imagine
 //
-//  POST /meditations (manual path) — creates meditation package from structured selections.
-//  QA: Filter console logs by "[Server][Meditations]" to trace server communication.
+//  POST /meditations (manual + AI paths) — creates meditation package from structured selections or free-text prompts.
+//  QA: Filter console logs by "[Server][Meditations]" or "[Server][Meditations-AI]" to trace server communication.
 //
 
 import Foundation
@@ -154,16 +154,41 @@ enum CueTriggerValue: Encodable {
     }
 }
 
+/// Conversation history item for AI path
+struct ConversationHistoryItem: Encodable {
+    let role: String
+    let content: String
+}
+
+private struct PostMeditationsAIRequestBody: Encodable {
+    let type: String = "ai"
+    let prompt: String
+    let conversationHistory: [ConversationHistoryItem]
+    let maxDuration: Int?
+}
+
 // MARK: - Service (struct of closures)
 
 struct MeditationsService {
     /// Create a meditation via POST /meditations (manual path).
     /// Throws on network or decode error; caller handles offline fallback.
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|Create tapped").
     var createMeditationManual: (
         _ duration: Int,
         _ backgroundSoundId: String,
         _ binauralBeatId: String?,
-        _ cues: [(id: String, trigger: CueTriggerValue)]
+        _ cues: [(id: String, trigger: CueTriggerValue)],
+        _ triggerContext: String?
+    ) async throws -> MeditationPackage
+
+    /// Create a meditation via POST /meditations (AI path).
+    /// Throws on network or decode error; caller handles offline fallback.
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "AIRequestManager|generateMeditation").
+    var createMeditationAI: (
+        _ prompt: String,
+        _ conversationHistory: [ConversationHistoryItem],
+        _ maxDuration: Int?,
+        _ triggerContext: String?
     ) async throws -> MeditationPackage
 }
 
@@ -171,11 +196,13 @@ struct MeditationsService {
 
 extension MeditationsService {
     /// Create a meditation from app CueSettings. Converts to request format internally.
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|Create tapped").
     func createMeditationManual(
         duration: Int,
         backgroundSoundId: String,
         binauralBeatId: String?,
-        cueSettings: [CueSetting]
+        cueSettings: [CueSetting],
+        triggerContext: String? = nil
     ) async throws -> MeditationPackage {
         let cues = cueSettings.map { cs -> (id: String, trigger: CueTriggerValue) in
             let trigger: CueTriggerValue
@@ -186,7 +213,7 @@ extension MeditationsService {
             }
             return (cs.cue.id, trigger)
         }
-        return try await createMeditationManual(duration, backgroundSoundId, binauralBeatId, cues)
+        return try await createMeditationManual(duration, backgroundSoundId, binauralBeatId, cues, triggerContext)
     }
 }
 
@@ -194,12 +221,14 @@ extension MeditationsService {
 
 extension MeditationsService {
     static let live = MeditationsService(
-        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues in
+        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues, triggerContext in
             let tag = "[Server][Meditations]"
-            print("\(tag) createMeditationManual: start duration=\(duration) cueCount=\(cues.count)")
+            let trigger = triggerContext ?? "unknown"
+            print("\(tag) createMeditationManual: start trigger=\(trigger) duration=\(duration) cueCount=\(cues.count) bs=\(backgroundSoundId) bb=\(binauralBeatId ?? "None")")
             var request = URLRequest(url: Config.meditationsURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
             let body = PostMeditationsRequestBody(
                 duration: duration,
                 backgroundSoundId: backgroundSoundId,
@@ -209,20 +238,53 @@ extension MeditationsService {
             request.httpBody = try JSONEncoder().encode(body)
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                print("\(tag) createMeditationManual: invalid response type")
+                print("\(tag) createMeditationManual: failure trigger=\(trigger) - invalid response type")
                 throw NSError(domain: "MeditationsService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
             }
             if http.statusCode != 200 {
                 let bodyStr = String(data: data, encoding: .utf8) ?? ""
-                print("\(tag) createMeditationManual: failure status=\(http.statusCode) body=\(bodyStr)")
+                print("\(tag) createMeditationManual: failure trigger=\(trigger) status=\(http.statusCode) body=\(String(bodyStr.prefix(200)))")
                 throw NSError(domain: "MeditationsService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(http.statusCode)"])
             }
             do {
                 let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
-                print("\(tag) createMeditationManual: success id=\(package.id) duration=\(package.duration)")
+                print("\(tag) createMeditationManual: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil")")
                 return package
             } catch {
-                print("\(tag) createMeditationManual: decode error - \(error.localizedDescription)")
+                print("\(tag) createMeditationManual: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
+                throw error
+            }
+        },
+        createMeditationAI: { prompt, conversationHistory, maxDuration, triggerContext in
+            let tag = "[Server][Meditations-AI]"
+            let trigger = triggerContext ?? "unknown"
+            print("\(tag) createMeditationAI: start trigger=\(trigger) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) maxDuration=\(maxDuration?.description ?? "nil")")
+            var request = URLRequest(url: Config.meditationsURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
+            let body = PostMeditationsAIRequestBody(
+                prompt: prompt,
+                conversationHistory: conversationHistory,
+                maxDuration: maxDuration
+            )
+            request.httpBody = try JSONEncoder().encode(body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                print("\(tag) createMeditationAI: failure trigger=\(trigger) - invalid response type")
+                throw NSError(domain: "MeditationsService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+            }
+            if http.statusCode != 200 {
+                let bodyStr = String(data: data, encoding: .utf8) ?? ""
+                print("\(tag) createMeditationAI: failure trigger=\(trigger) status=\(http.statusCode) error=\(String(bodyStr.prefix(200)))")
+                throw NSError(domain: "MeditationsService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(http.statusCode)"])
+            }
+            do {
+                let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
+                print("\(tag) createMeditationAI: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil")")
+                return package
+            } catch {
+                print("\(tag) createMeditationAI: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
                 throw error
             }
         }
@@ -239,7 +301,7 @@ extension MeditationsService {
 
 extension MeditationsService {
     static let preview = MeditationsService(
-        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues in
+        createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues, _ in
             try await Task.sleep(nanoseconds: 300_000_000)
             return MeditationPackage(
                 id: "preview-\(UUID().uuidString.prefix(8))",
@@ -257,6 +319,24 @@ extension MeditationsService {
                     }
                     return MeditationCue(id: c.id, name: "Preview Cue", url: "gs://preview", trigger: trigger)
                 }
+            )
+        },
+        createMeditationAI: { _, _, _, _ in
+            try await Task.sleep(nanoseconds: 500_000_000)
+            return MeditationPackage(
+                id: "preview-ai-\(UUID().uuidString.prefix(8))",
+                title: "Preview AI Meditation",
+                duration: 10,
+                description: "Preview meditation from AI path.",
+                backgroundSound: MeditationAsset(id: "SP", name: "Preview Sound", url: "gs://preview", description: nil),
+                binauralBeat: MeditationAsset(id: "BB10", name: "Preview Beat", url: "gs://preview", description: nil),
+                cues: [
+                    MeditationCue(id: "SI", name: "Settling In", url: "gs://preview", trigger: .start),
+                    MeditationCue(id: "PB1", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1)),
+                    MeditationCue(id: "BS1", name: "Body Scan", url: "gs://preview", trigger: .minute(2)),
+                    MeditationCue(id: "IM2", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
+                    MeditationCue(id: "GB", name: "Gentle Bell", url: "gs://preview", trigger: .end),
+                ]
             )
         }
     )

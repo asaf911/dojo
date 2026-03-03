@@ -1370,7 +1370,7 @@ class SimplifiedAIService {
     
     private func loadLatestResources() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            CatalogsManager.shared.fetchCatalogs { _ in
+            CatalogsManager.shared.fetchCatalogs(triggerContext: "AIService|loadResources for AI") { _ in
                 continuation.resume()
             }
         }

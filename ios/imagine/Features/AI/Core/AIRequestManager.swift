@@ -659,7 +659,7 @@ class AIRequestManager: ObservableObject {
         let isOnline = NetworkMonitor.shared.isConnected
         if isOnline && (CatalogsManager.shared.sounds.isEmpty || CatalogsManager.shared.cues.isEmpty || CatalogsManager.shared.beats.isEmpty) {
             group.enter()
-            CatalogsManager.shared.fetchCatalogs { _ in group.leave() }
+            CatalogsManager.shared.fetchCatalogs(triggerContext: "AIRequestManager|preload for AI") { _ in group.leave() }
         }
         group.notify(queue: .main) {
             var appliedConfig = response.meditationConfiguration

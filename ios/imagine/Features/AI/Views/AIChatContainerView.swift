@@ -258,7 +258,7 @@ struct AIChatContainerView: View {
         Task {
             await manager.refreshRules()
             // Warm catalogs
-            CatalogsManager.shared.fetchCatalogs()
+            CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|onAppear preload")
         }
         
         // Check for pending meditation from subscription flow and auto-play
@@ -1335,7 +1335,7 @@ struct AIChatContainerView: View {
             // Skip network fetch if already have cached beats OR if offline (use cached data)
             if CatalogsManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    CatalogsManager.shared.fetchCatalogs { _ in
+                    CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|play meditation resolve") { _ in
                         continuation.resume()
                     }
                 }
@@ -1650,7 +1650,7 @@ struct AIChatContainerView: View {
             // Make sure BB catalog is loaded before mapping
             if CatalogsManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    CatalogsManager.shared.fetchCatalogs { _ in
+                    CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|dual custom play resolve") { _ in
                         continuation.resume()
                     }
                 }

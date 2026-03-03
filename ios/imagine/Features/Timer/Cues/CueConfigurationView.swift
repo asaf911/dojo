@@ -146,7 +146,7 @@ struct CueConfigurationView: View {
         .padding(.vertical, 10)
         .onAppear {
             if ConnectivityHelper.isConnectedToInternet() {
-                catalogsManager.fetchCatalogs()
+                catalogsManager.fetchCatalogs(triggerContext: "CueConfigurationView|pull-to-refresh")
             }
         }
     }

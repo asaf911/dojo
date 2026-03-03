@@ -664,8 +664,17 @@ export const getCatalogs = functions.https.onRequest(
       return;
     }
 
+    const TAG_CATALOGS = "[Server][Catalogs]";
+    const trigger = (req.headers["x-trigger"] as string) ?? "unknown";
+    functions.logger.info(
+      `${TAG_CATALOGS} getCatalogs: request received trigger=${trigger}`
+    );
+
     try {
       const catalogs = await loadCatalogs();
+      functions.logger.info(
+        `${TAG_CATALOGS} getCatalogs: success sounds=${catalogs.backgroundSounds.length} beats=${catalogs.binauralBeats.length} cues=${catalogs.cues.length}`
+      );
       res.set("Content-Type", "application/json");
       res.status(200).send(
         JSON.stringify({
@@ -677,14 +686,14 @@ export const getCatalogs = functions.https.onRequest(
       );
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      functions.logger.error("getCatalogs: Unexpected error:", errMsg);
+      functions.logger.error(`${TAG_CATALOGS} getCatalogs: error - ${errMsg}`);
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }
 );
 
 // ---------------------------------------------------------------------------
-// 6. postMeditations — HTTP POST endpoint for manual meditation creation
+// 6. postMeditations — HTTP POST endpoint for manual and AI meditation creation
 // ---------------------------------------------------------------------------
 
 interface PostMeditationsRequest {
@@ -693,6 +702,9 @@ interface PostMeditationsRequest {
   backgroundSoundId?: string;
   binauralBeatId?: string;
   cues?: Array<{ id: string; trigger: string | number }>;
+  prompt?: string;
+  conversationHistory?: Array<{ role: string; content: string }>;
+  maxDuration?: number;
 }
 
 function randomUUID(): string {
@@ -703,7 +715,9 @@ function randomUUID(): string {
   });
 }
 
-export const postMeditations = functions.https.onRequest(
+export const postMeditations = functions.runWith({
+  secrets: ["OPENAI_API_KEY"],
+}).https.onRequest(
   async (req, res) => {
     // CORS
     res.set("Access-Control-Allow-Origin", "*");
@@ -718,22 +732,166 @@ export const postMeditations = functions.https.onRequest(
       return;
     }
 
+    const TAG_MEDITATIONS = "[Server][Meditations]";
+    const TAG_AI = "[Server][Meditations-AI]";
+    const trigger = (req.headers["x-trigger"] as string) ?? "unknown";
+
     try {
       const body = req.body as PostMeditationsRequest;
-      if (!body || body.type !== "manual") {
+      if (!body || (body.type !== "manual" && body.type !== "ai")) {
+        functions.logger.warn(
+          `${TAG_MEDITATIONS} postMeditations: validation failed reason=invalid_type type=${body?.type ?? "unknown"} trigger=${trigger}`
+        );
         res.status(400).send(
-          JSON.stringify({ error: "Invalid request: type must be 'manual'" })
+          JSON.stringify({ error: "Invalid request: type must be 'manual' or 'ai'" })
         );
         return;
       }
+
+      // --- AI path ---
+      if (body.type === "ai") {
+        const prompt = (body.prompt ?? "").trim();
+        if (!prompt) {
+          functions.logger.warn(
+            `${TAG_AI} postMeditations: validation failed reason=empty_prompt trigger=${trigger}`
+          );
+          res.status(400).send(
+            JSON.stringify({ error: "Invalid request: prompt is required for type 'ai'" })
+          );
+          return;
+        }
+
+        const apiKey = (process.env.OPENAI_API_KEY ?? "").trim();
+        if (!apiKey) {
+          functions.logger.error(`${TAG_AI} postMeditations: OPENAI_API_KEY not configured`);
+          res.status(500).send(
+            JSON.stringify({ error: "AI service is not configured" })
+          );
+          return;
+        }
+
+        functions.logger.info(
+          `${TAG_AI} postMeditations: request received type=ai trigger=${trigger} promptLen=${prompt.length} historyLen=${body.conversationHistory?.length ?? 0} maxDuration=${body.maxDuration ?? "nil"}`
+        );
+
+        const catalogs = await loadCatalogs();
+        const { generateAIMeditation } = await import("./aiMeditation");
+
+        const { meditation, usedFallback } = await generateAIMeditation({
+          prompt,
+          conversationHistory: body.conversationHistory ?? [],
+          maxDuration: body.maxDuration,
+          catalogs,
+          apiKey,
+        });
+
+        // Resolve IDs to catalog objects
+        const soundMap = new Map(
+          catalogs.backgroundSounds.map((s) => [s.id, s])
+        );
+        const beatMap = new Map(
+          catalogs.binauralBeats.map((b) => [b.id, b])
+        );
+        const cueMap = new Map(catalogs.cues.map((c) => [c.id, c]));
+
+        const backgroundSound = soundMap.get(meditation.backgroundSoundId);
+        if (!backgroundSound) {
+          functions.logger.warn(
+            `${TAG_AI} postMeditations: invalid backgroundSoundId from AI: ${meditation.backgroundSoundId}, using first available`
+          );
+          const first = catalogs.backgroundSounds[0];
+          if (!first) {
+            res.status(500).send(
+              JSON.stringify({ error: "No background sounds in catalog" })
+            );
+            return;
+          }
+          meditation.backgroundSoundId = first.id;
+        }
+
+        const bg = soundMap.get(meditation.backgroundSoundId)!;
+        const bbId = meditation.binauralBeatId ?? "None";
+        const binauralBeat =
+          bbId && bbId !== "None" ? beatMap.get(bbId) ?? null : null;
+
+        const resolvedCues: Array<{
+          id: string;
+          name: string;
+          url: string;
+          trigger: string | number;
+        }> = [];
+        for (const c of meditation.cues) {
+          const asset = cueMap.get(c.id);
+          if (asset) {
+            resolvedCues.push({
+              id: asset.id,
+              name: asset.name,
+              url: asset.url,
+              trigger: c.trigger,
+            });
+          } else if (c.id === "SI" || c.id === "GB") {
+            resolvedCues.push({
+              id: c.id,
+              name: c.id,
+              url: "",
+              trigger: c.trigger,
+            });
+          }
+        }
+
+        const deepLink = generateDeepLink({
+          duration: meditation.duration,
+          backgroundSoundId: bg.id,
+          binauralBeatId: binauralBeat?.id ?? null,
+          cues: resolvedCues,
+          title: meditation.title,
+        });
+
+        const response = {
+          id: randomUUID(),
+          title: meditation.title,
+          duration: meditation.duration,
+          description: meditation.description ?? meditation.title,
+          backgroundSound: {
+            id: bg.id,
+            name: bg.name,
+            url: bg.url,
+          },
+          binauralBeat: binauralBeat
+            ? {
+                id: binauralBeat.id,
+                name: binauralBeat.name,
+                url: binauralBeat.url,
+                description: binauralBeat.description ?? undefined,
+              }
+            : null,
+          cues: resolvedCues,
+        };
+
+        functions.logger.info(
+          `${TAG_AI} postMeditations: success id=${response.id} duration=${meditation.duration} title=${meditation.title} cues=${resolvedCues.length} usedFallback=${usedFallback} trigger=${trigger}`
+        );
+        res.set("Content-Type", "application/json");
+        res.status(200).send(JSON.stringify(response));
+        return;
+      }
+
+      // --- Manual path ---
 
       const duration = body.duration ?? 0;
       const backgroundSoundId = body.backgroundSoundId ?? "";
       const binauralBeatId = body.binauralBeatId ?? "None";
       const cues = body.cues ?? [];
 
+      functions.logger.info(
+        `${TAG_MEDITATIONS} postMeditations: request received type=manual trigger=${trigger} duration=${duration} cueCount=${cues.length} bs=${backgroundSoundId} bb=${binauralBeatId}`
+      );
+
       // Validate duration (1-60)
       if (typeof duration !== "number" || duration < 1 || duration > 60) {
+        functions.logger.warn(
+          `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_duration trigger=${trigger}`
+        );
         res.status(400).send(
           JSON.stringify({ error: "Invalid duration: must be 1-60" })
         );
@@ -748,6 +906,9 @@ export const postMeditations = functions.https.onRequest(
       );
       const backgroundSound = soundMap.get(backgroundSoundId);
       if (!backgroundSound) {
+        functions.logger.warn(
+          `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_backgroundSoundId trigger=${trigger}`
+        );
         res.status(400).send(
           JSON.stringify({
             error: `Invalid backgroundSoundId: ${backgroundSoundId}`,
@@ -764,6 +925,9 @@ export const postMeditations = functions.https.onRequest(
         );
         const found = beatMap.get(binauralBeatId);
         if (!found) {
+          functions.logger.warn(
+            `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_binauralBeatId trigger=${trigger}`
+          );
           res.status(400).send(
             JSON.stringify({ error: `Invalid binauralBeatId: ${binauralBeatId}` })
           );
@@ -783,6 +947,9 @@ export const postMeditations = functions.https.onRequest(
 
       for (const c of cues) {
         if (!c || typeof c.id !== "string" || c.trigger === undefined) {
+          functions.logger.warn(
+            `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_cue trigger=${trigger}`
+          );
           res.status(400).send(
             JSON.stringify({ error: "Invalid cue: each cue needs id and trigger" })
           );
@@ -790,17 +957,23 @@ export const postMeditations = functions.https.onRequest(
         }
         const cueAsset = cueMap.get(c.id);
         if (!cueAsset) {
+          functions.logger.warn(
+            `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_cue_id cue=${c.id} trigger=${trigger}`
+          );
           res.status(400).send(
             JSON.stringify({ error: `Invalid cue id: ${c.id}` })
           );
           return;
         }
-        const trigger = c.trigger;
+        const cueTrigger = c.trigger;
         const validTrigger =
-          trigger === "start" ||
-          trigger === "end" ||
-          (typeof trigger === "number" && trigger >= 0 && trigger <= duration);
+          cueTrigger === "start" ||
+          cueTrigger === "end" ||
+          (typeof cueTrigger === "number" && cueTrigger >= 0 && cueTrigger <= duration);
         if (!validTrigger) {
+          functions.logger.warn(
+            `${TAG_MEDITATIONS} postMeditations: validation failed type=manual reason=invalid_trigger cue=${c.id} trigger=${trigger}`
+          );
           res.status(400).send(
             JSON.stringify({
               error: `Invalid trigger for cue ${c.id}: must be 'start', 'end', or a number 0-${duration}`,
@@ -812,7 +985,7 @@ export const postMeditations = functions.https.onRequest(
           id: cueAsset.id,
           name: cueAsset.name,
           url: cueAsset.url,
-          trigger,
+          trigger: cueTrigger,
         });
       }
 
@@ -837,11 +1010,16 @@ export const postMeditations = functions.https.onRequest(
         cues: resolvedCues,
       };
 
+      functions.logger.info(
+        `${TAG_MEDITATIONS} postMeditations: success type=manual id=${response.id} duration=${duration} trigger=${trigger}`
+      );
       res.set("Content-Type", "application/json");
       res.status(200).send(JSON.stringify(response));
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      functions.logger.error("postMeditations: Unexpected error:", errMsg);
+      functions.logger.error(
+        `${TAG_MEDITATIONS} postMeditations: error type=manual trigger=${trigger} - ${errMsg}`
+      );
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }

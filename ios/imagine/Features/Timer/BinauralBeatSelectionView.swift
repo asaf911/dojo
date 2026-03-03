@@ -35,7 +35,7 @@ struct BinauralBeatSelectionView: View {
         .padding(.top, 10)
         .onAppear {
             if ConnectivityHelper.isConnectedToInternet() {
-                catalogsManager.fetchCatalogs()
+                catalogsManager.fetchCatalogs(triggerContext: "BinauralBeatSelectionView|pull-to-refresh")
             }
         }
     }

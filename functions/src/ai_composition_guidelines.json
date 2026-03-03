@@ -1,0 +1,547 @@
+{
+  "version": "4.1.0",
+  "last_updated": "2026-02-11",
+  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus)",
+
+  "priority_detection": {
+    "description": "When user explicitly requests a specific exercise, give it 50% of session time",
+    "rules": {
+      "body_scan": {
+        "keywords": ["body scan", "bodyscan", "body awareness"],
+        "target_module": "BS",
+        "allocation": "50% of session duration (capped at BS10)"
+      },
+      "breathing": {
+        "keywords": ["breath", "breathing", "breathwork"],
+        "target_module": "PB",
+        "allocation": "50% of session duration (capped at PB5)"
+      },
+      "i_am_mantra": {
+        "keywords": ["mantra", "chant", "chanting", "i am", "affirmation"],
+        "target_module": "IM",
+        "allocation": "50% of session duration (capped at IM10)"
+      },
+      "nostril_focus": {
+        "keywords": ["nostril", "nostril focus", "nadi shodhana", "alternate nostril"],
+        "target_module": "NF",
+        "allocation": "50% of session duration (capped at NF10)"
+      },
+      "visualization": {
+        "keywords": ["visualization", "vision", "intention", "intentions"],
+        "target_module": "VC",
+        "allocation": "priority placement in visualization phase"
+      },
+      "retrospection": {
+        "keywords": ["retrospection", "reflection", "gratitude"],
+        "target_module": "RT",
+        "allocation": "priority placement in visualization phase"
+      }
+    },
+    "when_priority_detected": {
+      "action": "Give priority exercise 50% of total session time",
+      "other_modules": "Reduce to minimum (1m each)",
+      "example_10m_bodyscan": "SI@start, PB1@1, BS5@2, IM2@7, GB@end"
+    }
+  },
+
+  "module_type_classifications": {
+    "finite_exercise": {
+      "description": "Full-duration guided audio. The audio file IS the exercise.",
+      "time_allocation": "exact duration of the module",
+      "behavior": "Occupies its full duration in the session timeline. No additional quiet time needed.",
+      "modules": ["SI", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB1", "PB2", "PB3", "PB4", "PB5", "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10", "NF1", "NF2", "NF3", "NF4", "NF5", "NF6", "NF7", "NF8", "NF9", "NF10"]
+    },
+    "trigger_cue": {
+      "description": "Short audio trigger that instructs user to BEGIN a practice. User continues in silence.",
+      "time_allocation": "Cue audio + remaining phase time as quiet practice",
+      "behavior": "After audio plays, user continues the practice silently until next module.",
+      "audio_duration_note": "Actual duration loaded from cues_models.json via CueManager",
+      "modules": ["OH", "VC", "RT"]
+    },
+    "instant_cue": {
+      "description": "Brief sound marker with no time allocation needed.",
+      "time_allocation": "0 minutes",
+      "behavior": "Instant audio marker, does not occupy timeline space.",
+      "modules": ["GB"]
+    }
+  },
+
+  "special_modules": {
+    "SI": {
+      "position": "start",
+      "required": true,
+      "duration": 1,
+      "skip_keywords": ["no settle in", "skip settle in", "without settle in", "no settling", "skip settling", "no SI"]
+    },
+    "GB": {
+      "position": "end",
+      "skip_for": ["sleep", "bedtime", "night", "fall asleep", "drift off", "slumber"]
+    }
+  },
+
+  "short_session_rules": {
+    "description": "Rules for sessions 1-6 minutes. Simpler structure than 4-phase.",
+    "rules": {
+      "1min": {
+        "structure": "SI + GB",
+        "cues": ["SI@start", "GB@end"],
+        "notes": "Settle in only"
+      },
+      "2-3min": {
+        "structure": "SI + ONE relaxation (PB or BS) + GB",
+        "cues_2m": ["SI@start", "PB1@1 or BS1@1", "GB@end"],
+        "cues_3m": ["SI@start", "PB2@1 or BS2@1", "GB@end"],
+        "notes": "Choose PB or BS based on prompt, not both"
+      },
+      "4min": {
+        "structure": "SI + PB + BS + GB (no focus module)",
+        "cues": ["SI@start", "PB1@1", "BS2@2", "GB@end"],
+        "notes": "Both breathing and body scan, but no focus module"
+      },
+      "5-6min": {
+        "structure": "SI + PB + BS + focus + GB",
+        "cues_5m": ["SI@start", "PB1@1", "BS1@2", "IM2 or NF2@3", "GB@end"],
+        "cues_6m": ["SI@start", "PB1@1", "BS2@2", "IM2 or NF2@4", "GB@end"],
+        "focus_selection": {
+          "default": "IM2 or NF2 (random)",
+          "nostril": "NF2",
+          "mantra": "IM2",
+          "sleep": "OH"
+        },
+        "notes": "ONE focus module (IM2 or NF2 randomly, OH for sleep, explicit request overrides)"
+      }
+    },
+    "gb_rule": "GB at end for ALL sessions (short and long) EXCEPT sleep sessions"
+  },
+
+  "composition_algorithm": {
+    "description": "4-phase blueprint for sessions > 6 minutes. Fills 100% of session time.",
+    "target_fill_percentage": 100,
+    "phases": {
+      "settle_in": {
+        "range": "0% to ~10%",
+        "duration": 1,
+        "modules": ["SI"],
+        "required": true
+      },
+      "relaxation": {
+        "range": "~10% to 50%",
+        "modules": ["PB", "BS"],
+        "split": { "breathing": 0.40, "body_scan": 0.60 },
+        "purpose": "Physical relaxation and grounding"
+      },
+      "focus": {
+        "range": "50% to 75%",
+        "modules": ["IM", "NF", "OH"],
+        "purpose": "Guided focus practice (I AM mantra or nostril focus) or emotional focus",
+        "preferred": "IM or NF",
+        "note": "IM and NF are finite exercises (1-10m guided audio). Use only ONE per session unless user explicitly requests both. OH remains a trigger cue for sleep/emotional sessions."
+      },
+      "visualization": {
+        "range": "75% to 100%",
+        "modules": ["VC", "RT"],
+        "purpose": "Intention, vision, or reflection practice",
+        "preferred_by_time": { "morning": "VC", "evening": "RT", "default": "VC" },
+        "note": "OH is NOT a visualization cue - use only VC or RT"
+      },
+      "closing": {
+        "modules": ["GB"],
+        "skip_for": ["sleep", "bedtime", "night"]
+      }
+    },
+    "steps": [
+      {
+        "step": 1,
+        "action": "Add SI at start",
+        "details": "Always start with Settling In (SI) at trigger 'start'. Duration: 1 minute.",
+        "time_used": 1
+      },
+      {
+        "step": 2,
+        "action": "Calculate phase boundaries",
+        "details": "relaxation_end = floor(duration * 0.5), focus_end = floor(duration * 0.75)"
+      },
+      {
+        "step": 3,
+        "action": "Add breathing (PB) in relaxation phase",
+        "details": "PB gets 40% of relaxation time. relaxation_time = relaxation_end - 1. PB_duration = round(relaxation_time * 0.4), capped at 5.",
+        "placement": "minute 1"
+      },
+      {
+        "step": 4,
+        "action": "Add body scan (BS) in relaxation phase",
+        "details": "BS gets remaining relaxation time. BS_duration = relaxation_end - 1 - PB_duration, capped at 10.",
+        "placement": "minute (1 + PB_duration)"
+      },
+      {
+        "step": 5,
+        "action": "Add focus module (IM or NF) in focus phase",
+        "details": "Select ONE focus module: IM (I AM Mantra) or NF (Nostril Focus), randomly unless user requested a specific one. Duration = focus_end - relaxation_end, capped at 10, min 1 (NF) or 2 (IM). Both are finite exercises (guided audio fills exact duration).",
+        "placement": "minute relaxation_end"
+      },
+      {
+        "step": 6,
+        "action": "Add visualization trigger cue",
+        "details": "Add VC (morning) or RT (evening) at focus_end. Audio plays for 2 min, user practices silently until session end.",
+        "placement": "minute focus_end"
+      },
+      {
+        "step": 7,
+        "action": "Add GB at end",
+        "details": "Add Gentle Bell at trigger 'end' unless this is a sleep meditation.",
+        "placement": "trigger 'end'"
+      }
+    ]
+  },
+
+  "session_templates": {
+    "description": "Pre-calculated examples. Short sessions (1-6m) use simplified structure, long sessions (>6m) use 4-phase blueprint.",
+    "1min": {
+      "composition": "SI(0-1) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 1,
+      "percentage_filled": 100,
+      "notes": "Settle in only"
+    },
+    "2min": {
+      "composition": "SI(0-1) + PB1(1-2) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB1", "trigger": "1" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 2,
+      "percentage_filled": 100,
+      "notes": "Could also use BS1 instead of PB1"
+    },
+    "3min": {
+      "composition": "SI(0-1) + PB2(1-3) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB2", "trigger": "1" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 3,
+      "percentage_filled": 100,
+      "notes": "Could also use BS2 instead of PB2"
+    },
+    "4min": {
+      "composition": "SI(0-1) + PB1(1-2) + BS2(2-4) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB1", "trigger": "1" },
+        { "id": "BS2", "trigger": "2" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 4,
+      "percentage_filled": 100,
+      "notes": "No focus module for 4min"
+    },
+    "5min": {
+      "composition": "SI(0-1) + PB1(1-2) + BS1(2-3) + IM2(3-5) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB1", "trigger": "1" },
+        { "id": "BS1", "trigger": "2" },
+        { "id": "IM2", "trigger": "3" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 5,
+      "percentage_filled": 100,
+      "notes": "ONE focus module (IM2 default, VC/RT for specific session types)"
+    },
+    "6min": {
+      "composition": "SI(0-1) + PB1(1-2) + BS2(2-4) + IM2(4-6) + GB(end)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB1", "trigger": "1" },
+        { "id": "BS2", "trigger": "2" },
+        { "id": "IM2", "trigger": "4" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 6,
+      "percentage_filled": 100,
+      "notes": "ONE focus module (IM2 default, VC/RT for specific session types)"
+    },
+    "7min": {
+      "composition": "SI(0-1) + PB1(1-2) + BS1(2-3) + IM2(3-5) + VC(5-7) + GB(end)",
+      "phases": "Settle(0-1) | Relax(1-3) | Focus(3-5) | Viz(5-7)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB1", "trigger": "1" },
+        { "id": "BS1", "trigger": "2" },
+        { "id": "IM2", "trigger": "3" },
+        { "id": "VC", "trigger": "5" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 7,
+      "percentage_filled": 100
+    },
+    "10min": {
+      "composition": "SI(0-1) + PB2(1-3) + BS2(3-5) + IM2(5-7) + VC(7-10) + GB(end)",
+      "phases": "Settle(0-1) | Relax(1-5) | Focus(5-7) | Viz(7-10)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB2", "trigger": "1" },
+        { "id": "BS2", "trigger": "3" },
+        { "id": "IM2", "trigger": "5" },
+        { "id": "VC", "trigger": "7" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 10,
+      "percentage_filled": 100
+    },
+    "15min": {
+      "composition": "SI(0-1) + PB3(1-4) + BS3(4-7) + IM4(7-11) + VC(11-15) + GB(end)",
+      "phases": "Settle(0-1) | Relax(1-7) | Focus(7-11) | Viz(11-15)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB3", "trigger": "1" },
+        { "id": "BS3", "trigger": "4" },
+        { "id": "IM4", "trigger": "7" },
+        { "id": "VC", "trigger": "11" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 15,
+      "percentage_filled": 100
+    },
+    "20min": {
+      "composition": "SI(0-1) + PB4(1-5) + BS5(5-10) + IM5(10-15) + VC(15-20) + GB(end)",
+      "phases": "Settle(0-1) | Relax(1-10) | Focus(10-15) | Viz(15-20)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB4", "trigger": "1" },
+        { "id": "BS5", "trigger": "5" },
+        { "id": "IM5", "trigger": "10" },
+        { "id": "VC", "trigger": "15" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 20,
+      "percentage_filled": 100
+    },
+    "30min": {
+      "composition": "SI(0-1) + PB5(1-6) + BS9(6-15) + IM7(15-22) + RT(22-30) + GB(end)",
+      "phases": "Settle(0-1) | Relax(1-15) | Focus(15-22) | Viz(22-30)",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB5", "trigger": "1" },
+        { "id": "BS9", "trigger": "6" },
+        { "id": "IM7", "trigger": "15" },
+        { "id": "RT", "trigger": "22" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "time_filled": 30,
+      "percentage_filled": 100
+    }
+  },
+
+  "trigger_cue_selection": {
+    "focus_phase": {
+      "default": "IM or NF",
+      "alternatives": ["OH"],
+      "description": "IM (I AM Mantra) or NF (Nostril Focus) as finite focus exercise (randomly chosen). OH for sleep/emotional sessions. Only ONE focus module per session unless user explicitly requests both."
+    },
+    "visualization_phase": {
+      "by_session_type": {
+        "morning": "VC",
+        "evening": "RT",
+        "relaxation": "VC",
+        "focus": "VC",
+        "default": "VC"
+      },
+      "description": "VC for intentions/goals, RT for evening reflection. OH is NOT a visualization cue."
+    }
+  },
+
+  "session_type_rules": {
+    "sleep": {
+      "keywords": ["sleep", "sleepy", "bedtime", "night", "fall asleep", "drift off", "slumber", "insomnia", "rest"],
+      "rules": [
+        "Skip GB (Gentle Bell) at end",
+        "Use longer body scans",
+        "Use calming background sounds (Ocean, Rain)"
+      ],
+      "focus_cue": "OH",
+      "viz_cue": null,
+      "preferred_sounds": ["OC", "BD"]
+    },
+    "focus": {
+      "keywords": ["focus", "concentrate", "concentration", "attention", "productivity", "work", "study"],
+      "rules": [
+        "Use IM for focus phase",
+        "Use VC for visualization phase"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["LI", "DH"]
+    },
+    "relaxation": {
+      "keywords": ["relax", "relaxation", "calm", "stress", "anxiety", "unwind", "destress"],
+      "rules": [
+        "Use VC for visualization (intentions/goals)",
+        "Use longer body scans"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["SP", "OC"]
+    },
+    "morning": {
+      "keywords": ["morning", "wake up", "start day", "energize", "sunrise"],
+      "rules": [
+        "Use VC (Vision Clarity) for visualization",
+        "Energizing background sounds"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["LI", "DH"]
+    },
+    "evening": {
+      "keywords": ["evening", "end of day", "wind down", "after work", "sunset"],
+      "rules": [
+        "Use RT (Retrospection) for visualization",
+        "Calming sounds"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "RT",
+      "preferred_sounds": ["OC", "SP"]
+    },
+    "anxiety": {
+      "keywords": ["anxiety", "anxious", "worried", "nervous", "panic", "overwhelm", "fear"],
+      "rules": [
+        "Use longer breathing exercises",
+        "Use calming background sounds",
+        "Focus on grounding techniques"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["SP", "OC"]
+    },
+    "stress": {
+      "keywords": ["stress", "stressed", "tense", "tension", "pressure", "burnout", "overwhelmed"],
+      "rules": [
+        "Use body scans to release tension",
+        "Use calming background sounds"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["SP", "OC"]
+    },
+    "energy": {
+      "keywords": ["energy", "energize", "boost", "vitality", "awake", "alert", "refresh"],
+      "rules": [
+        "Use shorter, more dynamic exercises",
+        "Use uplifting background sounds"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["LI", "DH"]
+    },
+    "creativity": {
+      "keywords": ["creative", "creativity", "inspiration", "ideas", "imagination", "art", "create"],
+      "rules": [
+        "Use visualization exercises",
+        "Open-ended focus techniques"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "VC",
+      "preferred_sounds": ["LI", "SP"]
+    },
+    "gratitude": {
+      "keywords": ["gratitude", "grateful", "thankful", "appreciation", "thanks"],
+      "rules": [
+        "Use RT (Retrospection) for reflection",
+        "Gentle background sounds"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": "RT",
+      "preferred_sounds": ["SP", "LI"]
+    }
+  },
+
+  "strict_rules": [
+    {
+      "id": "si_at_start",
+      "rule": "SI (Settling In) must be at trigger 'start'",
+      "priority": 100
+    },
+    {
+      "id": "gb_at_end",
+      "rule": "GB (Gentle Bell) must be at trigger 'end' for all non-sleep meditations",
+      "priority": 90
+    },
+    {
+      "id": "no_overlap",
+      "rule": "Modules must NOT overlap - each module's end time must be <= next module's start time",
+      "priority": 100
+    },
+    {
+      "id": "fill_100_percent",
+      "rule": "Modules must fill 100% of the session duration using the 4-phase structure",
+      "priority": 100
+    },
+    {
+      "id": "focus_and_viz",
+      "rule": "Sessions > 6 min must have one finite focus module (IM or NF) and one visualization trigger cue (VC/RT)",
+      "priority": 95
+    },
+    {
+      "id": "valid_triggers",
+      "rule": "Trigger values must be 'start', 'end', or a valid minute number (string)",
+      "priority": 100
+    },
+    {
+      "id": "always_bg_and_bb",
+      "rule": "Always include a background sound and binaural beat unless user explicitly asks for silence",
+      "priority": 90
+    }
+  ],
+
+  "background_sound_guidelines": {
+    "description": "Guidelines for selecting appropriate background sounds",
+    "sound_categories": {
+      "calming": ["SP", "OC", "BD"],
+      "focus": ["LI", "DH"],
+      "sleep": ["OC", "BD"]
+    },
+    "default_by_session_type": {
+      "relaxation": "SP",
+      "focus": "LI",
+      "sleep": "OC",
+      "morning": "LI",
+      "evening": "OC",
+      "default": "LI"
+    }
+  },
+
+  "json_output_format": {
+    "description": "The exact JSON format the AI must return",
+    "template": {
+      "duration": "N (integer, minutes)",
+      "backgroundSoundId": "ID from available sounds (REQUIRED)",
+      "binauralBeatId": "ID from available beats (REQUIRED)",
+      "cues": [
+        { "id": "module_id", "trigger": "start|end|minute_number" }
+      ],
+      "title": "Short descriptive title",
+      "description": "One sentence description of the meditation"
+    },
+    "example": {
+      "duration": 10,
+      "backgroundSoundId": "LI",
+      "binauralBeatId": "BB10",
+      "cues": [
+        { "id": "SI", "trigger": "start" },
+        { "id": "PB2", "trigger": "1" },
+        { "id": "BS2", "trigger": "3" },
+        { "id": "IM2", "trigger": "5" },
+        { "id": "VC", "trigger": "7" },
+        { "id": "GB", "trigger": "end" }
+      ],
+      "title": "Morning Focus Meditation",
+      "description": "A 10-minute session with breathwork, body scan, I AM mantra, and vision clarity."
+    }
+  }
+}

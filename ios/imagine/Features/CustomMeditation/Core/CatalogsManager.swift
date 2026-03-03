@@ -52,30 +52,34 @@ final class CatalogsManager: ObservableObject {
 
     /// Fetch catalogs from GET /catalogs. On success, updates all properties and caches locally.
     /// On failure (e.g. offline), attempts to load from cache. Completion reports whether fresh data was fetched.
-    func fetchCatalogs(completion: ((Bool) -> Void)? = nil) {
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|onAppear preload").
+    func fetchCatalogs(triggerContext: String? = nil, completion: ((Bool) -> Void)? = nil) {
+        let trigger = triggerContext ?? "unknown"
         guard ConnectivityHelper.isConnectedToInternet() else {
-            print("\(kCatalogsServerTag) fetchCatalogs: offline - using cache")
+            print("\(kCatalogsServerTag) fetchCatalogs: offline trigger=\(trigger) - using cache")
             loadCachedCatalogs()
             completion?(false)
             return
         }
 
         let url = Config.catalogsURL
-        print("\(kCatalogsServerTag) fetchCatalogs: starting request to \(url.host ?? "server")/getCatalogs")
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        var request = URLRequest(url: url)
+        request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
+        print("\(kCatalogsServerTag) fetchCatalogs: start trigger=\(trigger) url=\(url.host ?? "server")/getCatalogs")
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { completion?(false); return }
             if let httpResponse = response as? HTTPURLResponse {
-                print("\(kCatalogsServerTag) fetchCatalogs: response status=\(httpResponse.statusCode)")
+                print("\(kCatalogsServerTag) fetchCatalogs: response trigger=\(trigger) status=\(httpResponse.statusCode)")
             }
             if let error = error {
-                print("\(kCatalogsServerTag) fetchCatalogs: network error - \(error.localizedDescription)")
+                print("\(kCatalogsServerTag) fetchCatalogs: failure trigger=\(trigger) error=\(error.localizedDescription)")
                 logger.errorMessage("CatalogsManager: Network error: \(error.localizedDescription)")
                 DispatchQueue.main.async { self.loadCachedCatalogs() }
                 completion?(false)
                 return
             }
             guard let data = data else {
-                print("\(kCatalogsServerTag) fetchCatalogs: no data received")
+                print("\(kCatalogsServerTag) fetchCatalogs: failure trigger=\(trigger) - no data received")
                 DispatchQueue.main.async { self.loadCachedCatalogs() }
                 completion?(false)
                 return
@@ -91,12 +95,12 @@ final class CatalogsManager: ObservableObject {
                     self.cues = cues
                     self.bodyScanDurations = decoded.bodyScanDurations
                     self.cacheCatalogs(data: data)
-                    print("\(kCatalogsServerTag) fetchCatalogs: success - sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
+                    print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
                     logger.eventMessage("CatalogsManager: Loaded \(sounds.count) sounds, \(beats.count) beats, \(cues.count) cues")
                 }
                 completion?(true)
             } catch {
-                print("\(kCatalogsServerTag) fetchCatalogs: decode error - \(error.localizedDescription)")
+                print("\(kCatalogsServerTag) fetchCatalogs: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
                 logger.errorMessage("CatalogsManager: Decode error: \(error.localizedDescription)")
                 DispatchQueue.main.async { self.loadCachedCatalogs() }
                 completion?(false)
