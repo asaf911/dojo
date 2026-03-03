@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseFunctions
 
 // MARK: - OpenAI Models
 
@@ -71,10 +72,6 @@ struct AIGeneratedTimer: Codable {
 // MARK: - Simplified AI Meditation Service
 
 class SimplifiedAIService {
-    
-    // TODO: Load from secure config (e.g. xcconfig in .gitignore) - never commit API keys
-    private let apiKey = ""
-    private let openAIURL = "https://api.openai.com/v1/chat/completions"
     
     // MARK: - Meditation Generation (Prescriptive Approach)
     
@@ -1424,23 +1421,18 @@ class SimplifiedAIService {
             temperature: 0.7
         )
         
-        guard let url = URL(string: openAIURL) else {
-            throw NSError(domain: "SimplifiedAIService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid OpenAI URL"])
+        let callable = Functions.functions().httpsCallable("proxyOpenAIChat")
+        let payload = try JSONEncoder().encode(request)
+        let dict = try JSONSerialization.jsonObject(with: payload) as? [String: Any]
+            ?? [:]
+        
+        let result = try await callable.call(dict)
+        
+        guard let responseData = try? JSONSerialization.data(withJSONObject: result.data) else {
+            throw NSError(domain: "SimplifiedAIService", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid server response"])
         }
         
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.httpBody = try JSONEncoder().encode(request)
-        
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw NSError(domain: "SimplifiedAIService", code: 2, userInfo: [NSLocalizedDescriptionKey: "OpenAI API error"])
-        }
-        
-        let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        let openAIResponse = try JSONDecoder().decode(OpenAIResponse.self, from: responseData)
         guard let content = openAIResponse.choices.first?.message.content else {
             throw NSError(domain: "SimplifiedAIService", code: 3, userInfo: [NSLocalizedDescriptionKey: "No response content"])
         }

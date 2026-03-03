@@ -421,3 +421,78 @@ export const cleanupExpiredCodes = functions.pubsub
     );
     return null;
   });
+
+// ---------------------------------------------------------------------------
+// 4. proxyOpenAIChat — OpenAI API proxy (keeps API key server-side)
+// ---------------------------------------------------------------------------
+
+interface ProxyOpenAIRequest {
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  max_tokens: number;
+  temperature: number;
+}
+
+export const proxyOpenAIChat = functions.runWith({
+  secrets: ["OPENAI_API_KEY"],
+}).https.onCall(
+  async (data: unknown, context) => {
+    const apiKey = (process.env.OPENAI_API_KEY ?? "").trim();
+    if (!apiKey) {
+      functions.logger.error("OPENAI_PROXY: OPENAI_API_KEY secret not configured");
+      throw new functions.https.HttpsError(
+        "internal",
+        "AI service is not configured."
+      );
+    }
+
+    const body = data as ProxyOpenAIRequest;
+    if (!body?.model || !Array.isArray(body?.messages)) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid request: model and messages required."
+      );
+    }
+
+    const payload = {
+      model: body.model || "gpt-4o-mini",
+      messages: body.messages,
+      max_tokens: body.max_tokens ?? 300,
+      temperature: body.temperature ?? 0.7,
+    };
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseBody = await response.text();
+
+      if (!response.ok) {
+        functions.logger.error(
+          `OPENAI_PROXY: OpenAI API error (${response.status}): ${responseBody}`
+        );
+        throw new functions.https.HttpsError(
+          "internal",
+          "AI service temporarily unavailable."
+        );
+      }
+
+      const parsed = JSON.parse(responseBody);
+      return parsed;
+    } catch (err: unknown) {
+      if (err instanceof functions.https.HttpsError) throw err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error(`OPENAI_PROXY: Unexpected error: ${errMsg}`);
+      throw new functions.https.HttpsError(
+        "internal",
+        "AI service temporarily unavailable."
+      );
+    }
+  }
+);
