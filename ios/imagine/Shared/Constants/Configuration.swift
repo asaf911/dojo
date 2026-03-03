@@ -30,4 +30,9 @@ struct Config {
     static var meditationsURL: URL {
         URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/postMeditations")!
     }
+
+    // MARK: - AI Request API (POST /ai/request - unified classify + route + respond)
+    static var aiRequestURL: URL {
+        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/postAIRequest")!
+    }
 }

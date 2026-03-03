@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import {createHash} from "crypto";
+import { processAIRequest } from "./aiRequest";
 
 admin.initializeApp();
 
@@ -1012,6 +1013,59 @@ export const postMeditations = functions.runWith({
       functions.logger.error(
         `${TAG_MEDITATIONS} postMeditations: error type=manual trigger=${trigger} - ${errMsg}`
       );
+      res.status(500).send(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 7. postAIRequest — Unified AI endpoint (classify, route, respond)
+// ---------------------------------------------------------------------------
+
+const TAG_AI_REQUEST = "[Server][AI]";
+
+export const postAIRequest = functions.runWith({
+  secrets: ["OPENAI_API_KEY"],
+}).https.onRequest(
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type, X-Trigger");
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const trigger = (req.headers["x-trigger"] as string) ?? "unknown";
+
+    try {
+      const body = req.body as { prompt?: string; conversationHistory?: Array<{ role: string; content: string }>; context?: unknown };
+      const apiKey = (process.env.OPENAI_API_KEY ?? "").trim();
+      if (!apiKey) {
+        functions.logger.error(`${TAG_AI_REQUEST} OPENAI_API_KEY not configured`);
+        res.status(500).send(JSON.stringify({ error: "AI service is not configured" }));
+        return;
+      }
+
+      const result = await processAIRequest(
+        {
+          prompt: body.prompt ?? "",
+          conversationHistory: body.conversationHistory,
+          context: body.context as { pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null; exploreInfo?: { sessionTitle: string; timeOfDay: string } | null },
+        },
+        loadCatalogs,
+        apiKey
+      );
+
+      res.set("Content-Type", "application/json");
+      res.status(200).send(JSON.stringify(result));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error(`${TAG_AI_REQUEST} error trigger=${trigger} - ${errMsg}`);
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }

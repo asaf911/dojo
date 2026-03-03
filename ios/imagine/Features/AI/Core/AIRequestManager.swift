@@ -24,11 +24,7 @@ class AIRequestManager: ObservableObject {
     
     @Published private(set) var lastRequestContext: AIRequestContext?
     
-    // Use simplified OpenAI path only for meditation JSON; use Assistants for explain
-    private let useAssistantsService = false
-    private let simplifiedService = SimplifiedAIService()
-    private let unifiedGenerator = AIMeditationGenerator()
-    private let assistantsExplainService = AssistantsAIService()
+    // Unified AI: single server call via POST /ai/request
     // History query router for handling meditation history questions
     private let historyQueryRouter = HistoryQueryRouter.shared
     // Rotate alternative suggestions to avoid repetition on "another idea"
@@ -144,7 +140,6 @@ class AIRequestManager: ObservableObject {
         showResult = false
         classifiedIntent = nil  // Reset intent for new request
         
-        let turnStart = Date()
         logger.eventMessage("🤖 AI_MEDITATION_UI: Starting meditation generation for: '\(trimmedPrompt)'")
         logger.aiChat("🧠 AI_DEBUG FLOW start route=simplified request_type=pending history=\(conversationHistory.count)")
         logger.eventMessage("🤖 AI_MEDITATION_UI: Prompt length: \(trimmedPrompt.count) characters")
@@ -189,28 +184,70 @@ class AIRequestManager: ObservableObject {
         // Run AI work off the main actor for immediate responsiveness
         let trimmedPromptCopy = trimmedPrompt
         let historyCopy = conversationHistory
-        let lastMeditationSnapshot = self.lastMeditation
         let maxDurationCopy = maxDuration
         let historyRouter = self.historyQueryRouter
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let strongSelf = self else { return }
             do {
-                logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
-                logger.eventMessage("🤖 AI_MEDITATION_UI: Using simplified service (v3.0)")
-                let openAIStart = Date()
-                let preCallMs = Int(openAIStart.timeIntervalSince(turnStart) * 1000)
-                logger.aiChat("🧠 AI_DEBUG TIMING pre_call_ms=\(preCallMs)")
-                // 1) Classify intent via OpenAI
-                logger.aiChat("🧠 AI_DEBUG OPENAI_CC start (intent) id=\(ctx.request_id) prompt_len=\(trimmedPromptCopy.count)")
-                let intent = try await strongSelf.simplifiedService.classifyIntent(prompt: trimmedPromptCopy, conversationHistory: historyCopy)
-                logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (intent) id=\(ctx.request_id) intent=\(intent)")
-                let updatedCtx = AIRequestContext(request_id: ctx.request_id, user_prompt: ctx.user_prompt, prompt_length: ctx.prompt_length, request_type: intent, history_len: ctx.history_len)
-                await MainActor.run { 
-                    strongSelf.lastRequestContext = updatedCtx
-                    strongSelf.classifiedIntent = intent  // Update intent for thinking animation
+                // Offline gate: no AI when offline
+                guard ConnectivityHelper.isConnectedToInternet() else {
+                    print("[Server][AI] AIRequestManager: offline - skipping AI request")
+                    await MainActor.run {
+                        strongSelf.error = "You're offline. AI features need a connection."
+                        strongSelf.isLoading = false
+                    }
+                    return
                 }
-                
-                // Subscription gate: block meditation generation for unsubscribed users who already created their first AI meditation
+
+                logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
+
+                // Build context for path/explore guidance; capture step/session for notifications
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool) in
+                    ExploreRecommendationManager.shared.loadAudioFiles()
+                    let pm = PathProgressManager.shared
+                    let em = ExploreRecommendationManager.shared
+                    var path: AIServerRequestContext.PathInfo?
+                    var nextStep: PathStep?
+                    if pm.shouldRecommendPath(), let step = pm.nextStep {
+                        path = AIServerRequestContext.PathInfo(
+                            nextStepTitle: step.title,
+                            completedCount: pm.completedStepCount,
+                            totalCount: pm.totalStepCount,
+                            allCompleted: pm.allStepsCompleted
+                        )
+                        nextStep = step
+                    }
+                    var explore: AIServerRequestContext.ExploreInfo?
+                    var session: AudioFile?
+                    if em.shouldRecommendExplore() || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy),
+                       let s = em.getTimeAppropriateSession() {
+                        explore = AIServerRequestContext.ExploreInfo(
+                            sessionTitle: s.title,
+                            timeOfDay: em.getCurrentTimeOfDayName()
+                        )
+                        session = s
+                    }
+                    return (path, explore, nextStep, session, pm.allStepsCompleted)
+                }
+
+                let context = AIServerRequestContext(pathInfo: pathInfo, exploreInfo: exploreInfo)
+                let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
+
+                let response = try await AIRequestService.shared.processAIRequest(
+                    prompt: trimmedPromptCopy,
+                    conversationHistory: historyItems,
+                    context: context,
+                    triggerContext: "AIRequestManager|processUserMessage"
+                )
+
+                let intent = response.intent
+                let updatedCtx = AIRequestContext(request_id: ctx.request_id, user_prompt: ctx.user_prompt, prompt_length: ctx.prompt_length, request_type: intent, history_len: ctx.history_len)
+                await MainActor.run {
+                    strongSelf.lastRequestContext = updatedCtx
+                    strongSelf.classifiedIntent = intent
+                }
+
+                // Subscription gate: block meditation for unsubscribed users who already created first AI meditation
                 if intent == "meditation" {
                     // Check both the live subscription status AND the persisted value for robustness
                     let liveSubscribed = SubscriptionManager.shared.isUserSubscribed
@@ -234,25 +271,18 @@ class AIRequestManager: ObservableObject {
                         return
                     }
                 }
-                
-                // Handle history queries locally - no additional API call needed
+
+                // Handle history: server returns intent only; client runs local query
                 if intent == "history" {
-                    logger.aiChat("🧠 AI_DEBUG HISTORY intent from AI: \(trimmedPromptCopy)")
-                    print("🧠 AI_DEBUG HISTORY handling history intent for prompt: '\(trimmedPromptCopy)'")
-                    
+                    logger.aiChat("🧠 AI_DEBUG HISTORY intent from server: \(trimmedPromptCopy)")
                     let queryResult = historyRouter.executeQuery(for: trimmedPromptCopy)
-                    print("🧠 AI_DEBUG HISTORY queryResult success=\(queryResult.success) sessions=\(queryResult.sessions.count)")
-                    
                     let formattedResponse = historyRouter.formatForAIResponse(queryResult)
-                    print("🧠 AI_DEBUG HISTORY formatted response length=\(formattedResponse.count)")
-                    
                     AnalyticsManager.shared.logEvent("ai_history_query", parameters: [
                         "user_prompt": trimmedPromptCopy,
                         "success": queryResult.success,
                         "session_count": queryResult.sessions.count,
                         "request_id": ctx.request_id
                     ])
-                    
                     await MainActor.run {
                         strongSelf.conversationalResponse = formattedResponse
                         strongSelf.showResult = false
@@ -262,42 +292,27 @@ class AIRequestManager: ObservableObject {
                     return
                 }
                 
-                // Handle path guidance questions - recommend next path step
+                // Handle path guidance: server returns text; use captured step for notification
                 if intent == "path_guidance" {
                     logger.aiChat("🧠 AI_DEBUG PATH_GUIDANCE intent: \(trimmedPromptCopy)")
-                    
-                    // Access PathProgressManager on MainActor and capture values
-                    let pathInfo: (shouldRecommend: Bool, nextStep: PathStep?, completedCount: Int, totalCount: Int, allCompleted: Bool) = await MainActor.run {
-                        let pm = PathProgressManager.shared
-                        return (pm.shouldRecommendPath(), pm.nextStep, pm.completedStepCount, pm.totalStepCount, pm.allStepsCompleted)
-                    }
-                    
-                    // Check if we can recommend a path step
-                    if pathInfo.shouldRecommend, let nextStep = pathInfo.nextStep {
-                        // Generate AI response sentence
-                        let message: String
-                        do {
-                            message = try await strongSelf.simplifiedService.generatePathGuidanceMessage(
-                                userPrompt: trimmedPromptCopy,
-                                nextStepTitle: nextStep.title,
-                                completedCount: pathInfo.completedCount,
-                                totalCount: pathInfo.totalCount
-                            )
-                        } catch {
-                            // Fallback if API fails
-                            logger.aiChat("🧠 AI_DEBUG PATH_GUIDANCE message generation failed: \(error.localizedDescription)")
-                            message = "Here's your next step."
+                    if pathAllCompleted {
+                        await MainActor.run {
+                            strongSelf.conversationalResponse = "You've completed the entire Path - amazing work! You now have a solid meditation foundation. Would you like me to create a personalized meditation for you?"
+                            strongSelf.isLoading = false
                         }
-                        
+                        return
+                    }
+                    if let nextStep = capturedNextStep {
+                        let message: String
+                        if case .text(let t) = response.content { message = t }
+                        else { message = "Here's your next step." }
                         AnalyticsManager.shared.logEvent("path_guidance_recommended", parameters: [
                             "step_id": nextStep.id,
                             "step_order": nextStep.order,
-                            "completed_count": pathInfo.completedCount,
+                            "completed_count": pathInfo?.completedCount ?? 0,
                             "user_prompt": trimmedPromptCopy
                         ])
-                        
                         await MainActor.run {
-                            // Post notification with path recommendation data
                             NotificationCenter.default.post(
                                 name: .aiPathGuidanceRecommendation,
                                 object: nil,
@@ -306,82 +321,39 @@ class AIRequestManager: ObservableObject {
                             strongSelf.isLoading = false
                         }
                         return
-                        
-                    } else if pathInfo.allCompleted {
-                        // Path completed - offer AI meditation instead
+                    }
+                    if case .text(let t) = response.content {
                         await MainActor.run {
-                            strongSelf.conversationalResponse = "You've completed the entire Path - amazing work! You now have a solid meditation foundation. Would you like me to create a personalized meditation for you?"
-                            strongSelf.isLoading = false
-                        }
-                        return
-                        
-                    } else {
-                        // Fallback to conversation if path not available
-                        let text = try await strongSelf.simplifiedService.generateConversation(
-                            prompt: trimmedPromptCopy,
-                            intent: "conversation",
-                            conversationHistory: historyCopy
-                        )
-                        await MainActor.run {
-                            strongSelf.conversationalResponse = text
+                            strongSelf.conversationalResponse = t
                             strongSelf.isLoading = false
                         }
                         return
                     }
                 }
                 
-                // Handle explore guidance - recommend pre-recorded session
-                if intent == "explore_guidance" || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy) {
-                    logger.aiChat("🧠 AI_DEBUG [EXPLORE] intent detected: \(trimmedPromptCopy)")
-                    
-                    // Load fresh audio files and get recommendation
-                    await MainActor.run {
-                        ExploreRecommendationManager.shared.loadAudioFiles()
-                    }
-                    
-                    let exploreInfo: (shouldRecommend: Bool, session: AudioFile?, timeOfDay: String) = await MainActor.run {
-                        let em = ExploreRecommendationManager.shared
-                        // Allow explore recommendation if Path is complete OR if user explicitly asked for pre-recorded
-                        let shouldRecommend = em.shouldRecommendExplore() || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy)
-                        return (shouldRecommend, em.getTimeAppropriateSession(), em.getCurrentTimeOfDayName())
-                    }
-                    
-                    if let session = exploreInfo.session, exploreInfo.shouldRecommend {
-                        logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] session=\(session.id) title=\(session.title) time=\(exploreInfo.timeOfDay)")
-                        
-                        // Generate AI message
+                // Handle explore guidance: server returns text; use captured session for notification
+                if intent == "explore_guidance" {
+                    logger.aiChat("🧠 AI_DEBUG [EXPLORE] intent: \(trimmedPromptCopy)")
+                    if let session = capturedSession {
                         let message: String
-                        do {
-                            message = try await strongSelf.simplifiedService.generateExploreGuidanceMessage(
-                                userPrompt: trimmedPromptCopy,
-                                sessionTitle: session.title,
-                                timeOfDay: exploreInfo.timeOfDay
-                            )
-                        } catch {
-                            logger.aiChat("🧠 AI_DEBUG [EXPLORE] message generation failed: \(error.localizedDescription)")
-                            // Use fallback message based on session tags
+                        if case .text(let t) = response.content { message = t }
+                        else {
                             let tagsLower = session.tags.map { $0.lowercased() }
-                            if tagsLower.contains("morning") {
-                                message = "Here's a great way to start your \(exploreInfo.timeOfDay):"
-                            } else if tagsLower.contains("noon") {
-                                message = "This is a great \(exploreInfo.timeOfDay) reset:"
-                            } else if tagsLower.contains("evening") {
-                                message = "Here's a nice way to wind down your day:"
-                            } else if tagsLower.contains("sleep") {
-                                message = "This will help you relax and prepare for rest:"
-                            } else {
-                                message = "Here's a session for you:"
-                            }
+                            let timeOfDay = exploreInfo?.timeOfDay ?? "day"
+                            if tagsLower.contains("morning") { message = "Here's a great way to start your \(timeOfDay):" }
+                            else if tagsLower.contains("noon") { message = "This is a great \(timeOfDay) reset:" }
+                            else if tagsLower.contains("evening") { message = "Here's a nice way to wind down your day:" }
+                            else if tagsLower.contains("sleep") { message = "This will help you relax and prepare for rest:" }
+                            else { message = "Here's a session for you." }
                         }
-                        
+                        logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] session=\(session.id) title=\(session.title)")
                         AnalyticsManager.shared.logEvent("explore_guidance_recommended", parameters: [
                             "session_id": session.id,
                             "session_title": session.title,
-                            "time_of_day": exploreInfo.timeOfDay,
+                            "time_of_day": exploreInfo?.timeOfDay ?? "",
                             "is_premium": session.premium,
                             "user_prompt": trimmedPromptCopy
                         ])
-                        
                         await MainActor.run {
                             NotificationCenter.default.post(
                                 name: .aiExploreGuidanceRecommendation,
@@ -391,163 +363,62 @@ class AIRequestManager: ObservableObject {
                             strongSelf.isLoading = false
                         }
                         return
-                        
-                    } else {
-                        // No explore session available - fallback to conversation
-                        logger.aiChat("🧠 AI_DEBUG [EXPLORE] no session available, falling back to conversation")
-                        let text = try await strongSelf.simplifiedService.generateConversation(
-                            prompt: trimmedPromptCopy,
-                            intent: "conversation",
-                            conversationHistory: historyCopy
-                        )
+                    }
+                    if case .text(let t) = response.content {
                         await MainActor.run {
-                            strongSelf.conversationalResponse = text
+                            strongSelf.conversationalResponse = t
                             strongSelf.isLoading = false
                         }
                         return
                     }
                 }
                 
-                // 2) Generate based on intent, with modification-aware edit prompts
-                logger.aiChat("🧠 AI_DEBUG OPENAI_CC start (simplified) id=\(ctx.request_id) prompt_len=\(trimmedPromptCopy.count)")
-                var result: AIMeditationResult
-                if intent == "explain" {
-                    var text: String
-                    do {
-                        text = try await strongSelf.assistantsExplainService.generateExplainResponse(
-                            prompt: trimmedPromptCopy,
-                            conversationHistory: historyCopy
-                        )
-                        logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (assistant_explain) id=\(ctx.request_id)")
-                    } catch {
-                        logger.aiChatError("🧠 AI_DEBUG OPENAI_ASSISTANTS explain_error id=\(ctx.request_id) msg=\(error.localizedDescription)")
-                        text = try await strongSelf.simplifiedService.generateExplanation(
-                            prompt: trimmedPromptCopy,
-                            conversationHistory: historyCopy
-                        )
-                        logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (fallback_explain) id=\(ctx.request_id)")
+                // Handle text content (explain, conversation, app_help, out_of_scope)
+                if case .text(let text) = response.content {
+                    logger.aiChat("🧠 AI_DEBUG FLOW result ok id=\(ctx.request_id) type=text")
+                    await MainActor.run {
+                        strongSelf.isLoading = false
+                        strongSelf.conversationalResponse = text
+                        strongSelf.lastSuggestedIdea = strongSelf.extractIdea(from: text)
+                        var cparams: [String: Any] = strongSelf.baseParams(from: strongSelf.lastRequestContext ?? ctx)
+                        cparams["stage"] = "response"
+                        cparams["response_type"] = "conversation"
+                        cparams["response_text"] = text
+                        cparams["response_length"] = text.count
+                        AnalyticsManager.shared.logEvent("ai_interaction", parameters: cparams)
                     }
-                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
-                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
-                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
-                    result = .conversationalResponse(text)
-                } else if intent == "meditation" {
-                    let isModify = trimmedPromptCopy.lowercased().contains("change") || trimmedPromptCopy.lowercased().contains("set ") || trimmedPromptCopy.lowercased().contains("make ") || trimmedPromptCopy.lowercased().contains("switch") || trimmedPromptCopy.lowercased().contains("update")
-                    var effectivePrompt = trimmedPromptCopy
-                    if isModify, let last = lastMeditationSnapshot {
-                        let cuesSummary = last.meditationConfiguration.cueSettings.map { setting -> String in
-                            let trig: String
-                            switch setting.triggerType {
-                            case .minute: trig = String(setting.minute ?? 0)
-                            case .start: trig = "start"
-                            case .end: trig = "end"
-                            }
-                            return "\(setting.cue.id)@\(trig)"
-                        }.joined(separator: ",")
-                        let lastSummary = "LAST_TIMER dur=\(last.meditationConfiguration.duration) bg=\(last.meditationConfiguration.backgroundSound.id) cues=\(cuesSummary) title=\(last.meditationConfiguration.title ?? "")"
-                        effectivePrompt = "Please APPLY EDITS to existing timer. \(lastSummary). USER_EDIT: \(trimmedPromptCopy). Only change what is requested. Keep other cues intact. Ensure total duration remains reasonable and BS cue exists with requested minutes if specified. Respond with valid JSON per schema."
-                        logger.aiChat("🧠 AI_DEBUG EDIT_GUIDE id=\(ctx.request_id) \(lastSummary)")
-                    }
-                    let historyItems = historyCopy.map { msg in
-                        ConversationHistoryItem(
-                            role: msg.isUser ? "user" : "assistant",
-                            content: msg.meditation?.description ?? msg.content
-                        )
-                    }
-                    let med: AIMeditationResult
-                    let meditationFromServer: Bool
-                    if ConnectivityHelper.isConnectedToInternet() {
-                        print("[Server][Meditations-AI] AIRequestManager: using server path trigger=generateMeditation promptLen=\(effectivePrompt.count) historyLen=\(historyCopy.count)")
-                        do {
-                            let package = try await MeditationsService.shared.createMeditationAI(
-                                effectivePrompt,
-                                historyItems,
-                                maxDurationCopy,
-                                "AIRequestManager|generateMeditation"
-                            )
-                            med = .meditation(package.toAITimerResponse())
-                            meditationFromServer = true
-                            print("[Server][Meditations-AI] AIRequestManager: server success id=\(package.id) duration=\(package.duration)")
-                        } catch {
-                            print("[Server][Meditations-AI] AIRequestManager: server failed fallback=client error=\(error.localizedDescription)")
-                            med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
-                            meditationFromServer = false
-                        }
-                    } else {
-                        print("[Server][Meditations-AI] AIRequestManager: offline using client path trigger=generateMeditation")
-                        med = try await strongSelf.unifiedGenerator.generate(.init(prompt: effectivePrompt, history: historyCopy, maxDuration: maxDurationCopy))
-                        meditationFromServer = false
-                    }
-                    logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (simplified) id=\(ctx.request_id)")
-                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
-                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
-                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
-                    // Generate acknowledgment text separately (displayed above the card)
-                    // When meditation comes from server, skip generateMeditationPrefix (avoids extra client OpenAI call)
-                    if case .meditation(let timerResponse) = med {
-                        var acknowledgment: String
-                        if meditationFromServer {
-                            let l = trimmedPromptCopy.lowercased()
-                            if l.contains("scatter") || l.contains("focus") {
-                                acknowledgment = "I've designed a meditation to help steady your attention."
-                            } else if l.contains("anxiety") || l.contains("stress") {
-                                acknowledgment = "Here's a practice to help calm your nervous system."
-                            } else if l.contains("sleep") {
-                                acknowledgment = "I've crafted a meditation to help you wind down for rest."
-                            } else if l.contains("meeting") || l.contains("presentation") {
-                                acknowledgment = "Here's a practice to help you feel grounded and focused."
-                            } else {
-                                acknowledgment = "I've put together a meditation tailored for you."
-                            }
-                        } else {
-                            do {
-                                acknowledgment = try await strongSelf.simplifiedService.generateMeditationPrefix(
-                                    userPrompt: trimmedPromptCopy,
-                                    conversationHistory: historyCopy,
-                                    response: timerResponse
-                                )
-                                logger.aiChat("🧠 AI_DEBUG ACKNOWLEDGMENT generated len=\(acknowledgment.count)")
-                            } catch {
-                                logger.aiChatError("🧠 AI_DEBUG ACKNOWLEDGMENT fallback msg=\(error.localizedDescription)")
-                                let l = trimmedPromptCopy.lowercased()
-                                if l.contains("scatter") || l.contains("focus") {
-                                    acknowledgment = "I've designed a meditation to help steady your attention."
-                                } else if l.contains("anxiety") || l.contains("stress") {
-                                    acknowledgment = "Here's a practice to help calm your nervous system."
-                                } else if l.contains("sleep") {
-                                    acknowledgment = "I've crafted a meditation to help you wind down for rest."
-                                } else if l.contains("meeting") || l.contains("presentation") {
-                                    acknowledgment = "Here's a practice to help you feel grounded and focused."
-                                } else {
-                                    acknowledgment = "I've put together a meditation tailored for you."
-                                }
-                            }
-                        }
-                        let acknowledgmentToStore = acknowledgment
-                        await MainActor.run {
-                            strongSelf.generatedMeditationAcknowledgment = acknowledgmentToStore
-                        }
-                        result = med
-                    } else {
-                        result = med
-                    }
+                    return
+                }
+
+                // Handle meditation: server returns package; use keyword fallback for acknowledgment
+                guard intent == "meditation", case .meditation(let package) = response.content else {
+                    logger.aiChat("🧠 AI_DEBUG FLOW unexpected response intent=\(intent)")
+                    await MainActor.run { strongSelf.isLoading = false }
+                    return
+                }
+
+                let timerResponse = package.toAITimerResponse()
+                let l = trimmedPromptCopy.lowercased()
+                let acknowledgment: String
+                if l.contains("scatter") || l.contains("focus") {
+                    acknowledgment = "I've designed a meditation to help steady your attention."
+                } else if l.contains("anxiety") || l.contains("stress") {
+                    acknowledgment = "Here's a practice to help calm your nervous system."
+                } else if l.contains("sleep") {
+                    acknowledgment = "I've crafted a meditation to help you wind down for rest."
+                } else if l.contains("meeting") || l.contains("presentation") {
+                    acknowledgment = "Here's a practice to help you feel grounded and focused."
                 } else {
-                    let text = try await strongSelf.simplifiedService.generateConversation(
-                        prompt: trimmedPromptCopy,
-                        intent: intent,
-                        conversationHistory: historyCopy
-                    )
-                    logger.aiChat("🧠 AI_DEBUG OPENAI_CC done (simplified) id=\(ctx.request_id)")
-                    let apiMs = Int(Date().timeIntervalSince(openAIStart) * 1000)
-                    let totalMs = Int(Date().timeIntervalSince(turnStart) * 1000)
-                    logger.aiChat("🧠 AI_DEBUG TIMING api_ms=\(apiMs) total_ms=\(totalMs)")
-                    result = .conversationalResponse(text)
+                    acknowledgment = "I've put together a meditation tailored for you."
+                }
+                await MainActor.run {
+                    strongSelf.generatedMeditationAcknowledgment = acknowledgment
                 }
 
                 logger.eventMessage("🤖 AI_MEDITATION_UI: AI service call completed successfully")
-                logger.aiChat("🧠 AI_DEBUG FLOW result ok id=\(ctx.request_id)")
+                logger.aiChat("🧠 AI_DEBUG FLOW result ok id=\(ctx.request_id) type=meditation")
 
-                let finalResult = result
+                let finalResult: AIMeditationResult = .meditation(timerResponse)
                 await MainActor.run {
                     strongSelf.isLoading = false
                     

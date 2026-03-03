@@ -89,7 +89,6 @@ extension RecommendationContextEngine {
     @MainActor static let live: RecommendationContextEngine = {
         let exploreManager = ExploreRecommendationManager.shared
         let messageService = RecommendationMessageService.shared
-        let aiService      = SimplifiedAIService()
 
         // Technique lenses diversify custom meditation prompts so consecutive
         // calls with the same hurdle produce distinctly named sessions.
@@ -147,10 +146,16 @@ extension RecommendationContextEngine {
             let prompt = buildCustomPrompt(duration: duration, context: context)
             logger.aiChat("🎯 CTX_ENGINE: generating custom prompt='\(prompt)'")
             do {
-                let result = try await aiService.generateMeditation(prompt: prompt, maxDuration: duration)
-                if case .meditation(let response) = result {
-                    logger.aiChat("🎯 CTX_ENGINE: ✅ custom generated duration=\(response.meditationConfiguration.duration)min")
-                    return response
+                let response = try await AIRequestService.shared.processAIRequest(
+                    prompt: prompt,
+                    conversationHistory: [],
+                    context: nil,
+                    triggerContext: "RecommendationContextEngine|generateCustom"
+                )
+                if case .meditation(let package) = response.content {
+                    let timerResponse = package.toAITimerResponse()
+                    logger.aiChat("🎯 CTX_ENGINE: ✅ custom generated duration=\(timerResponse.meditationConfiguration.duration)min")
+                    return timerResponse
                 }
                 logger.aiChat("🎯 CTX_ENGINE: conversational response instead of meditation — skipping")
             } catch {

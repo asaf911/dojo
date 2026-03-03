@@ -223,12 +223,42 @@ final class RecommendationMessageService {
     
     // MARK: - Dependencies
     
-    private let aiService = SimplifiedAIService()
-    
     // MARK: - Configuration
     
     /// Timeout for AI generation (seconds)
     private let timeoutSeconds: TimeInterval = 2.0
+
+    private func buildIntroPrompt(essence: MessageEssence, context: MessageContext) -> String {
+        var contextParts: [String] = []
+        if let name = context.firstName { contextParts.append("name: \(name)") }
+        if let step = context.stepNumber { contextParts.append("step: \(step)") }
+        if let title = context.stepTitle { contextParts.append("stepTitle: \(title)") }
+        if let completed = context.completedSteps { contextParts.append("completedSteps: \(completed)") }
+        if let time = context.timeOfDay { contextParts.append("timeOfDay: \(time)") }
+        if let session = context.sessionTitle { contextParts.append("sessionTitle: \(session)") }
+        if let remaining = context.routinesRemaining { contextParts.append("routinesRemaining: \(remaining)") }
+        if let dur = context.duration { contextParts.append("duration: \(dur)min") }
+        if let seed = context.hurdlePromptSeed { contextParts.append("userChallenge: \(seed)") }
+        let contextString = contextParts.isEmpty ? "none" : contextParts.joined(separator: ", ")
+        return """
+        You write brief, friendly intro text for meditation app cards.
+
+        RULES:
+        - Keep it under \(essence.maxCharacters) characters (strict limit)
+        - Aim for 5-10 words - not too short, not too long
+        - Casual, warm tone - like texting a friend
+        - NO overused words: journey, embrace, discover, essence, path (unless referring to app feature)
+        - End with colon if introducing content
+        - Vary phrasing - don't repeat same structure
+        - Be helpful and specific, not generic or lazy
+
+        TYPE: \(essence.rawValue)
+        INTENT: \(essence.description)
+        CONTEXT: \(contextString)
+
+        Output ONLY the intro text, nothing else. Generate the intro text now.
+        """
+    }
     
     // MARK: - Initialization
     
@@ -247,23 +277,31 @@ final class RecommendationMessageService {
         logger.aiChat("🎯 REC_MSG: Generating message for \(essence.rawValue) hurdle=\(context.hurdleId ?? "nil") goal=\(context.goalId ?? "nil") timeOfDay=\(context.timeOfDay ?? "nil")")
         
         do {
-            // Use timeout to ensure we never block UI too long
+            let prompt = buildIntroPrompt(essence: essence, context: context)
             let message = try await withThrowingTaskGroup(of: String.self) { group in
                 group.addTask {
-                    try await self.aiService.generateIntroMessage(essence: essence, context: context)
+                    let response = try await AIRequestService.shared.processAIRequest(
+                        prompt: prompt,
+                        conversationHistory: [],
+                        context: nil,
+                        triggerContext: "RecommendationMessageService|generateIntro"
+                    )
+                    guard case .text(let t) = response.content else {
+                        throw NSError(domain: "RecommendationMessageService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Expected text response"])
+                    }
+                    return t
                 }
-                
                 group.addTask {
                     try await Task.sleep(nanoseconds: UInt64(self.timeoutSeconds * 1_000_000_000))
                     throw TimeoutError()
                 }
-                
-                // Return first successful result
-                guard let result = try await group.next() else {
-                    throw TimeoutError()
-                }
+                guard let result = try await group.next() else { throw TimeoutError() }
                 group.cancelAll()
-                return result
+                var cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                if cleaned.hasPrefix("\"") && cleaned.hasSuffix("\"") {
+                    cleaned = String(cleaned.dropFirst().dropLast())
+                }
+                return cleaned
             }
             
             // Validate length
