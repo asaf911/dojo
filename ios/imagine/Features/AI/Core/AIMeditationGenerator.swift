@@ -30,7 +30,7 @@ final class AIMeditationGenerator {
             let lastKey = "imagine.lastSoundscapeId"
             if let lastId = UserDefaults.standard.string(forKey: lastKey),
                response.meditationConfiguration.backgroundSound.id == lastId {
-                if let alt = BackgroundSoundManager.shared.sounds.first(where: { $0.id != lastId && $0.id != "None" }) {
+                if let alt = CatalogsManager.shared.sounds.first(where: { $0.id != lastId && $0.id != "None" }) {
                     let newConfig = MeditationConfiguration(
                         duration: response.meditationConfiguration.duration,
                         backgroundSound: alt,

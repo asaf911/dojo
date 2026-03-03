@@ -101,7 +101,7 @@
 		A514337C2D5462C200105271 /* MeditationAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337B2D5462B500105271 /* MeditationAudioManager.swift */; };
 		A514337E2D5462ED00105271 /* BackgroundSoundSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */; };
 		A51434162D554AD400105271 /* BackgroundSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434152D554AC900105271 /* BackgroundSound.swift */; };
-		A51434182D554B0A00105271 /* BackgroundSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434172D554B0000105271 /* BackgroundSoundManager.swift */; };
+		C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0012F000100000001 /* CatalogsManager.swift */; };
 		A51F61E92DDDA24300DA9CEB /* UserIdentityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */; };
 		A51F64B82DE2D36800DA9CEB /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64B62DE2D36800DA9CEB /* PlayerView.swift */; };
 		A51F64BC2DE2E5DF00DA9CEB /* PlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */; };
@@ -132,7 +132,6 @@
 		A56848402D8CBBD0007BFF17 /* GeneralBackgroundMusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A568483F2D8CBBCF007BFF17 /* GeneralBackgroundMusicController.swift */; };
 		A56A5DF92D6C4E1B00508EB1 /* PracticeBadges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DF82D6C4E1100508EB1 /* PracticeBadges.swift */; };
 		A56A5DFC2D6D95DC00508EB1 /* Cue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFB2D6D95CF00508EB1 /* Cue.swift */; };
-		A56A5DFE2D6D960000508EB1 /* CueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFD2D6D95F000508EB1 /* CueManager.swift */; };
 		A56A5E002D6D962800508EB1 /* CueConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */; };
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
@@ -226,7 +225,6 @@
 		B90D3816EE4D55569B045F32 /* AnalyticsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */; };
 		B99E39F42E6D9108E6EB220A /* OnboardingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DEBFA0CFCE36629E887E534 /* OnboardingAnalytics.swift */; };
 		BB87153CB7CD4F0D98FA6155 /* OnboardingUnifiedFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9C58FF55BB6E75EEF623DC /* OnboardingUnifiedFooter.swift */; };
-		BBF000052FFF000100000001 /* BinauralBeatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000032FFF000100000001 /* BinauralBeatManager.swift */; };
 		BBF000062FFF000100000001 /* BinauralBeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000042FFF000100000001 /* BinauralBeat.swift */; };
 		BBF000072FFF000100000001 /* BinauralBeatAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000022FFF000100000001 /* BinauralBeatAudioManager.swift */; };
 		BBF000082FFF000100000001 /* BinauralBeatSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000012FFF000100000001 /* BinauralBeatSelectionView.swift */; };
@@ -504,7 +502,7 @@
 		A514337B2D5462B500105271 /* MeditationAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationAudioManager.swift; sourceTree = "<group>"; };
 		A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundSelectionView.swift; sourceTree = "<group>"; };
 		A51434152D554AC900105271 /* BackgroundSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSound.swift; sourceTree = "<group>"; };
-		A51434172D554B0000105271 /* BackgroundSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundManager.swift; sourceTree = "<group>"; };
+		C5A1B0012F000100000001 /* CatalogsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogsManager.swift; sourceTree = "<group>"; };
 		A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIdentityManager.swift; sourceTree = "<group>"; };
 		A51F64B62DE2D36800DA9CEB /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsView.swift; sourceTree = "<group>"; };
@@ -529,7 +527,6 @@
 		A568483F2D8CBBCF007BFF17 /* GeneralBackgroundMusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralBackgroundMusicController.swift; sourceTree = "<group>"; };
 		A56A5DF82D6C4E1100508EB1 /* PracticeBadges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeBadges.swift; sourceTree = "<group>"; };
 		A56A5DFB2D6D95CF00508EB1 /* Cue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cue.swift; sourceTree = "<group>"; };
-		A56A5DFD2D6D95F000508EB1 /* CueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueManager.swift; sourceTree = "<group>"; };
 		A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueConfigurationView.swift; sourceTree = "<group>"; };
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
@@ -625,7 +622,6 @@
 		BB97D178F8CAA55F883E8FB4 /* SubscriptionAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionAnalytics.swift; sourceTree = "<group>"; };
 		BBF000012FFF000100000001 /* BinauralBeatSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatSelectionView.swift; sourceTree = "<group>"; };
 		BBF000022FFF000100000001 /* BinauralBeatAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatAudioManager.swift; sourceTree = "<group>"; };
-		BBF000032FFF000100000001 /* BinauralBeatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatManager.swift; sourceTree = "<group>"; };
 		BBF000042FFF000100000001 /* BinauralBeat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeat.swift; sourceTree = "<group>"; };
 		BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomMeditationVolumeStore.swift; sourceTree = "<group>"; };
 		BBF100112FFF000100000001 /* CustomSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSlider.swift; sourceTree = "<group>"; };
@@ -1434,10 +1430,9 @@
 			isa = PBXGroup;
 			children = (
 				A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */,
-				A51434172D554B0000105271 /* BackgroundSoundManager.swift */,
+				C5A1B0012F000100000001 /* CatalogsManager.swift */,
 				A51434152D554AC900105271 /* BackgroundSound.swift */,
 				BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */,
-				BBF000032FFF000100000001 /* BinauralBeatManager.swift */,
 				BBF000042FFF000100000001 /* BinauralBeat.swift */,
 				A5A1D3912E178F0B00F45A3F /* Cues */,
 			);
@@ -1467,7 +1462,6 @@
 			isa = PBXGroup;
 			children = (
 				A56A5DFB2D6D95CF00508EB1 /* Cue.swift */,
-				A56A5DFD2D6D95F000508EB1 /* CueManager.swift */,
 				A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */,
 			);
 			path = Cues;
@@ -2192,7 +2186,6 @@
 				FA1000043A00000100000001 /* HeartRateStreamingManager.swift in Sources */,
 				FA1000063A00000100000001 /* MeditationHRAnalyzer.swift in Sources */,
 				F0B1C2D42F70000100123456 /* BinauralBeatSelector.swift in Sources */,
-				BBF000052FFF000100000001 /* BinauralBeatManager.swift in Sources */,
 				BBF000062FFF000100000001 /* BinauralBeat.swift in Sources */,
 				BBF000072FFF000100000001 /* BinauralBeatAudioManager.swift in Sources */,
 				BBF000082FFF000100000001 /* BinauralBeatSelectionView.swift in Sources */,
@@ -2257,9 +2250,8 @@
 				0A5HAPTIC12345678901234 /* HapticManager.swift in Sources */,
 				A53A05682D9CAEB500E25959 /* AuthServiceButton.swift in Sources */,
 				A57C44052DD29965007B495B /* AccountCreationValueView.swift in Sources */,
-				A56A5DFE2D6D960000508EB1 /* CueManager.swift in Sources */,
 				A5EA2B9E2DA87E79009505D4 /* FooterView.swift in Sources */,
-				A51434182D554B0A00105271 /* BackgroundSoundManager.swift in Sources */,
+				C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */,
 				A53A05662D9CAD1600E25959 /* AuthDividerView.swift in Sources */,
 				A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */,
 				A58C21882B196127000EC608 /* AudioPlayerManager.swift in Sources */,

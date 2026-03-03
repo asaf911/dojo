@@ -496,3 +496,160 @@ export const proxyOpenAIChat = functions.runWith({
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// 5. getCatalogs — HTTP GET endpoint for aggregated meditation catalogs
+// ---------------------------------------------------------------------------
+
+const CATALOG_PATHS = [
+  "modules/background_music/background_music_models.json",
+  "modules/binaural_beats/binaural_beats_models.json",
+  "modules/cues/cues_models.json",
+  "modules/body_scan/body_scan_models.json",
+  "modules/perfect_breath/perfect_breath_models.json",
+  "modules/i_am_mantra/i_am_mantra_models.json",
+  "modules/nostril_focus/nostril_focus_models.json",
+] as const;
+
+interface CatalogModel {
+  id: string;
+  name: string;
+  audio: { url: string };
+  duration_minutes?: number;
+  description?: string;
+}
+
+interface CatalogFile {
+  version?: string;
+  models: CatalogModel[];
+}
+
+const DEPRECATED_CUE_IDS = new Set(["MA"]);
+
+export const getCatalogs = functions.https.onRequest(
+  async (req, res) => {
+    // CORS
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "GET");
+      res.set("Access-Control-Allow-Headers", "Content-Type");
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const bucket = admin.storage().bucket();
+      const downloads = await Promise.all(
+        CATALOG_PATHS.map(async (path) => {
+          try {
+            const [contents] = await bucket.file(path).download();
+            return { path, data: contents.toString("utf8") };
+          } catch (err) {
+            functions.logger.warn(`getCatalogs: Failed to read ${path}:`, err);
+            return { path, data: null };
+          }
+        })
+      );
+
+      const byPath = Object.fromEntries(
+        downloads.map((d) => [d.path, d.data])
+      );
+
+      // Background sounds
+      const bgPath = CATALOG_PATHS[0];
+      const bgData = byPath[bgPath];
+      const backgroundSounds: Array<{ id: string; name: string; url: string }> =
+        [];
+      if (bgData) {
+        try {
+          const catalog = JSON.parse(bgData) as CatalogFile;
+          for (const m of catalog.models ?? []) {
+            backgroundSounds.push({
+              id: m.id,
+              name: m.name,
+              url: m.audio?.url ?? "",
+            });
+          }
+        } catch (e) {
+          functions.logger.warn("getCatalogs: Failed to parse background music", e);
+        }
+      }
+
+      // Binaural beats
+      const bbPath = CATALOG_PATHS[1];
+      const bbData = byPath[bbPath];
+      const binauralBeats: Array<{
+        id: string;
+        name: string;
+        url: string;
+        description: string | null;
+      }> = [];
+      if (bbData) {
+        try {
+          const catalog = JSON.parse(bbData) as CatalogFile;
+          for (const m of catalog.models ?? []) {
+            binauralBeats.push({
+              id: m.id,
+              name: m.name,
+              url: m.audio?.url ?? "",
+              description: m.description ?? null,
+            });
+          }
+        } catch (e) {
+          functions.logger.warn("getCatalogs: Failed to parse binaural beats", e);
+        }
+      }
+
+      // Cues: merge from cues + body_scan + perfect_breath + i_am_mantra + nostril_focus
+      const cuePaths = CATALOG_PATHS.slice(2);
+      const allModels: CatalogModel[] = [];
+      const bodyScanDurations: Record<string, number> = {};
+
+      for (const path of cuePaths) {
+        const data = byPath[path];
+        if (!data) continue;
+        try {
+          const catalog = JSON.parse(data) as CatalogFile;
+          for (const m of catalog.models ?? []) {
+            allModels.push(m);
+            if (m.duration_minutes != null) {
+              bodyScanDurations[m.id] = m.duration_minutes;
+            }
+          }
+        } catch (e) {
+          functions.logger.warn(`getCatalogs: Failed to parse ${path}`, e);
+        }
+      }
+
+      const seen = new Set<string>();
+      const cues: Array<{ id: string; name: string; url: string }> = [];
+      for (const m of allModels) {
+        if (seen.has(m.id) || DEPRECATED_CUE_IDS.has(m.id)) continue;
+        seen.add(m.id);
+        cues.push({
+          id: m.id,
+          name: m.name,
+          url: m.audio?.url ?? "",
+        });
+      }
+
+      res.set("Content-Type", "application/json");
+      res.status(200).send(
+        JSON.stringify({
+          backgroundSounds,
+          binauralBeats,
+          cues,
+          bodyScanDurations,
+        })
+      );
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error("getCatalogs: Unexpected error:", errMsg);
+      res.status(500).send(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+);

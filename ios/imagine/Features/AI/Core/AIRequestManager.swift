@@ -657,14 +657,9 @@ class AIRequestManager: ObservableObject {
         // Skip network fetches if offline or if catalogs are already loaded from cache
         let group = DispatchGroup()
         let isOnline = NetworkMonitor.shared.isConnected
-        if isOnline && BackgroundSoundManager.shared.sounds.isEmpty {
-            group.enter(); BackgroundSoundManager.shared.fetchBackgroundSounds { _ in group.leave() }
-        }
-        if isOnline && CueManager.shared.cues.isEmpty {
-            group.enter(); CueManager.shared.fetchCues { _ in group.leave() }
-        }
-        if isOnline && BinauralBeatManager.shared.beats.isEmpty {
-            group.enter(); BinauralBeatManager.shared.fetchBinauralBeats { _ in group.leave() }
+        if isOnline && (CatalogsManager.shared.sounds.isEmpty || CatalogsManager.shared.cues.isEmpty || CatalogsManager.shared.beats.isEmpty) {
+            group.enter()
+            CatalogsManager.shared.fetchCatalogs { _ in group.leave() }
         }
         group.notify(queue: .main) {
             var appliedConfig = response.meditationConfiguration
@@ -677,7 +672,7 @@ class AIRequestManager: ObservableObject {
                 if let qItems = components.queryItems, let v = qItems.first(where: { $0.name == "bb" })?.value {
                     bbIdFromLink = v
                 }
-                if let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
+                if let beat = CatalogsManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
                     forcedBeat = beat
                 }
                 logger.aiChat("🧠 AI_DEBUG [BB]: rebuilt_config bb_link=\(bbIdFromLink) mapped=\(forcedBeat.name)")

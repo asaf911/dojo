@@ -54,15 +54,15 @@ final class AssistantsAIService {
     // Build dynamic grounding instructions from Firebase catalogs (backgrounds + cues + binaural beats)
     private func buildGroundingInstructions() -> String {
         let backgrounds: String = {
-            let list = BackgroundSoundManager.shared.sounds
+            let list = CatalogsManager.shared.sounds
             if list.isEmpty { return "- None: No Background" }
             return list.map { "- \($0.id): \($0.name)" }.joined(separator: "\n")
         }()
-        let cuesList = CueManager.shared.cues
+        let cuesList = CatalogsManager.shared.cues
         let cuesAsList: String = cuesList.isEmpty ? "- SI: Settling In" : cuesList.map { "- \($0.id): \($0.name)" }.joined(separator: "\n")
         let cueEnum: String = cuesList.map { "\"\($0.id)\"" }.joined(separator: ", ")
         let beatsList: String = {
-            let beats = BinauralBeatManager.shared.beats
+            let beats = CatalogsManager.shared.beats
             if beats.isEmpty { return "- BB2: 2 Hz (Sleep)\n- BB4: 4 Hz (Imagination)\n- BB6: 6 Hz (Future Vision)\n- BB10: 10 Hz (Relaxation)\n- BB14: 14 Hz (Focus)\n- BB40: 40 Hz (Gratitude)" }
             return beats.map { beat in
                 "- \(beat.id): \(beat.name)"
@@ -846,7 +846,7 @@ AMBIGUITY HANDLING
         let lowerTitle = (aiTimer.title + " " + (aiTimer.description ?? "")).lowercased()
         let looksSleep = lowerTitle.contains("sleep") || lowerTitle.contains("bedtime")
         let looksSilent = lowerTitle.contains("no music") || lowerTitle.contains("silent") || lowerTitle.contains("no background")
-        let available = BackgroundSoundManager.shared.sounds
+        let available = CatalogsManager.shared.sounds
         // Lightweight persistence for last-used soundscape to encourage variety
         enum SoundscapePrefs {
             static let key = "imagine.lastSoundscapeId"
@@ -956,7 +956,7 @@ AMBIGUITY HANDLING
         }
 
         var cueSettings: [CueSetting] = rebuiltCues.compactMap { aiCue in
-            guard let cue = CueManager.shared.cues.first(where: { $0.id == aiCue.id }) else { return nil }
+            guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == aiCue.id }) else { return nil }
             let triggerType: CueTriggerType
             let minute: Int?
             switch aiCue.trigger.lowercased() {
@@ -987,7 +987,7 @@ AMBIGUITY HANDLING
             title: aiTimer.title
         )
         // Resolve binaural beat deterministically from current context
-        let beats = BinauralBeatManager.shared.beats
+        let beats = CatalogsManager.shared.beats
         var bbId: String = "None"
         if !beats.isEmpty {
             let ctx = BinauralBeatSelector.Context(
@@ -1053,9 +1053,9 @@ AMBIGUITY HANDLING
     // MARK: - Resource loading (reuse existing managers)
     private func loadLatestResources() async {
         // If already loaded in memory, skip network calls
-        if !BackgroundSoundManager.shared.sounds.isEmpty,
-           !CueManager.shared.cues.isEmpty,
-           !BinauralBeatManager.shared.beats.isEmpty {
+        if !CatalogsManager.shared.sounds.isEmpty,
+           !CatalogsManager.shared.cues.isEmpty,
+           !CatalogsManager.shared.beats.isEmpty {
             logger.eventMessage("🧭 AI_DEBUG [ASSISTANT]: Resources already loaded, skipping fetch")
             return
         }
@@ -1067,29 +1067,10 @@ AMBIGUITY HANDLING
         }
         // Start a single shared fetch task
         let task = Task { @MainActor in
-            await withTaskGroup(of: Void.self) { group in
-                group.addTask {
-                    await withCheckedContinuation { continuation in
-                        BackgroundSoundManager.shared.fetchBackgroundSounds { _ in
-                            continuation.resume()
-                        }
-                    }
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                CatalogsManager.shared.fetchCatalogs { _ in
+                    continuation.resume()
                 }
-                group.addTask {
-                    await withCheckedContinuation { continuation in
-                        CueManager.shared.fetchCues { _ in
-                            continuation.resume()
-                        }
-                    }
-                }
-                group.addTask {
-                    await withCheckedContinuation { continuation in
-                        BinauralBeatManager.shared.fetchBinauralBeats { _ in
-                            continuation.resume()
-                        }
-                    }
-                }
-                await group.waitForAll()
             }
         }
         AssistantsAIService.resourceLoadTask = task
@@ -1308,7 +1289,7 @@ AMBIGUITY HANDLING
         if !looksSilent {
             let currentId = timer.backgroundSoundId.trimmingCharacters(in: .whitespacesAndNewlines)
             if currentId.isEmpty || currentId.lowercased() == "none" {
-                let sounds = BackgroundSoundManager.shared.sounds
+                let sounds = CatalogsManager.shared.sounds
                 let names = sounds.map { ($0.id, $0.name.lowercased()) }
                 let preferredOrderSleep = ["rain","ocean","binaural","nature","calm","forest","white","brown"]
                 let preferredOrderGeneral = ["calm","nature","forest","rain","ocean","white","brown","binaural"]

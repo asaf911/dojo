@@ -138,7 +138,7 @@ class SimplifiedAIService {
         var finiteModules: [String] = []
         
         // Get durations from CueManager (loaded from Firebase)
-        let durations = CueManager.shared.bodyScanDurations
+        let durations = CatalogsManager.shared.bodyScanDurations
         let triggerCueIds = guidelines?.moduleTypeClassifications.triggerCue.modules ?? ["OH", "VC", "RT"]
         
         // SI is always 1 min
@@ -157,13 +157,13 @@ class SimplifiedAIService {
         let triggerCueList = triggerCueIds.joined(separator: ", ")
         
         // Get available sounds from BackgroundSoundManager (single source of truth)
-        let sounds = BackgroundSoundManager.shared.sounds
+        let sounds = CatalogsManager.shared.sounds
         let soundsList = sounds.isEmpty 
             ? "LI, SP, OC, DH, BD" 
             : sounds.filter { $0.id != "None" }.map { $0.id }.joined(separator: ", ")
         
         // Get available binaural beats from BinauralBeatManager (single source of truth)
-        let beats = BinauralBeatManager.shared.beats
+        let beats = CatalogsManager.shared.beats
         let beatsList = beats.isEmpty
             ? "BB2, BB4, BB6, BB10, BB14, BB40"
             : beats.map { $0.id }.joined(separator: ", ")
@@ -279,14 +279,14 @@ class SimplifiedAIService {
     
     /// Fallback system prompt if guidelines fail to load
     private func buildFallbackSystemPrompt() -> String {
-        let sounds = BackgroundSoundManager.shared.sounds
+        let sounds = CatalogsManager.shared.sounds
         let soundsList = sounds.isEmpty ? "LI, SP, OC" : sounds.filter { $0.id != "None" }.map { $0.id }.joined(separator: ", ")
         
-        let beats = BinauralBeatManager.shared.beats
+        let beats = CatalogsManager.shared.beats
         let beatsList = beats.isEmpty ? "BB10" : beats.map { $0.id }.joined(separator: ", ")
         
         // Get trigger cue duration dynamically from CueManager
-        let durations = CueManager.shared.bodyScanDurations
+        let durations = CatalogsManager.shared.bodyScanDurations
         let triggerDuration = durations["VC"] ?? durations["RT"] ?? 1
         
         return """
@@ -319,7 +319,7 @@ class SimplifiedAIService {
     // MARK: - Validation
     
     private func validate(_ timer: AIGeneratedTimer, prompt: String) -> String? {
-        let validIds = Set(CueManager.shared.cues.map { $0.id })
+        let validIds = Set(CatalogsManager.shared.cues.map { $0.id })
         
         // Check all cue IDs exist
         for cue in timer.cues {
@@ -509,7 +509,7 @@ class SimplifiedAIService {
     
     /// Get cue duration from CueManager (single source of truth from Firebase)
     private static func getCueDuration(_ id: String) -> Int {
-        return CueManager.shared.bodyScanDurations[id] ?? 1
+        return CatalogsManager.shared.bodyScanDurations[id] ?? 1
     }
     
     private static func buildFallback(duration: Int, prompt: String) -> AIGeneratedTimer {
@@ -746,7 +746,7 @@ class SimplifiedAIService {
         
         // Pick binaural beat based on session type
         let bb: String?
-        let beats = BinauralBeatManager.shared.beats
+        let beats = CatalogsManager.shared.beats
         if beats.isEmpty {
             bb = nil
         } else {
@@ -973,7 +973,7 @@ class SimplifiedAIService {
         }
         
         // Get background sound name
-        let soundName = BackgroundSoundManager.shared.sounds
+        let soundName = CatalogsManager.shared.sounds
             .first(where: { $0.id == backgroundSoundId })?.name ?? "ambient"
         
         // Build description
@@ -992,7 +992,7 @@ class SimplifiedAIService {
     
     private func cueDuration(_ cueId: String) -> Int {
         // CueManager is the single source of truth (loaded from Firebase)
-        if let d = CueManager.shared.bodyScanDurations[cueId] { 
+        if let d = CatalogsManager.shared.bodyScanDurations[cueId] { 
             return max(1, d) 
         }
         
@@ -1369,20 +1369,9 @@ class SimplifiedAIService {
     // MARK: - Private Helpers
     
     private func loadLatestResources() async {
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                await withCheckedContinuation { continuation in
-                    BackgroundSoundManager.shared.fetchBackgroundSounds { _ in
-                        continuation.resume()
-                    }
-                }
-            }
-            group.addTask {
-                await withCheckedContinuation { continuation in
-                    CueManager.shared.fetchCues { _ in
-                        continuation.resume()
-                    }
-                }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            CatalogsManager.shared.fetchCatalogs { _ in
+                continuation.resume()
             }
         }
     }
@@ -1473,14 +1462,14 @@ class SimplifiedAIService {
         // Look up binaural beat from BinauralBeatManager
         let binauralBeat: BinauralBeat?
         if let beatId = aiTimer.binauralBeatId, !beatId.isEmpty, beatId.lowercased() != "none" {
-            binauralBeat = BinauralBeatManager.shared.beats.first(where: { $0.id == beatId })
+            binauralBeat = CatalogsManager.shared.beats.first(where: { $0.id == beatId })
             logger.aiChat("🧠 AI_DEBUG CONVERT binaural beat=\(binauralBeat?.id ?? "not found") from id=\(beatId)")
         } else {
             binauralBeat = nil
         }
         
         let cueSettings: [CueSetting] = aiTimer.cues.compactMap { aiCue in
-            guard let cue = CueManager.shared.cues.first(where: { $0.id == aiCue.id }) else { return nil }
+            guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == aiCue.id }) else { return nil }
             
             let triggerType: CueTriggerType
             let minute: Int?

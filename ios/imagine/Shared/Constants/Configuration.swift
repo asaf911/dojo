@@ -5,6 +5,8 @@
 //  Created by Michael Tabachnik on 10/15/24.
 //
 
+import Foundation
+
 struct Config {
     static var appsFlyerDevKey          = "eLUB6YrwUiT9stNvVy5BRh"
     static var appsFlyerAppleAppID      = "6503365052"
@@ -18,4 +20,9 @@ struct Config {
     
     // MARK: - OneLink Deep Link Configuration
     static var oneLinkBaseURL           = "https://medidojo.onelink.me/miw9/share"
+
+    // MARK: - Catalogs API (GET /catalogs)
+    static var catalogsURL: URL {
+        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/getCatalogs")!
+    }
 }

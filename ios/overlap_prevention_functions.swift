@@ -83,7 +83,7 @@ private func getMinuteFromTrigger(_ trigger: String) -> Int? {
 /// Returns the duration in minutes for different cue types
 private func getCueDuration(_ cueId: String) -> Int {
     // Prefer dynamic durations from catalogs/rules when available
-    if let d = CueManager.shared.bodyScanDurations[cueId] { return max(1, d) }
+    if let d = CatalogsManager.shared.bodyScanDurations[cueId] { return max(1, d) }
     // Fallbacks for legacy ids
     switch cueId {
     case "BS1": return 1

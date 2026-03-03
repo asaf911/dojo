@@ -244,7 +244,7 @@ struct HistoryCardView: View {
             
             let binauralBeat: BinauralBeat = {
                 if let beatId = customConfig?.binauralBeatId,
-                   let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == beatId }) {
+                   let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
                     return beat
                 }
                 return BinauralBeat(id: "None", name: "None", url: "", description: nil)
@@ -302,7 +302,7 @@ struct HistoryCardView: View {
         
         let binauralBeat: BinauralBeat? = {
             if let beatId = customConfig?.binauralBeatId,
-               let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == beatId }) {
+               let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
                 return beat
             }
             return nil
@@ -334,7 +334,7 @@ struct HistoryCardView: View {
         guard let customConfig = customConfig else { return [] }
         
         return customConfig.cueIds.compactMap { cueId in
-            guard let cue = CueManager.shared.cues.first(where: { $0.id == cueId }) else {
+            guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == cueId }) else {
                 return nil
             }
             // Default trigger to .start since trigger info is not stored in SessionCustomConfig

@@ -23,11 +23,7 @@ class DeepLinkHandler {
             // Ensure catalogs are loaded before decoding so ids (bs, bb, cues) resolve to models
             let group = DispatchGroup()
             group.enter()
-            BackgroundSoundManager.shared.fetchBackgroundSounds { _ in group.leave() }
-            group.enter()
-            CueManager.shared.fetchCues { _ in group.leave() }
-            group.enter()
-            BinauralBeatManager.shared.fetchBinauralBeats { _ in group.leave() }
+            CatalogsManager.shared.fetchCatalogs { _ in group.leave() }
             group.notify(queue: .main) {
                 guard let queryItems = urlComponents?.queryItems,
                       let meditationConfiguration = MeditationConfiguration(queryItems: queryItems) else {

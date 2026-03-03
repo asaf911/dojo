@@ -108,7 +108,7 @@ extension MeditationConfiguration {
     
     /// Dynamically looks up a BackgroundSound from BackgroundSoundManager by matching its id.
     static func backgroundSound(forID id: String) -> BackgroundSound {
-        if let sound = BackgroundSoundManager.shared.sounds.first(where: { $0.id == id }) {
+        if let sound = CatalogsManager.shared.sounds.first(where: { $0.id == id }) {
             return sound
         }
         return BackgroundSound(id: "None", name: "None", url: "")
@@ -119,7 +119,7 @@ extension MeditationConfiguration {
         let parts = cueString.split(separator: ":")
         guard let idPart = parts.first else { return nil }
         let cueID = String(idPart)
-        guard let cue = CueManager.shared.cues.first(where: { $0.id == cueID }) else { return nil }
+        guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == cueID }) else { return nil }
         
         var triggerType: CueTriggerType = .minute
         var minute: Int? = 1 // default for minute trigger

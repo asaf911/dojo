@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BinauralBeatSelectionView: View {
     @Binding var selectedBeat: BinauralBeat
-    @ObservedObject var beatManager = BinauralBeatManager.shared
+    @ObservedObject var catalogsManager = CatalogsManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -15,7 +15,7 @@ struct BinauralBeatSelectionView: View {
                     Button("None") {
                         selectedBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
                     }
-                    ForEach(beatManager.beats) { beat in
+                    ForEach(catalogsManager.beats) { beat in
                         Button(beat.name) {
                             selectedBeat = beat
                         }
@@ -35,7 +35,7 @@ struct BinauralBeatSelectionView: View {
         .padding(.top, 10)
         .onAppear {
             if ConnectivityHelper.isConnectedToInternet() {
-                beatManager.fetchBinauralBeats()
+                catalogsManager.fetchCatalogs()
             }
         }
     }

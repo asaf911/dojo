@@ -28,9 +28,7 @@ struct TimerView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.toggleMenu) private var toggleMenu
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
-    @StateObject private var backgroundSoundManager = BackgroundSoundManager.shared
-    @StateObject private var cueManager = CueManager.shared
-    @StateObject private var binauralBeatManager = BinauralBeatManager.shared
+    @StateObject private var catalogsManager = CatalogsManager.shared
 
     var body: some View {
         DojoScreenContainer(
@@ -144,26 +142,12 @@ struct TimerView: View {
             .topFadeMask(height: 5)
         }
         .onAppear {
-            // Load background sounds and cues if needed
-            if backgroundSoundManager.sounds.isEmpty {
-                backgroundSoundManager.fetchBackgroundSounds { success in
+            // Load catalogs if needed
+            if catalogsManager.sounds.isEmpty || catalogsManager.cues.isEmpty || catalogsManager.beats.isEmpty {
+                catalogsManager.fetchCatalogs { success in
                     if success {
-                        logger.eventMessage("Background sounds loaded successfully")
+                        logger.eventMessage("Catalogs loaded successfully")
                     }
-                    checkDataLoaded()
-                }
-            }
-            
-            if cueManager.cues.isEmpty {
-                cueManager.fetchCues { success in
-                    if success {
-                        logger.eventMessage("Cues loaded successfully")
-                    }
-                    checkDataLoaded()
-                }
-            }
-            if binauralBeatManager.beats.isEmpty {
-                binauralBeatManager.fetchBinauralBeats { _ in
                     checkDataLoaded()
                 }
             }
@@ -352,7 +336,7 @@ struct TimerView: View {
     // MARK: - Data Loading
 
     private func checkDataLoaded() {
-        isDataLoaded = !backgroundSoundManager.sounds.isEmpty && !cueManager.cues.isEmpty && !binauralBeatManager.beats.isEmpty
+        isDataLoaded = !catalogsManager.sounds.isEmpty && !catalogsManager.cues.isEmpty && !catalogsManager.beats.isEmpty
         logger.eventMessage("Data loaded status: \(isDataLoaded)")
     }
 
