@@ -22,15 +22,19 @@ struct DevModeSettingsView: View {
     /// Callback for the "Test New User" action (handled by parent for alert state)
     var onTestNewUser: (() -> Void)?
     
+    @State private var selectedVoiceId: String = "Asaf"
+
     var body: some View {
         VStack(spacing: 12) {
             devModeHeader
             currentStateCard
+            narrationVoiceCard
             skipDestinationCard
             actionButtons
         }
         .onAppear {
             initializeSelectedDestination()
+            selectedVoiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
         }
     }
     
@@ -108,8 +112,39 @@ struct DevModeSettingsView: View {
         }
     }
     
+    // MARK: - Narration Voice Card
+
+    private var narrationVoiceCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Narration Voice")
+                .nunitoFont(size: 16, style: .bold)
+                .foregroundColor(.dojoTurquoise)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Voice:")
+                    .nunitoFont(size: 14, style: .regular)
+                    .foregroundColor(.foregroundLightGray)
+
+                Picker("", selection: $selectedVoiceId) {
+                    Text("Asaf").tag("Asaf")
+                    Text("Dan").tag("Dan")
+                }
+                .pickerStyle(.menu)
+                .tint(.dojoTurquoise)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: selectedVoiceId) { _, newValue in
+                    SharedUserStorage.save(value: newValue, forKey: .narrationVoiceId)
+                }
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(Color.backgroundPurple)
+        .cornerRadius(12)
+    }
+
     // MARK: - Skip Destination Card
-    
+
     private var skipDestinationCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Skip to Destination")

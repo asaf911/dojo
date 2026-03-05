@@ -204,4 +204,7 @@ enum UserStorageKey: String, CaseIterable {
     // Tracks the last observed RevenueCat periodType ("trial", "intro", "normal").
     // Used to detect trial→paid conversion so af_subscribe fires exactly once.
     case lastKnownPeriodType
+
+    // Narration voice for custom meditations (dev mode). Values: "Asaf" | "Dan"
+    case narrationVoiceId
 }

@@ -127,6 +127,7 @@ extension MeditationPackage {
 
 private struct PostMeditationsRequestBody: Encodable {
     let type: String = "manual"
+    let voiceId: String?
     let duration: Int
     let backgroundSoundId: String
     let binauralBeatId: String?
@@ -162,6 +163,7 @@ struct ConversationHistoryItem: Encodable {
 
 private struct PostMeditationsAIRequestBody: Encodable {
     let type: String = "ai"
+    let voiceId: String?
     let prompt: String
     let conversationHistory: [ConversationHistoryItem]
     let maxDuration: Int?
@@ -224,12 +226,14 @@ extension MeditationsService {
         createMeditationManual: { duration, backgroundSoundId, binauralBeatId, cues, triggerContext in
             let tag = "[Server][Meditations]"
             let trigger = triggerContext ?? "unknown"
-            print("\(tag) createMeditationManual: start trigger=\(trigger) duration=\(duration) cueCount=\(cues.count) bs=\(backgroundSoundId) bb=\(binauralBeatId ?? "None")")
+            let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+            print("\(tag) createMeditationManual: start trigger=\(trigger) duration=\(duration) cueCount=\(cues.count) bs=\(backgroundSoundId) bb=\(binauralBeatId ?? "None") voiceId=\(voiceId)")
             var request = URLRequest(url: Config.meditationsURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
             let body = PostMeditationsRequestBody(
+                voiceId: voiceId,
                 duration: duration,
                 backgroundSoundId: backgroundSoundId,
                 binauralBeatId: binauralBeatId,
@@ -258,12 +262,14 @@ extension MeditationsService {
         createMeditationAI: { prompt, conversationHistory, maxDuration, triggerContext in
             let tag = "[Server][Meditations-AI]"
             let trigger = triggerContext ?? "unknown"
-            print("\(tag) createMeditationAI: start trigger=\(trigger) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) maxDuration=\(maxDuration?.description ?? "nil")")
+            let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+            print("\(tag) createMeditationAI: start trigger=\(trigger) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) maxDuration=\(maxDuration?.description ?? "nil") voiceId=\(voiceId)")
             var request = URLRequest(url: Config.meditationsURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
             let body = PostMeditationsAIRequestBody(
+                voiceId: voiceId,
                 prompt: prompt,
                 conversationHistory: conversationHistory,
                 maxDuration: maxDuration

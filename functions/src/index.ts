@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import {createHash} from "crypto";
+import * as path from "path";
+import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
 
 admin.initializeApp();
@@ -502,34 +504,59 @@ export const proxyOpenAIChat = functions.runWith({
 // 5. getCatalogs — HTTP GET endpoint for aggregated meditation catalogs
 // ---------------------------------------------------------------------------
 
-const CATALOG_PATHS = [
-  "modules/background_music/background_music_models.json",
-  "modules/binaural_beats/binaural_beats_models.json",
-  "modules/cues/cues_models.json",
-  "modules/body_scan/body_scan_models.json",
-  "modules/perfect_breath/perfect_breath_models.json",
-  "modules/i_am_mantra/i_am_mantra_models.json",
-  "modules/nostril_focus/nostril_focus_models.json",
+const STORAGE_BUCKET = "imagine-c6162.appspot.com";
+const CATALOG_FILE_NAMES = [
+  "background_music",
+  "binaural_beats",
+  "cues",
+  "body_scan",
+  "perfect_breath",
+  "i_am_mantra",
+  "nostril_focus",
 ] as const;
 
-interface CatalogModel {
+interface RepoCatalogModel {
   id: string;
   name: string;
-  audio: { url: string };
+  path: string;
+  voices?: Record<string, string>;
   duration_minutes?: number;
   description?: string;
 }
 
-interface CatalogFile {
+interface RepoCatalogFile {
   version?: string;
-  models: CatalogModel[];
+  models: RepoCatalogModel[];
+}
+
+interface VoiceItem {
+  id: string;
+  name: string;
 }
 
 const DEPRECATED_CUE_IDS = new Set(["MA"]);
 
+function resolveStorageUrl(relativePath: string): string {
+  return `gs://${STORAGE_BUCKET}/${relativePath}`;
+}
+
+function resolveCueUrl(
+  cue: { url: string; urlsByVoice?: Record<string, string> },
+  voiceId: string
+): string {
+  return cue.urlsByVoice?.[voiceId] ?? cue.url;
+}
+
 // ---------------------------------------------------------------------------
 // Shared catalog loading (used by getCatalogs and postMeditations)
 // ---------------------------------------------------------------------------
+
+interface CueItem {
+  id: string;
+  name: string;
+  url: string;
+  urlsByVoice?: Record<string, string>;
+}
 
 interface LoadedCatalogs {
   backgroundSounds: Array<{ id: string; name: string; url: string }>;
@@ -539,82 +566,81 @@ interface LoadedCatalogs {
     url: string;
     description: string | null;
   }>;
-  cues: Array<{ id: string; name: string; url: string }>;
+  cues: CueItem[];
   bodyScanDurations: Record<string, number>;
+  voices: VoiceItem[];
 }
 
-async function loadCatalogs(): Promise<LoadedCatalogs> {
-  const bucket = admin.storage().bucket();
-  const downloads = await Promise.all(
-    CATALOG_PATHS.map(async (path) => {
-      try {
-        const [contents] = await bucket.file(path).download();
-        return { path, data: contents.toString("utf8") };
-      } catch (err) {
-        functions.logger.warn(`loadCatalogs: Failed to read ${path}:`, err);
-        return { path, data: null };
-      }
-    })
-  );
+function loadCatalogs(): LoadedCatalogs {
+  const catalogsDir = path.join(__dirname, "../catalogs");
 
-  const byPath = Object.fromEntries(
-    downloads.map((d) => [d.path, d.data])
-  );
+  // Load voices
+  let voices: VoiceItem[] = [];
+  try {
+    const voicesPath = path.join(catalogsDir, "voices.json");
+    const voicesData = fs.readFileSync(voicesPath, "utf8");
+    const voicesFile = JSON.parse(voicesData) as { voices?: VoiceItem[] };
+    voices = voicesFile.voices ?? [];
+  } catch (e) {
+    functions.logger.warn("loadCatalogs: Failed to load voices.json", e);
+  }
 
   // Background sounds
-  const bgPath = CATALOG_PATHS[0];
-  const bgData = byPath[bgPath];
   const backgroundSounds: Array<{ id: string; name: string; url: string }> = [];
-  if (bgData) {
-    try {
-      const catalog = JSON.parse(bgData) as CatalogFile;
-      for (const m of catalog.models ?? []) {
-        backgroundSounds.push({
-          id: m.id,
-          name: m.name,
-          url: m.audio?.url ?? "",
-        });
-      }
-    } catch (e) {
-      functions.logger.warn("loadCatalogs: Failed to parse background music", e);
+  try {
+    const data = fs.readFileSync(
+      path.join(catalogsDir, "background_music.json"),
+      "utf8"
+    );
+    const catalog = JSON.parse(data) as RepoCatalogFile;
+    for (const m of catalog.models ?? []) {
+      backgroundSounds.push({
+        id: m.id,
+        name: m.name,
+        url: resolveStorageUrl(m.path),
+      });
     }
+  } catch (e) {
+    functions.logger.warn("loadCatalogs: Failed to parse background_music", e);
   }
 
   // Binaural beats
-  const bbPath = CATALOG_PATHS[1];
-  const bbData = byPath[bbPath];
   const binauralBeats: Array<{
     id: string;
     name: string;
     url: string;
     description: string | null;
   }> = [];
-  if (bbData) {
-    try {
-      const catalog = JSON.parse(bbData) as CatalogFile;
-      for (const m of catalog.models ?? []) {
-        binauralBeats.push({
-          id: m.id,
-          name: m.name,
-          url: m.audio?.url ?? "",
-          description: m.description ?? null,
-        });
-      }
-    } catch (e) {
-      functions.logger.warn("loadCatalogs: Failed to parse binaural beats", e);
+  try {
+    const data = fs.readFileSync(
+      path.join(catalogsDir, "binaural_beats.json"),
+      "utf8"
+    );
+    const catalog = JSON.parse(data) as RepoCatalogFile;
+    for (const m of catalog.models ?? []) {
+      binauralBeats.push({
+        id: m.id,
+        name: m.name,
+        url: resolveStorageUrl(m.path),
+        description: m.description ?? null,
+      });
     }
+  } catch (e) {
+    functions.logger.warn("loadCatalogs: Failed to parse binaural_beats", e);
   }
 
   // Cues: merge from cues + body_scan + perfect_breath + i_am_mantra + nostril_focus
-  const cuePaths = CATALOG_PATHS.slice(2);
-  const allModels: CatalogModel[] = [];
+  const cueFileNames = CATALOG_FILE_NAMES.slice(2);
+  const allModels: RepoCatalogModel[] = [];
   const bodyScanDurations: Record<string, number> = {};
 
-  for (const path of cuePaths) {
-    const data = byPath[path];
-    if (!data) continue;
+  for (const fileName of cueFileNames) {
     try {
-      const catalog = JSON.parse(data) as CatalogFile;
+      const data = fs.readFileSync(
+        path.join(catalogsDir, `${fileName}.json`),
+        "utf8"
+      );
+      const catalog = JSON.parse(data) as RepoCatalogFile;
       for (const m of catalog.models ?? []) {
         allModels.push(m);
         if (m.duration_minutes != null) {
@@ -622,19 +648,26 @@ async function loadCatalogs(): Promise<LoadedCatalogs> {
         }
       }
     } catch (e) {
-      functions.logger.warn(`loadCatalogs: Failed to parse ${path}`, e);
+      functions.logger.warn(`loadCatalogs: Failed to parse ${fileName}`, e);
     }
   }
 
   const seen = new Set<string>();
-  const cues: Array<{ id: string; name: string; url: string }> = [];
+  const cues: CueItem[] = [];
   for (const m of allModels) {
     if (seen.has(m.id) || DEPRECATED_CUE_IDS.has(m.id)) continue;
     seen.add(m.id);
+    const url = resolveStorageUrl(m.path);
+    const urlsByVoice: Record<string, string> | undefined = m.voices
+      ? Object.fromEntries(
+          Object.entries(m.voices).map(([k, v]) => [k, resolveStorageUrl(v)])
+        )
+      : undefined;
     cues.push({
       id: m.id,
       name: m.name,
-      url: m.audio?.url ?? "",
+      url,
+      urlsByVoice,
     });
   }
 
@@ -643,6 +676,7 @@ async function loadCatalogs(): Promise<LoadedCatalogs> {
     binauralBeats,
     cues,
     bodyScanDurations,
+    voices,
   };
 }
 
@@ -672,9 +706,9 @@ export const getCatalogs = functions.https.onRequest(
     );
 
     try {
-      const catalogs = await loadCatalogs();
+      const catalogs = loadCatalogs();
       functions.logger.info(
-        `${TAG_CATALOGS} getCatalogs: success sounds=${catalogs.backgroundSounds.length} beats=${catalogs.binauralBeats.length} cues=${catalogs.cues.length}`
+        `${TAG_CATALOGS} getCatalogs: success sounds=${catalogs.backgroundSounds.length} beats=${catalogs.binauralBeats.length} cues=${catalogs.cues.length} voices=${catalogs.voices.length}`
       );
       res.set("Content-Type", "application/json");
       res.status(200).send(
@@ -683,6 +717,7 @@ export const getCatalogs = functions.https.onRequest(
           binauralBeats: catalogs.binauralBeats,
           cues: catalogs.cues,
           bodyScanDurations: catalogs.bodyScanDurations,
+          voices: catalogs.voices,
         })
       );
     } catch (err) {
@@ -699,6 +734,7 @@ export const getCatalogs = functions.https.onRequest(
 
 interface PostMeditationsRequest {
   type: string;
+  voiceId?: string;
   duration?: number;
   backgroundSoundId?: string;
   binauralBeatId?: string;
@@ -775,7 +811,7 @@ export const postMeditations = functions.runWith({
           `${TAG_AI} postMeditations: request received type=ai trigger=${trigger} promptLen=${prompt.length} historyLen=${body.conversationHistory?.length ?? 0} maxDuration=${body.maxDuration ?? "nil"}`
         );
 
-        const catalogs = await loadCatalogs();
+        const catalogs = loadCatalogs();
         const { generateAIMeditation } = await import("./aiMeditation");
 
         const { meditation, usedFallback } = await generateAIMeditation({
@@ -785,6 +821,8 @@ export const postMeditations = functions.runWith({
           catalogs,
           apiKey,
         });
+
+        const voiceId = body.voiceId ?? "Asaf";
 
         // Resolve IDs to catalog objects
         const soundMap = new Map(
@@ -827,7 +865,7 @@ export const postMeditations = functions.runWith({
             resolvedCues.push({
               id: asset.id,
               name: asset.name,
-              url: asset.url,
+              url: resolveCueUrl(asset, voiceId),
               trigger: c.trigger,
             });
           } else if (c.id === "SI" || c.id === "GB") {
@@ -872,12 +910,13 @@ export const postMeditations = functions.runWith({
       // --- Manual path ---
 
       const duration = body.duration ?? 0;
+      const voiceId = body.voiceId ?? "Asaf";
       const backgroundSoundId = body.backgroundSoundId ?? "";
       const binauralBeatId = body.binauralBeatId ?? "None";
       const cues = body.cues ?? [];
 
       functions.logger.info(
-        `${TAG_MEDITATIONS} postMeditations: request received type=manual trigger=${trigger} duration=${duration} cueCount=${cues.length} bs=${backgroundSoundId} bb=${binauralBeatId}`
+        `${TAG_MEDITATIONS} postMeditations: request received type=manual trigger=${trigger} duration=${duration} cueCount=${cues.length} bs=${backgroundSoundId} bb=${binauralBeatId} voiceId=${voiceId}`
       );
 
       // Validate duration (1-60)
@@ -891,7 +930,7 @@ export const postMeditations = functions.runWith({
         return;
       }
 
-      const catalogs = await loadCatalogs();
+      const catalogs = loadCatalogs();
 
       // Validate backgroundSoundId
       const soundMap = new Map(
@@ -977,7 +1016,7 @@ export const postMeditations = functions.runWith({
         resolvedCues.push({
           id: cueAsset.id,
           name: cueAsset.name,
-          url: cueAsset.url,
+          url: resolveCueUrl(cueAsset, voiceId),
           trigger: cueTrigger,
         });
       }
@@ -1054,10 +1093,11 @@ export const postAIRequest = functions.runWith({
       const result = await processAIRequest(
         {
           prompt: body.prompt ?? "",
+          voiceId: (body as { voiceId?: string }).voiceId,
           conversationHistory: body.conversationHistory,
           context: body.context as { pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null; exploreInfo?: { sessionTitle: string; timeOfDay: string } | null },
         },
-        loadCatalogs,
+        () => Promise.resolve(loadCatalogs()),
         apiKey
       );
 

@@ -291,11 +291,20 @@ struct TimerView: View {
     // MARK: - Play Flow Helpers
 
     private func buildLocalTimerConfig() -> TimerSessionConfig {
-        TimerSessionConfig(
+        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        let resolvedCueSettings = cueSettings.map { cs in
+            let resolvedCue = Cue(
+                id: cs.cue.id,
+                name: cs.cue.name,
+                url: cs.cue.url(forVoice: voiceId)
+            )
+            return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
+        }
+        return TimerSessionConfig(
             minutes: selectedMinutes,
             backgroundSound: selectedBackgroundSound,
             binauralBeat: selectedBinauralBeat,
-            cueSettings: cueSettings
+            cueSettings: resolvedCueSettings
         )
     }
 

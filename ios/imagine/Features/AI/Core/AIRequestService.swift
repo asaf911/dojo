@@ -69,6 +69,7 @@ struct AIRequestResponse: Decodable {
 
 private struct AIRequestBody: Encodable {
     let prompt: String
+    let voiceId: String?
     let conversationHistory: [[String: String]]
     let context: AIServerRequestContext?
 }
@@ -86,7 +87,8 @@ struct AIRequestService {
         context: AIServerRequestContext?,
         triggerContext: String
     ) async throws -> AIRequestResponse {
-        print("\(kTag) request start trigger=\(triggerContext) promptLen=\(prompt.count) historyLen=\(conversationHistory.count)")
+        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        print("\(kTag) request start trigger=\(triggerContext) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) voiceId=\(voiceId)")
         var request = URLRequest(url: Config.aiRequestURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -94,6 +96,7 @@ struct AIRequestService {
         let historyItems = conversationHistory.map { ["role": $0.role, "content": $0.content] }
         let body = AIRequestBody(
             prompt: prompt,
+            voiceId: voiceId,
             conversationHistory: historyItems,
             context: context
         )

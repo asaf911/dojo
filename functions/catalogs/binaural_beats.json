@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "models": [
+    { "id": "BB2", "name": "2 Hz", "path": "modules/binaural_beats/BB2.mp3", "description": "Delta waves for deep relaxation" },
+    { "id": "BB4", "name": "4 Hz", "path": "modules/binaural_beats/BB4.mp3", "description": "Theta waves for meditation" },
+    { "id": "BB6", "name": "6 Hz", "path": "modules/binaural_beats/BB6.mp3", "description": "Low theta for focus" },
+    { "id": "BB10", "name": "10 Hz", "path": "modules/binaural_beats/BB10.mp3", "description": "Alpha waves for calm focus" },
+    { "id": "BB14", "name": "14 Hz", "path": "modules/binaural_beats/BB14.mp3", "description": "Beta waves for alertness" },
+    { "id": "BB40", "name": "40 Hz", "path": "modules/binaural_beats/BB40.mp3", "description": "Gamma waves for concentration" }
+  ]
+}

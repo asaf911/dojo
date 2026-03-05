@@ -23,6 +23,7 @@ export interface AIRequestContext {
 
 export interface AIRequestBody {
   prompt: string;
+  voiceId?: string;
   conversationHistory?: Array<{ role: string; content: string }>;
   context?: AIRequestContext;
 }
@@ -201,9 +202,17 @@ function randomUUID(): string {
   });
 }
 
+function resolveCueUrl(
+  cue: { url: string; urlsByVoice?: Record<string, string> },
+  voiceId: string
+): string {
+  return cue.urlsByVoice?.[voiceId] ?? cue.url;
+}
+
 function buildMeditationPackage(
   meditation: { duration: number; backgroundSoundId: string; binauralBeatId?: string | null; cues: Array<{ id: string; trigger: string }>; title?: string | null; description?: string | null },
-  catalogs: LoadedCatalogs
+  catalogs: LoadedCatalogs,
+  voiceId: string
 ): MeditationPackage {
   const soundMap = new Map(catalogs.backgroundSounds.map((s) => [s.id, s]));
   const beatMap = new Map(catalogs.binauralBeats.map((b) => [b.id, b]));
@@ -224,7 +233,12 @@ function buildMeditationPackage(
   for (const c of meditation.cues) {
     const asset = cueMap.get(c.id);
     if (asset) {
-      resolvedCues.push({ id: asset.id, name: asset.name, url: asset.url, trigger: c.trigger });
+      resolvedCues.push({
+        id: asset.id,
+        name: asset.name,
+        url: resolveCueUrl(asset, voiceId),
+        trigger: c.trigger,
+      });
     } else if (c.id === "SI" || c.id === "GB") {
       resolvedCues.push({ id: c.id, name: c.id, url: "", trigger: c.trigger });
     }
@@ -267,13 +281,14 @@ export async function processAIRequest(
 
   if (intent === "meditation") {
     const catalogs = await loadCatalogs();
+    const voiceId = body.voiceId ?? "Asaf";
     const { meditation, usedFallback } = await generateAIMeditation({
       prompt,
       conversationHistory,
       catalogs,
       apiKey,
     });
-    const pkg = buildMeditationPackage(meditation, catalogs);
+    const pkg = buildMeditationPackage(meditation, catalogs, voiceId);
     functions.logger.info(`${TAG} success intent=meditation id=${pkg.id} duration=${pkg.duration} usedFallback=${usedFallback}`);
     return { intent: "meditation", content: { type: "meditation", meditation: pkg } };
   }

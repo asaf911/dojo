@@ -17,6 +17,7 @@ private struct CatalogsResponse: Codable {
     let binauralBeats: [BinauralBeatItem]
     let cues: [CueItem]
     let bodyScanDurations: [String: Int]
+    let voices: [VoiceItem]?
 
     struct BackgroundSoundItem: Codable {
         let id: String
@@ -35,6 +36,12 @@ private struct CatalogsResponse: Codable {
         let id: String
         let name: String
         let url: String
+        let urlsByVoice: [String: String]?
+    }
+
+    struct VoiceItem: Codable {
+        let id: String
+        let name: String
     }
 }
 
@@ -44,7 +51,13 @@ final class CatalogsManager: ObservableObject {
     @Published private(set) var sounds: [BackgroundSound] = []
     @Published private(set) var beats: [BinauralBeat] = []
     @Published private(set) var cues: [Cue] = []
+    @Published private(set) var voices: [VoiceItem] = []
     private(set) var bodyScanDurations: [String: Int] = [:]
+
+    struct VoiceItem: Identifiable {
+        let id: String
+        let name: String
+    }
 
     private init() {
         loadCachedCatalogs()
@@ -88,11 +101,13 @@ final class CatalogsManager: ObservableObject {
                 let decoded = try JSONDecoder().decode(CatalogsResponse.self, from: data)
                 let sounds = decoded.backgroundSounds.map { BackgroundSound(id: $0.id, name: $0.name, url: $0.url) }
                 let beats = decoded.binauralBeats.map { BinauralBeat(id: $0.id, name: $0.name, url: $0.url, description: $0.description) }
-                let cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url) }
+                let cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+                let voices = (decoded.voices ?? []).map { VoiceItem(id: $0.id, name: $0.name) }
                 DispatchQueue.main.async {
                     self.sounds = sounds
                     self.beats = beats
                     self.cues = cues
+                    self.voices = voices
                     self.bodyScanDurations = decoded.bodyScanDurations
                     self.cacheCatalogs(data: data)
                     print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
@@ -129,7 +144,8 @@ final class CatalogsManager: ObservableObject {
             let decoded = try JSONDecoder().decode(CatalogsResponse.self, from: data)
             sounds = decoded.backgroundSounds.map { BackgroundSound(id: $0.id, name: $0.name, url: $0.url) }
             beats = decoded.binauralBeats.map { BinauralBeat(id: $0.id, name: $0.name, url: $0.url, description: $0.description) }
-            cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url) }
+            cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+            voices = (decoded.voices ?? []).map { VoiceItem(id: $0.id, name: $0.name) }
             bodyScanDurations = decoded.bodyScanDurations
             print("\(kCatalogsServerTag) loadCachedCatalogs: loaded from cache - sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
             logger.eventMessage("CatalogsManager: Loaded cached catalog with \(sounds.count) sounds, \(beats.count) beats, \(cues.count) cues")

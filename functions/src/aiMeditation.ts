@@ -28,7 +28,7 @@ export interface LoadedCatalogs {
     url: string;
     description: string | null;
   }>;
-  cues: Array<{ id: string; name: string; url: string }>;
+  cues: Array<{ id: string; name: string; url: string; urlsByVoice?: Record<string, string> }>;
   bodyScanDurations: Record<string, number>;
 }
 
