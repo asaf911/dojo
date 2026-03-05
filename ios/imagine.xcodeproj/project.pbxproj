@@ -101,8 +101,6 @@
 		A514337C2D5462C200105271 /* MeditationAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337B2D5462B500105271 /* MeditationAudioManager.swift */; };
 		A514337E2D5462ED00105271 /* BackgroundSoundSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */; };
 		A51434162D554AD400105271 /* BackgroundSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434152D554AC900105271 /* BackgroundSound.swift */; };
-		C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0012F000100000001 /* CatalogsManager.swift */; };
-		C5A1B0032F000100000002 /* MeditationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0042F000100000002 /* MeditationsService.swift */; };
 		A51F61E92DDDA24300DA9CEB /* UserIdentityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */; };
 		A51F64B82DE2D36800DA9CEB /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64B62DE2D36800DA9CEB /* PlayerView.swift */; };
 		A51F64BC2DE2E5DF00DA9CEB /* PlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */; };
@@ -158,10 +156,8 @@
 		A59FAC822DEE5BF900C7F9E7 /* LiveHeartRateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59FAC812DEE5BF900C7F9E7 /* LiveHeartRateCard.swift */; };
 		A59FAC842DF0A7FB00C7F9E7 /* WatchPairingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A59FAC832DF0A7FB00C7F9E7 /* WatchPairingManager.swift */; };
 		A5A1D03E2E0C689A00F45A3F /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A1D03B2E0C689A00F45A3F /* AIService.swift */; };
-		MPA1C0MP2F00000100000002 /* MeditationPackage+AICompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */; };
 		A5A1D03F2E0C689A00F45A3F /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A1D03C2E0C689A00F45A3F /* AIChatView.swift */; };
 		A5A1D0402E0C689A00F45A3F /* AIRequestManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A1D03D2E0C689A00F45A3F /* AIRequestManager.swift */; };
-		AIREQ001F00000100000001 /* AIRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AIREQ001F00000100000002 /* AIRequestService.swift */; };
 		A5A7DF632DB046B000A6469C /* ActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF622DB046B000A6469C /* ActivityViewController.swift */; };
 		A5A7DF652DB1771E00A6469C /* GreetingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF642DB1771800A6469C /* GreetingManager.swift */; };
 		A5A7DF672DB1A48100A6469C /* CueIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */; };
@@ -219,6 +215,7 @@
 		A7CB15E19007A1638E89C375 /* DailyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2CA88607C23D3A50BE6800 /* DailyStats.swift */; };
 		AEB58E082A151E68280AF78C /* MediaSessionProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F059D00A7BCB38F73601E75 /* MediaSessionProtocol.swift */; };
 		AFMGR00022E8F000100000001 /* AppsFlyerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFMGR00012E8F000100000001 /* AppsFlyerManager.swift */; };
+		AIREQ001F00000100000001 /* AIRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AIREQ001F00000100000002 /* AIRequestService.swift */; };
 		B1A1A1A12F00000100AAAAAA /* ThinkingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */; };
 		B211CA907177F10959DD6D1D /* JourneyPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5EE1D42B8780FD4D6C1C08 /* JourneyPhase.swift */; };
 		B467EF59E98773AD292FECE4 /* SessionHistoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCDDD51DE98D6EB915C3639 /* SessionHistoryQuery.swift */; };
@@ -243,6 +240,8 @@
 		C1E5F1242F12345600AAAAAA /* OnboardingResponseCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E5F1142F12345600AAAAAA /* OnboardingResponseCollector.swift */; };
 		C21E85E3A2E63C103CBF9912 /* RecommendationContextEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F935BB35868118A707C8596C /* RecommendationContextEngine.swift */; };
 		C4DB25F1BB32F2A55A2A9D75 /* OnboardingConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333AC32243B627B6F6E735BF /* OnboardingConfiguration.swift */; };
+		C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0012F000100000001 /* CatalogsManager.swift */; };
+		C5A1B0032F000100000002 /* MeditationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0042F000100000002 /* MeditationsService.swift */; };
 		C68990B377ABB6EAE33A980C /* OneSignalTagManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5326CB287938C21921A4297C /* OneSignalTagManager.swift */; };
 		C724E42341AB735D1E8A6BB8 /* MockAnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B16B5811E58280114D33AAA /* MockAnalyticsService.swift */; };
 		C860242BCF88C7631FD05D54 /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED4A96D89531645315D892 /* PhoneConnectivityManager.swift */; };
@@ -313,6 +312,7 @@
 		HURDLE0CONTENT0BUILD001 /* HurdleScreenContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = HURDLE0CONTENT0SWIFT01 /* HurdleScreenContent.swift */; };
 		KB0100012FFF000100000001 /* ChatKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = KB0100022FFF000100000001 /* ChatKeyboardController.swift */; };
 		LEGACY_CONTINUE_BTN_BLD01 /* LegacyContinueButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */; };
+		MPA1C0MP2F00000100000002 /* MeditationPackage+AICompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */; };
 		ONBOARDING_ANSWERS_BLD01 /* OnboardingAnswers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */; };
 		PATH_ENGAGEMENT_MGR_BLD01 /* PathEngagementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */; };
 		PE1234567890ABCDEF1234567 /* PromptEducationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PE1234567890ABCDEF1234568 /* PromptEducationView.swift */; };
@@ -503,8 +503,6 @@
 		A514337B2D5462B500105271 /* MeditationAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationAudioManager.swift; sourceTree = "<group>"; };
 		A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundSelectionView.swift; sourceTree = "<group>"; };
 		A51434152D554AC900105271 /* BackgroundSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSound.swift; sourceTree = "<group>"; };
-		C5A1B0012F000100000001 /* CatalogsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogsManager.swift; sourceTree = "<group>"; };
-		C5A1B0042F000100000002 /* MeditationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationsService.swift; sourceTree = "<group>"; };
 		A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIdentityManager.swift; sourceTree = "<group>"; };
 		A51F64B62DE2D36800DA9CEB /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsView.swift; sourceTree = "<group>"; };
@@ -559,10 +557,8 @@
 		A59FAC812DEE5BF900C7F9E7 /* LiveHeartRateCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveHeartRateCard.swift; sourceTree = "<group>"; };
 		A59FAC832DF0A7FB00C7F9E7 /* WatchPairingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchPairingManager.swift; sourceTree = "<group>"; };
 		A5A1D03B2E0C689A00F45A3F /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
-		MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MeditationPackage+AICompat.swift"; sourceTree = "<group>"; };
 		A5A1D03C2E0C689A00F45A3F /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 		A5A1D03D2E0C689A00F45A3F /* AIRequestManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRequestManager.swift; sourceTree = "<group>"; };
-		AIREQ001F00000100000002 /* AIRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRequestService.swift; sourceTree = "<group>"; };
 		A5A7DF622DB046B000A6469C /* ActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewController.swift; sourceTree = "<group>"; };
 		A5A7DF642DB1771800A6469C /* GreetingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GreetingManager.swift; sourceTree = "<group>"; };
 		A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueIndicatorView.swift; sourceTree = "<group>"; };
@@ -611,6 +607,7 @@
 		A5FCAA482C69BE5E00EE2A12 /* PracticeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeManager.swift; sourceTree = "<group>"; };
 		AEB78F33966E2099BE470F47 /* PracticeBPMTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PracticeBPMTracker.swift; path = imagine/Features/Insights/PracticeBPMTracker.swift; sourceTree = SOURCE_ROOT; };
 		AFMGR00012E8F000100000001 /* AppsFlyerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppsFlyerManager.swift; sourceTree = "<group>"; };
+		AIREQ001F00000100000002 /* AIRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRequestService.swift; sourceTree = "<group>"; };
 		B0C76AE88B7ED6C882ABC954 /* CustomContentAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomContentAdapter.swift; sourceTree = "<group>"; };
 		B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingIndicatorView.swift; sourceTree = "<group>"; };
 		B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsServiceProtocol.swift; sourceTree = "<group>"; };
@@ -643,6 +640,8 @@
 		C1E5F1132F12345600AAAAAA /* SenseiOnboardingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenseiOnboardingState.swift; sourceTree = "<group>"; };
 		C1E5F1142F12345600AAAAAA /* OnboardingResponseCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingResponseCollector.swift; sourceTree = "<group>"; };
 		C50905438DE82B35D7E7AEA5 /* SideMenuItemView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SideMenuItemView.swift; path = imagine/UI/Navigation/SideMenuItemView.swift; sourceTree = SOURCE_ROOT; };
+		C5A1B0012F000100000001 /* CatalogsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogsManager.swift; sourceTree = "<group>"; };
+		C5A1B0042F000100000002 /* MeditationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationsService.swift; sourceTree = "<group>"; };
 		C7E8B0825A87494EE6D8A6BB /* DualRecommendationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualRecommendationModels.swift; sourceTree = "<group>"; };
 		C874775EE06E3E138F83930B /* WelcomeScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
 		C922028CD04E4CCBB564F37D /* AIChatMessageList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatMessageList.swift; sourceTree = "<group>"; };
@@ -699,6 +698,7 @@
 		HURDLE0CONTENT0SWIFT01 /* HurdleScreenContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HurdleScreenContent.swift; sourceTree = "<group>"; };
 		KB0100022FFF000100000001 /* ChatKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatKeyboardController.swift; sourceTree = "<group>"; };
 		LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyContinueButton.swift; sourceTree = "<group>"; };
+		MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MeditationPackage+AICompat.swift"; sourceTree = "<group>"; };
 		ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAnswers.swift; sourceTree = "<group>"; };
 		PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathEngagementManager.swift; sourceTree = "<group>"; };
 		PE1234567890ABCDEF1234568 /* PromptEducationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptEducationView.swift; sourceTree = "<group>"; };
@@ -2806,7 +2806,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 226;
+				CURRENT_PROJECT_VERSION = 227;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2827,7 +2827,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meditationchef.imagine;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -2849,7 +2849,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 226;
+				CURRENT_PROJECT_VERSION = 227;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2870,7 +2870,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meditationchef.imagine;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
