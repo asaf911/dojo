@@ -653,20 +653,19 @@ class AIRequestManager: ObservableObject {
         case NSURLErrorTimedOut:
             return "Request timed out. Please try again."
         case 401:
-            if nsError.domain == "AIService" && nsError.localizedDescription.contains("quota") {
+            if (nsError.domain == "AIService" || nsError.domain == "AIRequestService") && nsError.localizedDescription.contains("quota") {
                 return "AI service quota exceeded. Please try again later or contact support."
             }
             return "Authentication error. Please try again."
         case 429:
-            if nsError.domain == "AIService" {
-                // Use the specific error message from the service which now differentiates between rate limits and quota
+            if nsError.domain == "AIService" || nsError.domain == "AIRequestService" {
                 return nsError.localizedDescription
             }
             return "Too many requests. Please wait a moment and try again."
         case 500...599:
             return "AI service is temporarily unavailable. Please try again later."
         default:
-            if nsError.domain == "AIService" {
+            if nsError.domain == "AIService" || nsError.domain == "AIRequestService" {
                 return nsError.localizedDescription
             }
             return "Unable to generate meditation. Please try again."
@@ -845,7 +844,7 @@ extension AIRequestManager {
         }
         return nil
     }
-    /// Returns the duration for given cue id using the same mapping as AIService
+    /// Returns the duration for given cue id (matches server catalog mapping)
     private func cueDuration(for cueId: String) -> Int {
         switch cueId {
         case "PB": return 2

@@ -177,11 +177,16 @@ extension RecommendationContextEngine {
                    requireHurdleMatch: true
                ) {
                 logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Explore hurdle-match → '\(exploreSession.title)'")
-                let message = await messageService.generateExplorePrimary(
-                    sessionTags: exploreSession.tags,
-                    timeOfDay: timeOfDayName,
-                    hurdleContext: context.hurdleContext
-                )
+                let message: String
+                if context.contextMessage != nil {
+                    message = ""  // Context replaces intro on first welcome — skip API call
+                } else {
+                    message = await messageService.generateExplorePrimary(
+                        sessionTags: exploreSession.tags,
+                        timeOfDay: timeOfDayName,
+                        hurdleContext: context.hurdleContext
+                    )
+                }
                 return RecommendationItem(
                     type: .explore(exploreSession),
                     introMessage: message,
@@ -197,7 +202,12 @@ extension RecommendationContextEngine {
                 logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Custom generation failed")
                 return nil
             }
-            let message = await messageService.generateCustomOnlyPrimary(timeOfDay: timeOfDayName)
+            let message: String
+            if context.contextMessage != nil {
+                message = ""  // Context replaces intro on first welcome — skip API call
+            } else {
+                message = await messageService.generateCustomOnlyPrimary(timeOfDay: timeOfDayName)
+            }
             return RecommendationItem(
                 type: .custom(custom),
                 introMessage: message,

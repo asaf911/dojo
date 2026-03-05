@@ -226,7 +226,7 @@ final class RecommendationMessageService {
     // MARK: - Configuration
     
     /// Timeout for AI generation (seconds)
-    private let timeoutSeconds: TimeInterval = 2.0
+    private let timeoutSeconds: TimeInterval = 5.0
 
     private func buildIntroPrompt(essence: MessageEssence, context: MessageContext) -> String {
         var contextParts: [String] = []
