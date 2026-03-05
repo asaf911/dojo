@@ -114,6 +114,10 @@ struct AIRequestService {
         do {
             let decoded = try JSONDecoder().decode(AIRequestResponse.self, from: data)
             print("\(kTag) request success trigger=\(triggerContext) intent=\(decoded.intent)")
+            if case .meditation(let pkg) = decoded.content {
+                let cuePaths = pkg.cues.map { "\($0.id)=\($0.url.split(separator: "/").last.map(String.init) ?? $0.url)" }.joined(separator: " ")
+                print("\(kTag) meditation received voiceId=\(voiceId) duration=\(pkg.duration) cues=[\(cuePaths)]")
+            }
             return decoded
         } catch {
             print("\(kTag) request failure trigger=\(triggerContext) decode error - \(error.localizedDescription)")

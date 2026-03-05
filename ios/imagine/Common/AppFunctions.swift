@@ -267,6 +267,9 @@ class AppFunctions {
         if categories.contains(.libraryData) {
             clearLibraryData()
         }
+        if categories.contains(.catalogs) {
+            CatalogsManager.shared.clearCache()
+        }
         if categories.contains(.downloadedAudio) {
             clearDownloadedAudioFiles()
         }

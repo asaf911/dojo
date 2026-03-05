@@ -110,7 +110,7 @@ final class CatalogsManager: ObservableObject {
                     self.voices = voices
                     self.bodyScanDurations = decoded.bodyScanDurations
                     self.cacheCatalogs(data: data)
-                    print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
+                    print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count) voices=\(voices.count)")
                     logger.eventMessage("CatalogsManager: Loaded \(sounds.count) sounds, \(beats.count) beats, \(cues.count) cues")
                 }
                 completion?(true)
@@ -147,7 +147,7 @@ final class CatalogsManager: ObservableObject {
             cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
             voices = (decoded.voices ?? []).map { VoiceItem(id: $0.id, name: $0.name) }
             bodyScanDurations = decoded.bodyScanDurations
-            print("\(kCatalogsServerTag) loadCachedCatalogs: loaded from cache - sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count)")
+            print("\(kCatalogsServerTag) loadCachedCatalogs: loaded from cache - sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count) voices=\(voices.count)")
             logger.eventMessage("CatalogsManager: Loaded cached catalog with \(sounds.count) sounds, \(beats.count) beats, \(cues.count) cues")
         } catch {
             print("\(kCatalogsServerTag) loadCachedCatalogs: failed to decode cache - \(error.localizedDescription)")
@@ -158,5 +158,18 @@ final class CatalogsManager: ObservableObject {
     private func localCacheURL() -> URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("catalogs_cache.json")
+    }
+
+    /// Clears the catalogs cache file and in-memory state. Fresh data will be fetched on next fetchCatalogs.
+    func clearCache() {
+        let url = localCacheURL()
+        try? FileManager.default.removeItem(at: url)
+        sounds = []
+        beats = []
+        cues = []
+        voices = []
+        bodyScanDurations = [:]
+        print("\(kCatalogsServerTag) clearCache: catalogs cache cleared")
+        logger.eventMessage("CatalogsManager: Cache cleared. Fresh data will be fetched on next load.")
     }
 }

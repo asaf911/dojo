@@ -252,7 +252,8 @@ extension MeditationsService {
             }
             do {
                 let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
-                print("\(tag) createMeditationManual: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil")")
+                let cuePaths = package.cues.map { "\($0.id)=\($0.url.split(separator: "/").last.map(String.init) ?? $0.url)" }.joined(separator: " ")
+                print("\(tag) createMeditationManual: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
                 return package
             } catch {
                 print("\(tag) createMeditationManual: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
@@ -287,7 +288,8 @@ extension MeditationsService {
             }
             do {
                 let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
-                print("\(tag) createMeditationAI: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil")")
+                let cuePaths = package.cues.map { "\($0.id)=\($0.url.split(separator: "/").last.map(String.init) ?? $0.url)" }.joined(separator: " ")
+                print("\(tag) createMeditationAI: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
                 return package
             } catch {
                 print("\(tag) createMeditationAI: failure trigger=\(trigger) decode error - \(error.localizedDescription)")

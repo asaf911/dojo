@@ -1,10 +1,11 @@
 {
-  "version": "1.0",
+  "version": "1.1.2",
   "models": [
-    { "id": "SP", "name": "Spa", "path": "modules/background_music/SP.mp3" },
-    { "id": "OC", "name": "Ocean", "path": "modules/background_music/OC.mp3" },
-    { "id": "LI", "name": "Light", "path": "modules/background_music/LI.mp3" },
-    { "id": "DH", "name": "Deep", "path": "modules/background_music/DH.mp3" },
-    { "id": "BD", "name": "Bed", "path": "modules/background_music/BD.mp3" }
+    { "id": "None", "name": "No Background Music", "path": "" },
+    { "id": "SP", "name": "Spa", "path": "modules/background_music/Interstice.mp3" },
+    { "id": "DH", "name": "Dharapani", "path": "modules/background_music/Dharapani.mp3" },
+    { "id": "LI", "name": "Lush Infinity", "path": "modules/background_music/Lush_Infinity.mp3" },
+    { "id": "OC", "name": "Ocean", "path": "modules/background_music/Ocean.mp3" },
+    { "id": "BD", "name": "Bird", "path": "modules/background_music/Bird.mp3" }
   ]
 }

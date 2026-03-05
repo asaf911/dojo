@@ -1,11 +1,41 @@
 {
-  "version": "1.0",
+  "version": "1",
   "models": [
-    { "id": "BB2", "name": "2 Hz", "path": "modules/binaural_beats/BB2.mp3", "description": "Delta waves for deep relaxation" },
-    { "id": "BB4", "name": "4 Hz", "path": "modules/binaural_beats/BB4.mp3", "description": "Theta waves for meditation" },
-    { "id": "BB6", "name": "6 Hz", "path": "modules/binaural_beats/BB6.mp3", "description": "Low theta for focus" },
-    { "id": "BB10", "name": "10 Hz", "path": "modules/binaural_beats/BB10.mp3", "description": "Alpha waves for calm focus" },
-    { "id": "BB14", "name": "14 Hz", "path": "modules/binaural_beats/BB14.mp3", "description": "Beta waves for alertness" },
-    { "id": "BB40", "name": "40 Hz", "path": "modules/binaural_beats/BB40.mp3", "description": "Gamma waves for concentration" }
+    {
+      "id": "BB2",
+      "name": "2 Hz (Sleep)",
+      "path": "modules/binaural_beats/Binaural_2hz.mp3",
+      "description": "Category: Sleep – 2 Hz delta – deep sleep, physical healing, immune support, unconscious restoration. Best for sleep and deep healing sessions."
+    },
+    {
+      "id": "BB4",
+      "name": "4 Hz (Imagination)",
+      "path": "modules/binaural_beats/Binaural_4hz.mp3",
+      "description": "Category: Imagination – 4 Hz theta – deep meditation, creativity, intuition, memory recall, and visualization. Ideal for imagination and inner exploration practices."
+    },
+    {
+      "id": "BB6",
+      "name": "6 Hz (Vision)",
+      "path": "modules/binaural_beats/Binaural_6hz.mp3",
+      "description": "Category: Future Vision – 6 Hz theta/alpha border – balance of deep relaxation and mental clarity. Supports intention-setting, future vision, and transformation exercises."
+    },
+    {
+      "id": "BB10",
+      "name": "10 Hz (Relaxation)",
+      "path": "modules/binaural_beats/Binaural_10hz.mp3",
+      "description": "Category: Relaxation – 10 Hz alpha – calm focus, stress relief, light meditation, flow state. Perfect for relaxation and stress reduction practices."
+    },
+    {
+      "id": "BB14",
+      "name": "14 Hz (Focus)",
+      "path": "modules/binaural_beats/Binaural_14hz.mp3",
+      "description": "Category: Focus – 14 Hz beta – alertness, concentration, mental clarity, problem-solving. Best for focus and productivity-oriented practices."
+    },
+    {
+      "id": "BB40",
+      "name": "40 Hz (Gratitude)",
+      "path": "modules/binaural_beats/Binaural_40hz.mp3",
+      "description": "Category: Gratitude – 40 Hz gamma – cognitive enhancement, memory, compassion, higher awareness, peak states. Excellent for gratitude and heart-opening practices."
+    }
   ]
 }

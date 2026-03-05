@@ -597,7 +597,7 @@ function loadCatalogs(): LoadedCatalogs {
       backgroundSounds.push({
         id: m.id,
         name: m.name,
-        url: resolveStorageUrl(m.path),
+        url: m.path ? resolveStorageUrl(m.path) : "",
       });
     }
   } catch (e) {
@@ -621,7 +621,7 @@ function loadCatalogs(): LoadedCatalogs {
       binauralBeats.push({
         id: m.id,
         name: m.name,
-        url: resolveStorageUrl(m.path),
+        url: m.path ? resolveStorageUrl(m.path) : "",
         description: m.description ?? null,
       });
     }

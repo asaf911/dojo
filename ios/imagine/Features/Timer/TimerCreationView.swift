@@ -97,14 +97,12 @@ struct TimerView: View {
             .topFadeMask(height: 5)
         }
         .onAppear {
-            // Load catalogs if needed
-            if catalogsManager.sounds.isEmpty || catalogsManager.cues.isEmpty || catalogsManager.beats.isEmpty {
-                catalogsManager.fetchCatalogs(triggerContext: "TimerCreationView|onAppear preload") { success in
-                    if success {
-                        logger.eventMessage("Catalogs loaded successfully")
-                    }
-                    checkDataLoaded()
+            // Always fetch fresh catalogs when online; fetchCatalogs falls back to cache when offline
+            catalogsManager.fetchCatalogs(triggerContext: "TimerCreationView|onAppear preload") { success in
+                if success {
+                    logger.eventMessage("Catalogs loaded successfully")
                 }
+                checkDataLoaded()
             }
             
             // Check for deep link settings immediately on appear
@@ -292,6 +290,9 @@ struct TimerView: View {
 
     private func buildLocalTimerConfig() -> TimerSessionConfig {
         let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        #if DEBUG
+        print("[TimerCreationView] buildLocalTimerConfig offline voiceId=\(voiceId) cueCount=\(cueSettings.count)")
+        #endif
         let resolvedCueSettings = cueSettings.map { cs in
             let resolvedCue = Cue(
                 id: cs.cue.id,
