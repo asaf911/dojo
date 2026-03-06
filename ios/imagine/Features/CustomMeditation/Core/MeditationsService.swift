@@ -339,7 +339,7 @@ extension MeditationsService {
                 backgroundSound: MeditationAsset(id: "SP", name: "Preview Sound", url: "gs://preview", description: nil),
                 binauralBeat: MeditationAsset(id: "BB10", name: "Preview Beat", url: "gs://preview", description: nil),
                 cues: [
-                    MeditationCue(id: "SI", name: "Settling In", url: "gs://preview", trigger: .start),
+                    MeditationCue(id: "INT_GEN_1", name: "General Introduction", url: "gs://preview", trigger: .start),
                     MeditationCue(id: "PB1", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1)),
                     MeditationCue(id: "BS1", name: "Body Scan", url: "gs://preview", trigger: .minute(2)),
                     MeditationCue(id: "IM2", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),

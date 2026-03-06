@@ -623,7 +623,7 @@ class TimerMeditationSessionWrapper: ObservableObject {
         backgroundSound: BackgroundSound(id: "B1", name: "Nature ambience", url: "test"),
         binauralBeat: BinauralBeat(id: "BB1", name: "6 Hz (vision)", url: "test", description: nil),
         cueSettings: [
-            CueSetting(triggerType: .start, cue: Cue(id: "C1", name: "Settling in", url: "test")),
+            CueSetting(triggerType: .start, cue: Cue(id: "C1", name: "General Introduction", url: "test")),
             CueSetting(triggerType: .minute, minute: 1, cue: Cue(id: "C2", name: "Perfect breath", url: "test")),
             CueSetting(triggerType: .minute, minute: 3, cue: Cue(id: "C3", name: "Body scan", url: "test")),
             CueSetting(triggerType: .end, cue: Cue(id: "C4", name: "Gentle Bell", url: "test"))

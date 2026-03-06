@@ -860,7 +860,7 @@ extension AIRequestManager {
         case "BS10": return 10
         case "BS": return 3
         case "OH", "VC", "RT": return 3
-        case "SI", "GB": return 1
+        case "INT_GEN_1", "GB": return 1
         case let id where id.hasPrefix("IM"):
             return Int(id.dropFirst(2)) ?? 3
         case let id where id.hasPrefix("NF"):

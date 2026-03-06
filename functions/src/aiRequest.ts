@@ -231,7 +231,8 @@ function buildMeditationPackage(
 
   const resolvedCues: Array<{ id: string; name: string; url: string; trigger: string | number }> = [];
   for (const c of meditation.cues) {
-    const asset = cueMap.get(c.id);
+    const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
+    const asset = cueMap.get(cueId);
     if (asset) {
       resolvedCues.push({
         id: asset.id,
@@ -239,7 +240,7 @@ function buildMeditationPackage(
         url: resolveCueUrl(asset, voiceId),
         trigger: c.trigger,
       });
-    } else if (c.id === "SI" || c.id === "GB") {
+    } else if (c.id === "GB") {
       resolvedCues.push({ id: c.id, name: c.id, url: "", trigger: c.trigger });
     }
   }

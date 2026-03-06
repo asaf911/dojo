@@ -2,15 +2,6 @@
   "version": "1.0",
   "models": [
     {
-      "id": "SI",
-      "name": "Settling In",
-      "path": "modules/cues/Cue_Settling_In.mp3",
-      "voices": {
-        "Asaf": "modules/cues/Cue_Settling_In.mp3",
-        "Dan": "modules/cues/Cue_Settling_In.mp3"
-      }
-    },
-    {
       "id": "OH",
       "name": "Open Heart",
       "path": "modules/cues/Cue_open_heart.mp3",

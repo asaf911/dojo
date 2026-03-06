@@ -87,8 +87,14 @@ class CuePlaybackManager {
     
     // MARK: - Preloading System
     
-    /// Preloaded cue data: local file URL and exact duration
+    /// Preloaded cue data: local file URL and exact duration.
+    /// Cache key combines cue.id and cue.url so different voices (different URLs) get separate entries.
     private var preloadedCues: [String: (localURL: URL, duration: TimeInterval)] = [:]
+    
+    /// Cache key that includes URL so same cue ID with different voice (URL) gets a separate cache entry.
+    private func preloadCacheKey(for cue: Cue) -> String {
+        "\(cue.id)|\(cue.url)"
+    }
     
     // MARK: - Init
     
@@ -119,8 +125,9 @@ class CuePlaybackManager {
             return
         }
         
-        // Check if already preloaded
-        if let cached = preloadedCues[cue.id] {
+        // Check if already preloaded (key includes URL so different voices get separate entries)
+        let cacheKey = preloadCacheKey(for: cue)
+        if let cached = preloadedCues[cacheKey] {
             print("🧠 AI_DEBUG [CUE] Already preloaded \(cue.id): duration=\(String(format: "%.1f", cached.duration))s")
             completion(cached.duration)
             return
@@ -146,7 +153,7 @@ class CuePlaybackManager {
             do {
                 let audioFile = try AVAudioFile(forReading: localURL)
                 let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+                self.preloadedCues[self.preloadCacheKey(for: cue)] = (localURL: localURL, duration: duration)
                 print("🧠 AI_DEBUG [CUE] Preloaded \(cue.id): duration=\(String(format: "%.1f", duration))s")
                 completion(duration)
             } catch {
@@ -161,9 +168,9 @@ class CuePlaybackManager {
     ///   - cues: Array of Cues to preload.
     ///   - completion: Called when all cues have been processed.
     func preloadCues(_ cues: [Cue], completion: @escaping () -> Void) {
-        // Filter out "None" cues and duplicates
+        // Filter out "None" cues and duplicates (by id+url so same cue with different voice is separate)
         let validCues = cues.filter { $0.id != "None" && $0.name != "None" && !$0.url.isEmpty }
-        let uniqueCues = Array(Set(validCues.map { $0.id })).compactMap { id in validCues.first { $0.id == id } }
+        let uniqueCues = Array(Set(validCues.map { preloadCacheKey(for: $0) })).compactMap { key in validCues.first { preloadCacheKey(for: $0) == key } }
         
         guard !uniqueCues.isEmpty else {
             completion()
@@ -186,8 +193,9 @@ class CuePlaybackManager {
     }
     
     /// Gets the preloaded duration for a cue if available.
-    func getPreloadedDuration(for cueId: String) -> TimeInterval? {
-        preloadedCues[cueId]?.duration
+    /// Uses cue.id and cue.url so different voices are looked up correctly.
+    func getPreloadedDuration(for cue: Cue) -> TimeInterval? {
+        preloadedCues[preloadCacheKey(for: cue)]?.duration
     }
     
     // MARK: - Playback Methods
@@ -204,8 +212,9 @@ class CuePlaybackManager {
             return
         }
         
-        // Check if we have preloaded data
-        if let preloaded = preloadedCues[cue.id] {
+        // Check if we have preloaded data (key includes URL so different voices get correct file)
+        let cacheKey = preloadCacheKey(for: cue)
+        if let preloaded = preloadedCues[cacheKey] {
             playFromLocalURL(preloaded.localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             return
         }
@@ -232,10 +241,10 @@ class CuePlaybackManager {
             }
             self.playFromLocalURL(localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             
-            // Cache for future use
+            // Cache for future use (key includes URL so different voices get separate entries)
             if let audioFile = self.currentAudioFile {
                 let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+                self.preloadedCues[self.preloadCacheKey(for: cue)] = (localURL: localURL, duration: duration)
             }
         })
     }

@@ -530,7 +530,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // Handle start cues: mark as played if skipped past their window
         for setting in config.cueSettings where setting.triggerType == .start {
-            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue.id) {
+            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue) {
                 // Start cue window is 0 to cueDuration
                 // If we skipped from within the window to past it, mark as played
                 if TimeInterval(oldElapsed) < cueDuration && TimeInterval(newElapsed) >= cueDuration {
@@ -594,7 +594,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // For start cues: reset if we skipped back into or before their window
         for setting in config.cueSettings where setting.triggerType == .start {
-            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue.id) {
+            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue) {
                 // If we were past the start cue window and now we're inside or before it
                 if TimeInterval(oldElapsed) >= cueDuration && TimeInterval(newElapsed) < cueDuration && playedCues.contains(setting.id) {
                     playedCues.remove(setting.id)
@@ -635,7 +635,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // Check start cues first (they trigger at elapsed=0, window is 0 to duration)
         for setting in config.cueSettings where setting.triggerType == .start {
-            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue.id) else {
+            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
                 print("🧠 AI_DEBUG [SKIP] No preloaded duration for start cue \(setting.cue.id)")
                 continue
             }
@@ -668,7 +668,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             let triggerTime = TimeInterval(min * 60)
             
             // Get the cue's duration from preloaded data
-            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue.id) else {
+            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
                 print("🧠 AI_DEBUG [SKIP] No preloaded duration for cue \(setting.cue.id)")
                 continue
             }

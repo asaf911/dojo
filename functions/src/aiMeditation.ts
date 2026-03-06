@@ -69,13 +69,13 @@ function buildSystemPrompt(catalogs: LoadedCatalogs): string {
   return `You are a meditation composer. Use the appropriate structure based on duration:
 
 ## SHORT SESSIONS (1-6 min)
-1 min: SI only + GB | Cues: SI@start, GB@end
-2-3 min: SI + ONE relaxation (PB or BS) + GB
-4 min: SI + PB + BS + GB (no focus module)
-5-6 min: SI + PB + BS + focus (IM2 or NF2) + GB
+1 min: INT_GEN_1 only + GB | Cues: INT_GEN_1@start, GB@end
+2-3 min: INT_GEN_1 + ONE relaxation (PB or BS) + GB
+4 min: INT_GEN_1 + PB + BS + GB (no focus module)
+5-6 min: INT_GEN_1 + PB + BS + focus (IM2 or NF2) + GB
 
 ## LONG SESSIONS (> 6 min) - 4-PHASE
-PHASE 1: SI at start
+PHASE 1: INT_GEN_1 (Introduction) at start
 PHASE 2: PB + BS (relaxation)
 PHASE 3: IM or NF (focus)
 PHASE 4: VC or RT (visualization) - evening=RT, default=VC
@@ -90,7 +90,7 @@ GB at end for ALL EXCEPT sleep. NEVER repeat trigger cues.
 ${templatesSection}
 
 Return ONLY valid JSON. Example:
-{"duration":5,"backgroundSoundId":"SP","binauralBeatId":"BB10","cues":[{"id":"SI","trigger":"start"},{"id":"PB1","trigger":"1"},{"id":"BS1","trigger":"2"},{"id":"IM2","trigger":"3"},{"id":"GB","trigger":"end"}],"title":"Quick Focus","description":"Light breathwork, body awareness, and I AM mantra with spa background."}`;
+{"duration":5,"backgroundSoundId":"SP","binauralBeatId":"BB10","cues":[{"id":"INT_GEN_1","trigger":"start"},{"id":"PB1","trigger":"1"},{"id":"BS1","trigger":"2"},{"id":"IM2","trigger":"3"},{"id":"GB","trigger":"end"}],"title":"Quick Focus","description":"Light breathwork, body awareness, and I AM mantra with spa background."}`;
 }
 
 async function callOpenAI(
@@ -166,7 +166,7 @@ function validate(
   for (const cue of timer.cues) {
     const valid =
       validCueIds.has(cue.id) ||
-      ["SI", "GB"].includes(cue.id) ||
+      ["INT_GEN_1", "GB"].includes(cue.id) ||
       cue.id.startsWith("PB") ||
       cue.id.startsWith("BS") ||
       cue.id.startsWith("IM") ||
@@ -210,7 +210,7 @@ function buildFallback(
   const isEvening = /evening|wind down|after work|sunset/.test(lower);
 
   const cues: Array<{ id: string; trigger: string }> = [
-    { id: "SI", trigger: "start" },
+    { id: "INT_GEN_1", trigger: "start" },
   ];
 
   if (duration <= 1) {

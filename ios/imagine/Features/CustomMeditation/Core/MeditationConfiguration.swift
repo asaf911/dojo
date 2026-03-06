@@ -118,7 +118,8 @@ extension MeditationConfiguration {
     static func cueSetting(from cueString: String) -> CueSetting? {
         let parts = cueString.split(separator: ":")
         guard let idPart = parts.first else { return nil }
-        let cueID = String(idPart)
+        var cueID = String(idPart)
+        if cueID == "SI" { cueID = "INT_GEN_1" }  // Migration: old Settling In → Introduction
         guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == cueID }) else { return nil }
         
         var triggerType: CueTriggerType = .minute
