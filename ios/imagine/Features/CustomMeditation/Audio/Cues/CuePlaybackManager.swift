@@ -52,6 +52,13 @@ class CuePlaybackManager {
     
     // MARK: - State Tracking for Skip/Seek
     
+    /// Generation counter to ignore stale completion handlers from previous buffers.
+    /// When we stop a cue and start a new one, playerNode.stop() triggers the OLD buffer's
+    /// completion handler. That handler schedules DispatchQueue.main.async { playbackFinished = true },
+    /// which can run AFTER we've started the new cue - incorrectly setting playbackFinished = true.
+    /// By incrementing this before each schedule, we ignore stale completions.
+    private var playbackGeneration: Int = 0
+    
     /// ID of the currently playing cue
     private(set) var currentCueId: String?
     
@@ -129,6 +136,7 @@ class CuePlaybackManager {
         
         FileManagerHelper.shared.ensureLocalFile(for: remoteURL, setDownloading: { _ in }, completion: { [weak self] localURL in
             guard let self = self, let localURL = localURL else {
+                print("[Server][Cue] Failed to download cue \(cue.id) (\(cue.name)) url=\(cue.url)")
                 print("🧠 AI_DEBUG [CUE] Failed to download cue \(cue.id)")
                 completion(nil)
                 return
@@ -218,6 +226,7 @@ class CuePlaybackManager {
             print("[DEBUG] Cue ensureLocalFile downloading: \(downloading)")
         }, completion: { [weak self] localURL in
             guard let self = self, let localURL = localURL else {
+                print("[Server][Cue] Failed to download cue \(cue.id) (\(cue.name)) url=\(cue.url)")
                 print("[DEBUG] Failed to download cue file.")
                 return
             }
@@ -262,13 +271,18 @@ class CuePlaybackManager {
             currentCueId = cueId
             cueStartSessionTime = sessionElapsedTime
             playbackFinished = false
+            playbackGeneration += 1
+            let generation = playbackGeneration
             
             let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
             
-            // Schedule the audio file and mark playback finished on completion
+            // Schedule the audio file and mark playback finished on completion.
+            // Only apply if we're still on this generation (prevents stale completion from
+            // previous cue when playerNode.stop() triggered its handler during cue switch).
             playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
                 DispatchQueue.main.async {
-                    self?.playbackFinished = true
+                    guard let self = self, self.playbackGeneration == generation else { return }
+                    self.playbackFinished = true
                 }
             }
             
@@ -304,11 +318,14 @@ class CuePlaybackManager {
         let wasPlaying = playerNode.isPlaying && !playbackFinished
         playerNode.stop()
         playbackFinished = false
+        playbackGeneration += 1
+        let generation = playbackGeneration
         
         // Reschedule from the target frame offset
         playerNode.scheduleSegment(audioFile, startingFrame: clampedFrame, frameCount: remainingFrames, at: nil) { [weak self] in
             DispatchQueue.main.async {
-                self?.playbackFinished = true
+                guard let self = self, self.playbackGeneration == generation else { return }
+                self.playbackFinished = true
             }
         }
         
@@ -324,6 +341,7 @@ class CuePlaybackManager {
     /// Stops the current cue and clears tracking state.
     func stop() {
         let wasPlaying = currentCueId
+        playbackGeneration += 1
         playerNode.stop()
         currentAudioFile = nil
         playbackFinished = true
@@ -352,7 +370,7 @@ class CuePlaybackManager {
     /// Fades out the currently playing cue sound over the specified duration.
     /// - Parameter fadeDuration: The duration over which to fade out the cue.
     func fadeOutCurrentCue(withDuration fadeDuration: TimeInterval = 1.0) {
-        guard playerNode.isPlaying, !playbackFinished else { return }
+        guard currentCueId != nil, !playbackFinished else { return }
         let fadeSteps = Int(fadeDuration / 0.1)
         let startVolume = engine.mainMixerNode.outputVolume
         let stepVolume = startVolume / Float(fadeSteps)
@@ -376,8 +394,9 @@ class CuePlaybackManager {
     
     /// Pauses the currently playing cue sound.
     func pause() {
-        print("🧠 AI_DEBUG [CUE] pause() called - isPlaying=\(playerNode.isPlaying), cueId=\(currentCueId ?? "none")")
-        if playerNode.isPlaying && !playbackFinished {
+        let shouldPause = currentCueId != nil && !playbackFinished
+        print("🧠 AI_DEBUG [CUE] pause() called - cueId=\(currentCueId ?? "none"), playbackFinished=\(playbackFinished), playerNode.isPlaying=\(playerNode.isPlaying) -> \(shouldPause ? "PAUSING" : "skipped (no active cue)")")
+        if shouldPause {
             playerNode.pause()
             print("🧠 AI_DEBUG [CUE] Paused \(currentCueId ?? "unknown") at \(String(format: "%.1f", currentPosition))s")
         }

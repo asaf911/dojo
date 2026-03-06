@@ -38,7 +38,8 @@ class FileManagerHelper {
             // Write directly to file to avoid HTTPS signed URL filename ambiguity
             storageRef.write(toFile: destinationURL) { _, error in
                 setDownloading(false)
-                if error != nil {
+                if let err = error {
+                    print("[Server][FileManager] Download failed (gs) url=\(url.absoluteString) error=\(err.localizedDescription)")
                     completion(nil)
                 } else {
                     completion(destinationURL)
@@ -51,12 +52,21 @@ class FileManagerHelper {
 
     private func downloadFromURL(_ url: URL, setDownloading: @escaping (Bool) -> Void, completion: @escaping (URL?) -> Void) {
         let task = URLSession.shared.downloadTask(with: url) { localURL, response, error in
-            if error != nil {
+            if let err = error {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                print("[Server][FileManager] Download failed (https) url=\(url.absoluteString) status=\(statusCode) error=\(err.localizedDescription)")
+                setDownloading(false)
+                completion(nil)
+                return
+            }
+            if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                print("[Server][FileManager] Download failed (https) url=\(url.absoluteString) status=\(http.statusCode)")
                 setDownloading(false)
                 completion(nil)
                 return
             }
             guard let localURL = localURL else {
+                print("[Server][FileManager] Download failed (https) url=\(url.absoluteString) no localURL")
                 setDownloading(false)
                 completion(nil)
                 return

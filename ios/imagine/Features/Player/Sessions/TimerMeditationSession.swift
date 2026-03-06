@@ -266,9 +266,8 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             print("🧠 AI_DEBUG [SESSION] Audio interruption BEGAN - wasPlaying=\(isPlaying)")
             wasPlayingBeforeInterruption = isPlaying
             if isPlaying {
-                // Pause timer but don't call full pause() to avoid side effects
-                timerManager.pause()
-                // Audio players are automatically paused by iOS
+                // Use full pause() - AVAudioEngine/AVAudioPlayerNode (cues) are NOT auto-paused by iOS
+                pause()
             }
             
         case .ended:
@@ -296,29 +295,27 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     private func resumeAfterInterruption() {
         print("🧠 AI_DEBUG [SESSION] Resuming after interruption...")
         
-        // Resume timer
         timerManager.start()
-        
-        // Resume background music
-        if hasBackgroundSound {
-            backgroundSoundManager.resume()
-            print("🧠 AI_DEBUG [SESSION] Resumed background sound")
-        }
-        
-        // Resume binaural beats
-        if hasBinauralBeat {
-            binauralBeatManager.resume()
-            print("🧠 AI_DEBUG [SESSION] Resumed binaural beats")
-        }
-        
-        // Resume cue if one was playing
-        CuePlaybackManager.shared.resume()
-        print("🧠 AI_DEBUG [SESSION] Resumed cue playback")
+        resumeAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
         
         print("🧠 AI_DEBUG [SESSION] All audio layers resumed after interruption")
+    }
+    
+    /// Pauses all audio layers (background, binaural, cues). Single place for coordination.
+    private func pauseAllAudio() {
+        if hasBackgroundSound { backgroundSoundManager.pause() }
+        if hasBinauralBeat { binauralBeatManager.pause() }
+        CuePlaybackManager.shared.pause()
+    }
+    
+    /// Resumes all audio layers (background, binaural, cues). Single place for coordination.
+    private func resumeAllAudio() {
+        if hasBackgroundSound { backgroundSoundManager.resume() }
+        if hasBinauralBeat { binauralBeatManager.resume() }
+        CuePlaybackManager.shared.resume()
     }
     
     // MARK: - MeditationSession Protocol Methods
@@ -369,14 +366,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         }
         
         timerManager.pause()
-        
-        if hasBackgroundSound {
-            backgroundSoundManager.pause()
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.pause()
-        }
-        CuePlaybackManager.shared.pause()
+        pauseAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: false)
@@ -400,14 +390,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         }
         
         timerManager.start()
-        
-        if hasBackgroundSound {
-            backgroundSoundManager.resume()
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.resume()
-        }
-        CuePlaybackManager.shared.resume()
+        resumeAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
