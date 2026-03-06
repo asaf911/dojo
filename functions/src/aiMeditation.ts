@@ -75,7 +75,7 @@ function buildSystemPrompt(catalogs: LoadedCatalogs): string {
 5-6 min: INT_GEN_1 + PB + BS + focus (IM2 or NF2) + GB
 
 ## LONG SESSIONS (> 6 min) - 4-PHASE
-PHASE 1: INT_GEN_1 (Introduction) at start
+PHASE 1: Introduction at start - use INT_MORN_1 for morning sessions, INT_GEN_1 otherwise
 PHASE 2: PB + BS (relaxation)
 PHASE 3: IM or NF (focus)
 PHASE 4: VC or RT (visualization) - evening=RT, default=VC
@@ -166,7 +166,7 @@ function validate(
   for (const cue of timer.cues) {
     const valid =
       validCueIds.has(cue.id) ||
-      ["INT_GEN_1", "GB"].includes(cue.id) ||
+      ["INT_GEN_1", "INT_MORN_1", "GB"].includes(cue.id) ||
       cue.id.startsWith("PB") ||
       cue.id.startsWith("BS") ||
       cue.id.startsWith("IM") ||
@@ -208,9 +208,11 @@ function buildFallback(
   const isSleep =
     /sleep|bedtime|night|fall asleep|drift off|slumber/.test(lower);
   const isEvening = /evening|wind down|after work|sunset/.test(lower);
+  const isMorning = /morning|wake up|start day|energize|sunrise/.test(lower);
 
+  const introId = isMorning ? "INT_MORN_1" : "INT_GEN_1";
   const cues: Array<{ id: string; trigger: string }> = [
-    { id: "INT_GEN_1", trigger: "start" },
+    { id: introId, trigger: "start" },
   ];
 
   if (duration <= 1) {

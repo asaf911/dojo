@@ -100,7 +100,7 @@ private func getCueDuration(_ cueId: String) -> Int {
         return 3
     case "MA", "OH", "VC", "RT":
         return 3
-    case "INT_GEN_1", "GB":
+    case "INT_GEN_1", "INT_MORN_1", "GB":
         return 1
     default:
         return 2

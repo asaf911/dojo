@@ -49,7 +49,7 @@
       "description": "Full-duration guided audio. The audio file IS the exercise.",
       "time_allocation": "exact duration of the module",
       "behavior": "Occupies its full duration in the session timeline. No additional quiet time needed.",
-      "modules": ["INT_GEN_1", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB1", "PB2", "PB3", "PB4", "PB5", "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10", "NF1", "NF2", "NF3", "NF4", "NF5", "NF6", "NF7", "NF8", "NF9", "NF10"]
+      "modules": ["INT_GEN_1", "INT_MORN_1", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB1", "PB2", "PB3", "PB4", "PB5", "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10", "NF1", "NF2", "NF3", "NF4", "NF5", "NF6", "NF7", "NF8", "NF9", "NF10"]
     },
     "trigger_cue": {
       "description": "Short audio trigger that instructs user to BEGIN a practice. User continues in silence.",
@@ -121,7 +121,7 @@
       "settle_in": {
         "range": "0% to ~10%",
         "duration": 1,
-        "modules": ["INT_GEN_1"],
+        "modules": ["INT_GEN_1", "INT_MORN_1"],
         "required": true
       },
       "relaxation": {
@@ -153,7 +153,7 @@
       {
         "step": 1,
         "action": "Add introduction at start",
-        "details": "Always start with INT_GEN_1 (Introduction) at trigger 'start'. Duration: 1 minute.",
+        "details": "Use INT_MORN_1 for morning sessions, INT_GEN_1 otherwise. Always at trigger 'start'. Duration: 1 minute.",
         "time_used": 1
       },
       {
@@ -356,6 +356,14 @@
     }
   },
 
+  "introduction_selection": {
+    "by_session_type": {
+      "morning": "INT_MORN_1",
+      "default": "INT_GEN_1"
+    },
+    "description": "Use INT_MORN_1 for morning sessions, INT_GEN_1 for all others."
+  },
+
   "session_type_rules": {
     "sleep": {
       "keywords": ["sleep", "sleepy", "bedtime", "night", "fall asleep", "drift off", "slumber", "insomnia", "rest"],
@@ -391,9 +399,11 @@
     "morning": {
       "keywords": ["morning", "wake up", "start day", "energize", "sunrise"],
       "rules": [
+        "Use INT_MORN_1 (Morning Introduction) at start",
         "Use VC (Vision Clarity) for visualization",
         "Energizing background sounds"
       ],
+      "intro_cue": "INT_MORN_1",
       "focus_cue": "IM",
       "viz_cue": "VC",
       "preferred_sounds": ["LI", "DH"]
@@ -464,7 +474,7 @@
   "strict_rules": [
     {
       "id": "si_at_start",
-      "rule": "INT_GEN_1 (Introduction) must be at trigger 'start'",
+      "rule": "INT_GEN_1 or INT_MORN_1 (Introduction) must be at trigger 'start'",
       "priority": 100
     },
     {
