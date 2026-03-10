@@ -21,28 +21,44 @@ class CuePlaybackManager {
     
     private var volume: Float = 1.0
     
-    // MARK: - Per-Module Volume Boost
+    // MARK: - Volume Boost
     
-    /// Per-module-prefix volume boost in dB. Positive = louder.
-    /// Used to compensate for modules recorded at lower levels.
+    /// Legacy per-module boost (IM, NF). These may have been amplified at file level; do not change.
     private static let moduleVolumeBoostDB: [String: Float] = [
         "IM": 18.0,  // I AM Mantra: +18dB to match other module levels
         "NF": 18.0   // Nostril Focus: +18dB to match other module levels
     ]
+    
+    /// Boost for Asaf's voice in NEW content (not pre-amplified before upload).
+    /// Legacy modules (IM, NF) use moduleVolumeBoostDB instead.
+    private static let asafVoiceBoostDB: Float = 18.0
     
     /// Converts a dB value to a linear gain multiplier.
     private static func linearGain(forDB db: Float) -> Float {
         pow(10.0, db / 20.0)
     }
     
-    /// Returns the linear gain boost for a given module ID based on its prefix.
-    private static func boostGain(for moduleId: String) -> Float {
+    /// Legacy: per-module boost for IM, NF (unchanged).
+    private static func boostGainForLegacyModule(for moduleId: String) -> Float {
         for (prefix, db) in moduleVolumeBoostDB {
             if moduleId.hasPrefix(prefix) {
                 return linearGain(forDB: db)
             }
         }
-        return 1.0  // No boost for other modules
+        return 1.0
+    }
+    
+    /// Asaf voice boost for new content (URL contains /asaf/).
+    private static func asafVoiceBoostGain(for cue: Cue) -> Float {
+        guard cue.url.localizedCaseInsensitiveContains("/asaf/") else { return 1.0 }
+        return linearGain(forDB: asafVoiceBoostDB)
+    }
+    
+    /// Combined boost: legacy modules first, then Asaf voice for new content.
+    private static func boostGain(for cue: Cue) -> Float {
+        let legacy = boostGainForLegacyModule(for: cue.id)
+        if legacy > 1.0 { return legacy }
+        return asafVoiceBoostGain(for: cue)
     }
     
     /// Applies the current user volume multiplied by the per-module boost to the engine mixer.
@@ -215,7 +231,7 @@ class CuePlaybackManager {
         // Check if we have preloaded data (key includes URL so different voices get correct file)
         let cacheKey = preloadCacheKey(for: cue)
         if let preloaded = preloadedCues[cacheKey] {
-            playFromLocalURL(preloaded.localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+            playFromLocalURL(preloaded.localURL, cue: cue, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             return
         }
         
@@ -239,7 +255,7 @@ class CuePlaybackManager {
                 print("[DEBUG] Failed to download cue file.")
                 return
             }
-            self.playFromLocalURL(localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+            self.playFromLocalURL(localURL, cue: cue, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             
             // Cache for future use (key includes URL so different voices get separate entries)
             if let audioFile = self.currentAudioFile {
@@ -250,7 +266,7 @@ class CuePlaybackManager {
     }
     
     /// Internal method to play from a local URL using AVAudioEngine.
-    private func playFromLocalURL(_ localURL: URL, cueId: String, cueName: String, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
+    private func playFromLocalURL(_ localURL: URL, cue: Cue, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
         do {
             // Stop any current playback
             playerNode.stop()
@@ -262,13 +278,14 @@ class CuePlaybackManager {
             engine.disconnectNodeOutput(playerNode)
             engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
             
-            // Calculate and apply per-module volume boost
-            currentBoostGain = Self.boostGain(for: cueId)
+            // Calculate and apply volume boost (legacy modules first, then Asaf voice for new content)
+            currentBoostGain = Self.boostGain(for: cue)
             updateEngineVolume()
             
             if currentBoostGain > 1.0 {
-                let db = Self.moduleVolumeBoostDB.first { cueId.hasPrefix($0.key) }?.value ?? 0
-                print("🧠 AI_DEBUG [CUE] Volume boost for \(cueId): +\(String(format: "%.0f", db))dB (x\(String(format: "%.2f", currentBoostGain)))")
+                let legacyDB = Self.moduleVolumeBoostDB.first { cue.id.hasPrefix($0.key) }?.value
+                let source = legacyDB != nil ? "legacy +\(Int(legacyDB!))dB" : "Asaf voice +\(Int(Self.asafVoiceBoostDB))dB"
+                print("🧠 AI_DEBUG [CUE] Volume boost for \(cue.id): \(source) (x\(String(format: "%.2f", currentBoostGain)))")
             }
             
             // Start engine if needed
@@ -277,7 +294,7 @@ class CuePlaybackManager {
             }
             
             // Track cue state
-            currentCueId = cueId
+            currentCueId = cue.id
             cueStartSessionTime = sessionElapsedTime
             playbackFinished = false
             playbackGeneration += 1
@@ -297,10 +314,10 @@ class CuePlaybackManager {
             
             if startPaused {
                 // Don't start playing - just load and prepare (ready for resume)
-                print("🧠 AI_DEBUG [CUE] Loaded \(cueId) (\(cueName)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+                print("🧠 AI_DEBUG [CUE] Loaded \(cue.id) (\(cue.name)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
             } else {
                 playerNode.play()
-                print("🧠 AI_DEBUG [CUE] Playing \(cueId) (\(cueName)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+                print("🧠 AI_DEBUG [CUE] Playing \(cue.id) (\(cue.name)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
             }
         } catch {
             print("🧠 AI_DEBUG [CUE] Error playing cue: \(error.localizedDescription)")

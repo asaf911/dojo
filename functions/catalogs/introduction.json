@@ -6,9 +6,9 @@
       "id": "INT_GEN_1",
       "name": "General Introduction",
       "class": "general",
-      "path": "modules/introduction/general/asaf/Cue_Settling_In.mp3",
+      "path": "modules/introduction/general/asaf/int_general_asaf.mp3",
       "voices": {
-        "Asaf": "modules/introduction/general/asaf/Cue_Settling_In.mp3",
+        "Asaf": "modules/introduction/general/asaf/int_general_asaf.mp3",
         "Dan": "modules/introduction/general/dan/int_general_dan.mp3"
       },
       "duration_minutes": 1,
