@@ -1,10 +1,10 @@
 {
   "version": "1.0",
   "models": [
-    { "id": "PB1", "name": "1-minute Perfect Breath", "path": "modules/perfect_breath/perfect-breath-1min.mp3", "voices": { "Asaf": "modules/perfect_breath/perfect-breath-1min.mp3", "Dan": "modules/perfect_breath/perfect-breath-1min.mp3" }, "duration_minutes": 1 },
-    { "id": "PB2", "name": "2-minute Perfect Breath", "path": "modules/perfect_breath/perfect-breath-2min.mp3", "voices": { "Asaf": "modules/perfect_breath/perfect-breath-2min.mp3", "Dan": "modules/perfect_breath/perfect-breath-2min.mp3" }, "duration_minutes": 2 },
-    { "id": "PB3", "name": "3-minute Perfect Breath", "path": "modules/perfect_breath/perfect-breath-3min.mp3", "voices": { "Asaf": "modules/perfect_breath/perfect-breath-3min.mp3", "Dan": "modules/perfect_breath/perfect-breath-3min.mp3" }, "duration_minutes": 3 },
-    { "id": "PB4", "name": "4-minute Perfect Breath", "path": "modules/perfect_breath/perfect-breath-4min.mp3", "voices": { "Asaf": "modules/perfect_breath/perfect-breath-4min.mp3", "Dan": "modules/perfect_breath/perfect-breath-4min.mp3" }, "duration_minutes": 4 },
-    { "id": "PB5", "name": "5-minute Perfect Breath", "path": "modules/perfect_breath/perfect-breath-5min.mp3", "voices": { "Asaf": "modules/perfect_breath/perfect-breath-5min.mp3", "Dan": "modules/perfect_breath/perfect-breath-5min.mp3" }, "duration_minutes": 5 }
+    { "id": "PB1", "name": "1-minute Perfect Breath", "path": "modules/perfect_breath/asaf/perfect-breath-1min.mp3", "voices": { "Asaf": "modules/perfect_breath/asaf/perfect-breath-1min.mp3", "Dan": "modules/perfect_breath/perfect-breath-1min.mp3" }, "duration_minutes": 1 },
+    { "id": "PB2", "name": "2-minute Perfect Breath", "path": "modules/perfect_breath/asaf/perfect-breath-2min.mp3", "voices": { "Asaf": "modules/perfect_breath/asaf/perfect-breath-2min.mp3", "Dan": "modules/perfect_breath/perfect-breath-2min.mp3" }, "duration_minutes": 2 },
+    { "id": "PB3", "name": "3-minute Perfect Breath", "path": "modules/perfect_breath/asaf/perfect-breath-3min.mp3", "voices": { "Asaf": "modules/perfect_breath/asaf/perfect-breath-3min.mp3", "Dan": "modules/perfect_breath/perfect-breath-3min.mp3" }, "duration_minutes": 3 },
+    { "id": "PB4", "name": "4-minute Perfect Breath", "path": "modules/perfect_breath/asaf/perfect-breath-4min.mp3", "voices": { "Asaf": "modules/perfect_breath/asaf/perfect-breath-4min.mp3", "Dan": "modules/perfect_breath/perfect-breath-4min.mp3" }, "duration_minutes": 4 },
+    { "id": "PB5", "name": "5-minute Perfect Breath", "path": "modules/perfect_breath/asaf/perfect-breath-5min.mp3", "voices": { "Asaf": "modules/perfect_breath/asaf/perfect-breath-5min.mp3", "Dan": "modules/perfect_breath/perfect-breath-5min.mp3" }, "duration_minutes": 5 }
   ]
 }
