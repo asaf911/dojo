@@ -28,6 +28,11 @@ struct Config {
     static var appSource: String {
         #if targetEnvironment(simulator)
         return "simulator"
+        #elseif DEBUG
+        // Debug builds only run from Xcode (never TestFlight/Store).
+        // Receipt check is unreliable: a stale sandbox receipt can persist when
+        // overwriting a TestFlight install with an Xcode install.
+        return "xcode"
         #else
         guard let receiptURL = Bundle.main.appStoreReceiptURL else {
             return "xcode"
