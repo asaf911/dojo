@@ -69,6 +69,7 @@ extension MeditationConfiguration {
     /// Expected keys:
     ///   - "dur" : duration (in minutes, Int)
     ///   - "bs"  : background sound ID (e.g., "B4")
+    ///   - "bb"  : binaural beat ID (e.g., "BB1")
     ///   - "cu"  : cues in the format "<ID>:<trigger>", where trigger is "S" for start, "E" for end, or a numeric value (e.g., "7") for a specific minute.
     init?(queryItems: [URLQueryItem]) {
         // Log the incoming query items for debugging
@@ -102,10 +103,19 @@ extension MeditationConfiguration {
             logger.eventMessage("MeditationConfiguration: No cues found in query items")
             self.cueSettings = []
         }
+        // Parse binaural beat using dynamic lookup.
+        let bbID = queryItems.first(where: { $0.name == "bb" })?.value ?? "None"
+        self.binauralBeat = bbID == "None" ? nil : MeditationConfiguration.binauralBeat(forID: bbID)
+        logger.eventMessage("MeditationConfiguration: Binaural beat parsed: \(binauralBeat?.name ?? "None") (ID: \(bbID))")
         self.title = nil
         self.id = UUID()
     }
     
+    /// Dynamically looks up a BinauralBeat from CatalogsManager by matching its id.
+    static func binauralBeat(forID id: String) -> BinauralBeat? {
+        CatalogsManager.shared.beats.first(where: { $0.id == id })
+    }
+
     /// Dynamically looks up a BackgroundSound from BackgroundSoundManager by matching its id.
     static func backgroundSound(forID id: String) -> BackgroundSound {
         if let sound = CatalogsManager.shared.sounds.first(where: { $0.id == id }) {
@@ -138,5 +148,26 @@ extension MeditationConfiguration {
             }
         }
         return CueSetting(triggerType: triggerType, minute: minute, cue: cue)
+    }
+
+    /// Converts to TimerSessionConfig with cue URLs resolved for the given voice.
+    func toTimerSessionConfig(voiceId: String, isDeepLinked: Bool = true, description: String? = nil) -> TimerSessionConfig {
+        let resolvedCueSettings = cueSettings.map { cs in
+            let resolvedCue = Cue(
+                id: cs.cue.id,
+                name: cs.cue.name,
+                url: cs.cue.url(forVoice: voiceId)
+            )
+            return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
+        }
+        return TimerSessionConfig(
+            minutes: duration,
+            backgroundSound: backgroundSound,
+            binauralBeat: binauralBeat ?? BinauralBeat(id: "None", name: "None", url: "", description: nil),
+            cueSettings: resolvedCueSettings,
+            isDeepLinked: isDeepLinked,
+            title: title,
+            description: description
+        )
     }
 }

@@ -30,16 +30,9 @@ class DeepLinkHandler {
                     logger.errorMessage("Failed to parse MeditationConfiguration from deep link after prefetch.")
                     return
                 }
-                let mirror = Mirror(reflecting: meditationConfiguration)
-                var bbId: String = "None"
-                if let beatChild = mirror.children.first(where: { $0.label == "binauralBeat" }) {
-                    let beatMirror = Mirror(reflecting: beatChild.value)
-                    if let id = beatMirror.children.first(where: { $0.label == "id" })?.value as? String {
-                        bbId = id
-                    }
-                }
-                logger.eventMessage("Parsed meditation configuration from deep link after prefetch: dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)")
-                navigationCoordinator.applyDeepLinkMeditationConfiguration(meditationConfiguration)
+                let bbId = meditationConfiguration.binauralBeat?.id ?? "None"
+                logger.eventMessage("Parsed meditation configuration from deep link: dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)")
+                navigationCoordinator.showPlayerFromDeepLink(meditationConfiguration: meditationConfiguration)
             }
             return
         }

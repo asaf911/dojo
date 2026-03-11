@@ -252,6 +252,19 @@ class NavigationCoordinator: ObservableObject {
         self.lastSessionFullyCompleted = false
         self.showPlayerSheet = true
     }
+
+    /// Show timer session via unified player sheet (convenience overload with TimerSessionConfig)
+    func showTimerPlayerSheet(timerConfig: TimerSessionConfig) {
+        showTimerPlayerSheet(
+            minutes: timerConfig.minutes,
+            backgroundSound: timerConfig.backgroundSound,
+            cueSettings: timerConfig.cueSettings,
+            binauralBeat: timerConfig.binauralBeat,
+            isDeepLinked: timerConfig.isDeepLinked,
+            title: timerConfig.title,
+            description: timerConfig.description
+        )
+    }
     
     // Method to dismiss the player sheet
     func dismissPlayerSheet() {
@@ -311,7 +324,45 @@ class NavigationCoordinator: ObservableObject {
         }
     }
 
-    // Apply deep link meditation configuration and navigate to the timer menu item
+    /// Shows the Player directly from a deep-linked meditation configuration (skips Create UI).
+    func showPlayerFromDeepLink(meditationConfiguration: MeditationConfiguration) {
+        logger.eventMessage("NavigationCoordinator: Showing Player from deep link - duration: \(meditationConfiguration.duration), sound: \(meditationConfiguration.backgroundSound.name)")
+
+        // Subscription gate: if user must subscribe first, show subscription flow
+        if SubscriptionManager.shared.shouldGatePlay {
+            SubscriptionManager.shared.logGateState()
+            subscriptionSource = .createScreen
+            navigateTo(.subscription)
+            return
+        }
+
+        // Navigate to main view to ensure proper view hierarchy for sheet presentation
+        currentView = .main
+
+        // Build TimerSessionConfig with cue URLs resolved for user's voice
+        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        let timerConfig = meditationConfiguration.toTimerSessionConfig(voiceId: voiceId, isDeepLinked: true)
+
+        SessionContextManager.shared.setupCustomMeditationSession(
+            entryPoint: .deepLink,
+            timerConfig: timerConfig,
+            origin: .userSelected,
+            customizationLevel: .none
+        )
+
+        GeneralBackgroundMusicController.shared.fadeOutForPractice()
+
+        showTimerPlayerSheet(
+            minutes: timerConfig.minutes,
+            backgroundSound: timerConfig.backgroundSound,
+            cueSettings: timerConfig.cueSettings,
+            binauralBeat: timerConfig.binauralBeat,
+            isDeepLinked: true,
+            title: timerConfig.title
+        )
+    }
+
+    // Apply deep link meditation configuration and navigate to the timer menu item (legacy - used by AI flow)
     func applyDeepLinkMeditationConfiguration(_ configuration: MeditationConfiguration) {
         logger.eventMessage("NavigationCoordinator: Applying deep link meditation configuration - duration: \(configuration.duration), sound: \(configuration.backgroundSound.name)")
         

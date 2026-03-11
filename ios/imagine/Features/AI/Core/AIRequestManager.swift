@@ -583,44 +583,42 @@ class AIRequestManager: ObservableObject {
         }
         group.notify(queue: .main) {
             var appliedConfig = response.meditationConfiguration
-            var forcedBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
-            var bbIdFromLink: String = "None"
+            var fallbackBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
             if let components = URLComponents(url: response.deepLink, resolvingAgainstBaseURL: false),
                let rebuilt = MeditationConfiguration(queryItems: components.queryItems ?? []) {
                 appliedConfig = rebuilt
-                // Pull bb directly from deep link and map to catalog to avoid any cross-target issues
-                if let qItems = components.queryItems, let v = qItems.first(where: { $0.name == "bb" })?.value {
-                    bbIdFromLink = v
+                // Fallback: pull bb from deep link if config didn't parse it (legacy)
+                if let bbId = components.queryItems?.first(where: { $0.name == "bb" })?.value,
+                   let beat = CatalogsManager.shared.beats.first(where: { $0.id == bbId }) {
+                    fallbackBeat = beat
                 }
-                if let beat = CatalogsManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
-                    forcedBeat = beat
-                }
-                logger.aiChat("🧠 AI_DEBUG [BB]: rebuilt_config bb_link=\(bbIdFromLink) mapped=\(forcedBeat.name)")
+                logger.aiChat("🧠 AI_DEBUG [BB]: rebuilt_config bb=\(appliedConfig.binauralBeat?.name ?? fallbackBeat.name)")
             } else {
                 logger.aiChat("🧠 AI_DEBUG [BB]: rebuild_config_failed using original config")
             }
-            // If we have a mapped beat from the deeplink, force it into navigation coordinator
-            if forcedBeat.id != "None" {
-                navigationCoordinator.timerBinauralBeat = forcedBeat
-                logger.aiChat("🧠 AI_DEBUG [BB]: navigation_forced bb=\(forcedBeat.id) name=\(forcedBeat.name)")
+            let resolvedBeat = appliedConfig.binauralBeat ?? (fallbackBeat.id != "None" ? fallbackBeat : BinauralBeat(id: "None", name: "None", url: "", description: nil))
+            logger.eventMessage("🤖 AI_MEDITATION_UI: Navigating to Player - assets will be prepared on Player screen...")
+            // Build timer config with cue URLs resolved for user's voice
+            let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+            var timerConfig = appliedConfig.toTimerSessionConfig(voiceId: voiceId, isDeepLinked: true, description: response.description)
+            // Override binaural beat if we have a resolved one from fallback
+            if resolvedBeat.id != "None" {
+                timerConfig = TimerSessionConfig(
+                    minutes: timerConfig.minutes,
+                    backgroundSound: timerConfig.backgroundSound,
+                    binauralBeat: resolvedBeat,
+                    cueSettings: timerConfig.cueSettings,
+                    isDeepLinked: timerConfig.isDeepLinked,
+                    title: timerConfig.title,
+                    description: timerConfig.description
+                )
             }
-            logger.eventMessage("🤖 AI_MEDITATION_UI: Navigating to timer - assets will be prepared on Player screen...")
-            // Set up SessionContextManager for the custom meditation session (customize flow)
-            let timerConfig = TimerSessionConfig(
-                minutes: appliedConfig.duration,
-                backgroundSound: appliedConfig.backgroundSound,
-                binauralBeat: forcedBeat,
-                cueSettings: appliedConfig.cueSettings,
-                title: appliedConfig.title,
-                description: response.description
-            )
             SessionContextManager.shared.setupCustomMeditationSession(
                 entryPoint: .aiChat,
                 timerConfig: timerConfig,
                 origin: .aiRecommended,
                 customizationLevel: .suggested
             )
-            
             // Log ai_onboarding_meditation_started if user came from AI onboarding
             if SenseiOnboardingState.shared.isComplete {
                 AnalyticsManager.shared.logEvent("ai_onboarding_meditation_started", parameters: [
@@ -628,9 +626,9 @@ class AIRequestManager: ObservableObject {
                     "skipped_early": SenseiOnboardingState.shared.didSkipEarly
                 ])
             }
-            
-            navigationCoordinator.applyDeepLinkMeditationConfiguration(appliedConfig)
-            // Clear the result after starting
+            GeneralBackgroundMusicController.shared.fadeOutForPractice()
+            navigationCoordinator.currentView = .main
+            navigationCoordinator.showTimerPlayerSheet(timerConfig: timerConfig)
             logger.eventMessage("🤖 AI_MEDITATION_UI: Clearing UI result state")
             self.clearResult()
             logger.eventMessage("🤖 AI_MEDITATION_UI: === MEDITATION START COMPLETED ===")
