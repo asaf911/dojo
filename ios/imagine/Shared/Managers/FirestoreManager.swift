@@ -8,9 +8,10 @@ import FirebaseStorage
 class FirestoreManager {
     static let shared = FirestoreManager()
     private let db = Firestore.firestore()
-    private let storage = Storage.storage()
 
     private init() {}
+
+    private var storage: Storage { Config.activeStorage }
 
     // MARK: - User Data Functions
 

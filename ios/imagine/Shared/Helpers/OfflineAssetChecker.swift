@@ -122,7 +122,7 @@ enum OfflineAssetChecker {
         
         if url.scheme == "gs" {
             // Firebase Storage URL - use storage reference name
-            let ref = Storage.storage().reference(forURL: urlString)
+            let ref = Config.storage(for: urlString).reference(forURL: urlString)
             return ref.name.isEmpty ? URL(fileURLWithPath: ref.fullPath).lastPathComponent : ref.name
         } else {
             // HTTP/HTTPS URL - decode and extract filename

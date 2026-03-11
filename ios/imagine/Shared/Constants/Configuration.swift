@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FirebaseStorage
 
 struct Config {
     static var appsFlyerDevKey          = "eLUB6YrwUiT9stNvVy5BRh"
@@ -21,12 +22,41 @@ struct Config {
     // MARK: - OneLink Deep Link Configuration
     static var oneLinkBaseURL           = "https://medidojo.onelink.me/miw9/share"
 
+    // MARK: - App Install Source (for Mixpanel filtering)
+    /// "simulator" | "xcode" | "testflight" | "store"
+    /// Filter in Mixpanel: where properties.source == "store" for production users only
+    static var appSource: String {
+        #if targetEnvironment(simulator)
+        return "simulator"
+        #else
+        guard let receiptURL = Bundle.main.appStoreReceiptURL else {
+            return "xcode"
+        }
+        return receiptURL.lastPathComponent == "sandboxReceipt" ? "testflight" : "store"
+        #endif
+    }
+
     // MARK: - Server Selection (runtime, from Dev Mode toggle)
     /// Human-readable label for logging: "Production" or "Dev"
     static var serverLabel: String {
         SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
             ? "Dev"
             : "Production"
+    }
+
+    /// Firebase Storage instance for the active server. Use when constructing URLs ourselves (e.g. pathSteps, audioFiles).
+    static var activeStorage: Storage {
+        SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
+            ? Storage.storage(url: "gs://\(devServerPath.dropLast())")
+            : Storage.storage()
+    }
+
+    /// Storage instance that matches the bucket in the given gs:// URL. Use when the URL comes from external data (catalogs, AI response, cache) which may be prod or dev.
+    static func storage(for urlString: String) -> Storage {
+        if urlString.contains("imaginedev-e5fd3.appspot.com") {
+            return Storage.storage(url: "gs://imaginedev-e5fd3.appspot.com")
+        }
+        return Storage.storage()
     }
 
     /// Active storage path (bucket) based on useDevServer flag. Used for Firebase Storage refs.

@@ -67,7 +67,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, ASAuthorizationControllerPre
             if let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
                 mixpanelInstance.registerSuperProperties(["build_number": build])
             }
-            
+            mixpanelInstance.registerSuperProperties(["source": Config.appSource])
+
         } else {
             logger.errorMessage("Mixpanel initialization failed - token is empty!")
         }

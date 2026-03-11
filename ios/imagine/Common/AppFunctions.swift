@@ -52,7 +52,7 @@ class AppFunctions {
     
     private static func fetchAudioFilesFromServer(completion: @escaping ([AudioFile]) -> Void) {
         print("[Server][Storage] fetchAudioFiles: start server=\(Config.serverLabel)")
-        let storage = Storage.storage()
+        let storage = Config.activeStorage
         let storageRef = storage.reference(forURL: serverPath() + Config.audioFileJsonFileName)
         
         storageRef.getData(maxSize: 10 * 1024 * 1024) { data, error in
@@ -162,7 +162,7 @@ class AppFunctions {
         for index in updatedAudioFiles.indices {
             if let imageFile = updatedAudioFiles[index].imageFile, imageFile.hasPrefix(serverPath()) {
                 dispatchGroup.enter()
-                let storageRef = Storage.storage().reference(forURL: imageFile)
+                let storageRef = Config.activeStorage.reference(forURL: imageFile)
                 storageRef.downloadURL { url, error in
                     if let error = error {
                         logger.eventMessage("Failed to download image URL: \(error.localizedDescription)")

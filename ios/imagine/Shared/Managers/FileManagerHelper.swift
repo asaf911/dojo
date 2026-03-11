@@ -29,7 +29,7 @@ class FileManagerHelper {
     func downloadFile(from url: URL, setDownloading: @escaping (Bool) -> Void, completion: @escaping (URL?) -> Void) {
         setDownloading(true)
         if url.scheme == "gs" {
-            let storageRef = Storage.storage().reference(forURL: url.absoluteString)
+            let storageRef = Config.storage(for: url.absoluteString).reference(forURL: url.absoluteString)
             // Derive a stable, clean filename from the storage reference
             let cleanName = storageRef.name.isEmpty
                 ? URL(fileURLWithPath: storageRef.fullPath).lastPathComponent
@@ -102,7 +102,7 @@ class FileManagerHelper {
         // Predict a clean filename for cache hit check prior to download
         let predictedName: String = {
             if remoteURL.scheme == "gs" {
-                let ref = Storage.storage().reference(forURL: remoteURL.absoluteString)
+                let ref = Config.storage(for: remoteURL.absoluteString).reference(forURL: remoteURL.absoluteString)
                 return ref.name.isEmpty ? URL(fileURLWithPath: ref.fullPath).lastPathComponent : ref.name
             } else {
                 let decodedTail = remoteURL.lastPathComponent.removingPercentEncoding
