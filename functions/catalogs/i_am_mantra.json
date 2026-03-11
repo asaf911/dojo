@@ -1,14 +1,14 @@
 {
   "version": "1.0",
   "models": [
-    { "id": "IM2", "name": "2-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-2min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-2min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-2min.mp3" }, "duration_minutes": 2 },
-    { "id": "IM3", "name": "3-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-3min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-3min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-3min.mp3" }, "duration_minutes": 3 },
-    { "id": "IM4", "name": "4-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-4min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-4min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-4min.mp3" }, "duration_minutes": 4 },
-    { "id": "IM5", "name": "5-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-5min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-5min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-5min.mp3" }, "duration_minutes": 5 },
-    { "id": "IM6", "name": "6-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-6min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-6min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-6min.mp3" }, "duration_minutes": 6 },
-    { "id": "IM7", "name": "7-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-7min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-7min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-7min.mp3" }, "duration_minutes": 7 },
-    { "id": "IM8", "name": "8-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-8min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-8min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-8min.mp3" }, "duration_minutes": 8 },
-    { "id": "IM9", "name": "9-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-9min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-9min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-9min.mp3" }, "duration_minutes": 9 },
-    { "id": "IM10", "name": "10-minute I AM Mantra", "path": "modules/i_am_mantra/iam-mantra-10min.mp3", "voices": { "Asaf": "modules/i_am_mantra/iam-mantra-10min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-10min.mp3" }, "duration_minutes": 10 }
+    { "id": "IM2", "name": "2-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-2min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-2min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-2min.mp3" }, "duration_minutes": 2 },
+    { "id": "IM3", "name": "3-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-3min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-3min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-3min.mp3" }, "duration_minutes": 3 },
+    { "id": "IM4", "name": "4-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-4min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-4min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-4min.mp3" }, "duration_minutes": 4 },
+    { "id": "IM5", "name": "5-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-5min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-5min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-5min.mp3" }, "duration_minutes": 5 },
+    { "id": "IM6", "name": "6-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-6min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-6min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-6min.mp3" }, "duration_minutes": 6 },
+    { "id": "IM7", "name": "7-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-7min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-7min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-7min.mp3" }, "duration_minutes": 7 },
+    { "id": "IM8", "name": "8-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-8min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-8min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-8min.mp3" }, "duration_minutes": 8 },
+    { "id": "IM9", "name": "9-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-9min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-9min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-9min.mp3" }, "duration_minutes": 9 },
+    { "id": "IM10", "name": "10-minute I AM Mantra", "path": "modules/i_am_mantra/asaf/iam-mantra-10min.mp3", "voices": { "Asaf": "modules/i_am_mantra/asaf/iam-mantra-10min.mp3", "Dan": "modules/i_am_mantra/iam-mantra-10min.mp3" }, "duration_minutes": 10 }
   ]
 }
