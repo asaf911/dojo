@@ -51,6 +51,7 @@ class AppFunctions {
     }
     
     private static func fetchAudioFilesFromServer(completion: @escaping ([AudioFile]) -> Void) {
+        print("[Server][Storage] fetchAudioFiles: start server=\(Config.serverLabel)")
         let storage = Storage.storage()
         let storageRef = storage.reference(forURL: serverPath() + Config.audioFileJsonFileName)
         
@@ -74,6 +75,7 @@ class AppFunctions {
             do {
                 let decoder = JSONDecoder()
                 let audioFiles = try decoder.decode([AudioFile].self, from: data)
+                print("[Server][Storage] fetchAudioFiles: success server=\(Config.serverLabel) count=\(audioFiles.count)")
                 logger.eventMessage("Successfully decoded audio files from server.")
                 processImageURLs(for: audioFiles) { updatedAudioFiles in
                     DispatchQueue.main.async {
@@ -327,11 +329,7 @@ class AppFunctions {
     }
     
     private static func serverPath() -> String {
-        #if DEVENV
-        return Config.storagePathPrefix + Config.devServerPath
-        #else
-        return Config.storagePathPrefix + Config.productionServerPath
-        #endif
+        Config.storagePathPrefix + Config.activeServerPath
     }
 }
 

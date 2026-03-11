@@ -137,6 +137,7 @@ enum UserStorageKey: String, CaseIterable {
     case hasCompletedFirstSession        // Bool - true after first session_complete
     // Feature flags
     case devModeEnabled
+    case useDevServer  // Bool - when true, app uses dev Firebase project (Cloud Functions + Storage)
     case hrMonitoringEnabled
     case aiPendingPostSessionMessage
     case userProfile

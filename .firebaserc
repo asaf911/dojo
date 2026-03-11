@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "imagine-c6162"
+    "default": "imagine-c6162",
+    "dev": "imaginedev-e5fd3"
   }
 }

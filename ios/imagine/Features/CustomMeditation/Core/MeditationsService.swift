@@ -227,7 +227,7 @@ extension MeditationsService {
             let tag = "[Server][Meditations]"
             let trigger = triggerContext ?? "unknown"
             let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
-            print("\(tag) createMeditationManual: start trigger=\(trigger) duration=\(duration) cueCount=\(cues.count) bs=\(backgroundSoundId) bb=\(binauralBeatId ?? "None") voiceId=\(voiceId)")
+            print("\(tag) createMeditationManual: start trigger=\(trigger) server=\(Config.serverLabel) duration=\(duration) cueCount=\(cues.count) bs=\(backgroundSoundId) bb=\(binauralBeatId ?? "None") voiceId=\(voiceId)")
             var request = URLRequest(url: Config.meditationsURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -253,7 +253,7 @@ extension MeditationsService {
             do {
                 let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
                 let cuePaths = package.cues.map { "\($0.id)=\($0.url.split(separator: "/").last.map(String.init) ?? $0.url)" }.joined(separator: " ")
-                print("\(tag) createMeditationManual: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
+                print("\(tag) createMeditationManual: success trigger=\(trigger) server=\(Config.serverLabel) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
                 return package
             } catch {
                 print("\(tag) createMeditationManual: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
@@ -264,7 +264,7 @@ extension MeditationsService {
             let tag = "[Server][Meditations-AI]"
             let trigger = triggerContext ?? "unknown"
             let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
-            print("\(tag) createMeditationAI: start trigger=\(trigger) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) maxDuration=\(maxDuration?.description ?? "nil") voiceId=\(voiceId)")
+            print("\(tag) createMeditationAI: start trigger=\(trigger) server=\(Config.serverLabel) promptLen=\(prompt.count) historyLen=\(conversationHistory.count) maxDuration=\(maxDuration?.description ?? "nil") voiceId=\(voiceId)")
             var request = URLRequest(url: Config.meditationsURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -289,7 +289,7 @@ extension MeditationsService {
             do {
                 let package = try JSONDecoder().decode(MeditationPackage.self, from: data)
                 let cuePaths = package.cues.map { "\($0.id)=\($0.url.split(separator: "/").last.map(String.init) ?? $0.url)" }.joined(separator: " ")
-                print("\(tag) createMeditationAI: success trigger=\(trigger) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
+                print("\(tag) createMeditationAI: success trigger=\(trigger) server=\(Config.serverLabel) id=\(package.id) duration=\(package.duration) title=\(package.title ?? "nil") voiceId=\(voiceId) cues=[\(cuePaths)]")
                 return package
             } catch {
                 print("\(tag) createMeditationAI: failure trigger=\(trigger) decode error - \(error.localizedDescription)")

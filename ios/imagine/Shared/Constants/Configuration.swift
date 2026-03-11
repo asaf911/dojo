@@ -21,18 +21,40 @@ struct Config {
     // MARK: - OneLink Deep Link Configuration
     static var oneLinkBaseURL           = "https://medidojo.onelink.me/miw9/share"
 
+    // MARK: - Server Selection (runtime, from Dev Mode toggle)
+    /// Human-readable label for logging: "Production" or "Dev"
+    static var serverLabel: String {
+        SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
+            ? "Dev"
+            : "Production"
+    }
+
+    /// Active storage path (bucket) based on useDevServer flag. Used for Firebase Storage refs.
+    static var activeServerPath: String {
+        SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
+            ? devServerPath
+            : productionServerPath
+    }
+
+    /// Cloud Functions base URL (region + project). Dev: imaginedev-e5fd3, Prod: imagine-c6162.
+    private static var cloudFunctionsBase: String {
+        SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
+            ? "https://us-central1-imaginedev-e5fd3.cloudfunctions.net"
+            : "https://us-central1-imagine-c6162.cloudfunctions.net"
+    }
+
     // MARK: - Catalogs API (GET /catalogs)
     static var catalogsURL: URL {
-        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/getCatalogs")!
+        URL(string: cloudFunctionsBase + "/getCatalogs")!
     }
 
     // MARK: - Meditations API (POST /meditations)
     static var meditationsURL: URL {
-        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/postMeditations")!
+        URL(string: cloudFunctionsBase + "/postMeditations")!
     }
 
     // MARK: - AI Request API (POST /ai/request - unified classify + route + respond)
     static var aiRequestURL: URL {
-        URL(string: "https://us-central1-imagine-c6162.cloudfunctions.net/postAIRequest")!
+        URL(string: cloudFunctionsBase + "/postAIRequest")!
     }
 }

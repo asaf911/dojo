@@ -23,10 +23,12 @@ struct DevModeSettingsView: View {
     var onTestNewUser: (() -> Void)?
     
     @State private var selectedVoiceId: String = "Asaf"
+    @State private var useDevServer: Bool = false
 
     var body: some View {
         VStack(spacing: 12) {
             devModeHeader
+            serverCard
             currentStateCard
             narrationVoiceCard
             skipDestinationCard
@@ -35,6 +37,7 @@ struct DevModeSettingsView: View {
         .onAppear {
             initializeSelectedDestination()
             selectedVoiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+            useDevServer = SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)
         }
     }
     
@@ -50,6 +53,38 @@ struct DevModeSettingsView: View {
             Spacer()
         }
         .padding(.horizontal, 16)
+    }
+    
+    // MARK: - Server Card
+    
+    private var serverCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Server")
+                .nunitoFont(size: 16, style: .bold)
+                .foregroundColor(.dojoTurquoise)
+            
+            HStack {
+                Text("Use Dev Server")
+                    .nunitoFont(size: 14, style: .regular)
+                    .foregroundColor(.foregroundLightGray)
+                Spacer()
+                Toggle("", isOn: $useDevServer)
+                    .tint(.dojoTurquoise)
+                    .labelsHidden()
+                    .onChange(of: useDevServer) { _, newValue in
+                        SharedUserStorage.save(value: newValue, forKey: .useDevServer)
+                        print("[Server][Config] Toggled to server=\(newValue ? "Dev" : "Production")")
+                    }
+            }
+            
+            Text(useDevServer ? "Dev (imaginedev-e5fd3)" : "Production (imagine-c6162)")
+                .nunitoFont(size: 12, style: .regular)
+                .foregroundColor(.white.opacity(0.5))
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(Color.backgroundPurple)
+        .cornerRadius(12)
     }
     
     // MARK: - Current State Card

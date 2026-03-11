@@ -78,7 +78,7 @@ final class CatalogsManager: ObservableObject {
         let url = Config.catalogsURL
         var request = URLRequest(url: url)
         request.setValue(trigger, forHTTPHeaderField: "X-Trigger")
-        print("\(kCatalogsServerTag) fetchCatalogs: start trigger=\(trigger) url=\(url.host ?? "server")/getCatalogs")
+        print("\(kCatalogsServerTag) fetchCatalogs: start trigger=\(trigger) server=\(Config.serverLabel) url=\(url.host ?? "server")/getCatalogs")
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { completion?(false); return }
             if let httpResponse = response as? HTTPURLResponse {
@@ -110,7 +110,7 @@ final class CatalogsManager: ObservableObject {
                     self.voices = voices
                     self.bodyScanDurations = decoded.bodyScanDurations
                     self.cacheCatalogs(data: data)
-                    print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count) voices=\(voices.count)")
+                    print("\(kCatalogsServerTag) fetchCatalogs: success trigger=\(trigger) server=\(Config.serverLabel) sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count) voices=\(voices.count)")
                     logger.eventMessage("CatalogsManager: Loaded \(sounds.count) sounds, \(beats.count) beats, \(cues.count) cues")
                 }
                 completion?(true)

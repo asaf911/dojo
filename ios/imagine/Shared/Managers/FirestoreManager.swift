@@ -536,7 +536,8 @@ class FirestoreManager {
     /// Fetches the path steps data from Firebase Storage
     /// - Parameter completion: A closure that returns the PathStepsResponse if successful, nil otherwise
     func fetchPathSteps(completion: @escaping (PathStepsResponse?) -> Void) {
-        let pathRef = storage.reference(forURL: "gs://imagine-c6162.appspot.com/Path/pathSteps.json")
+        print("[Server][Path] fetchPathSteps: start server=\(Config.serverLabel)")
+        let pathRef = storage.reference(forURL: Config.storagePathPrefix + Config.activeServerPath + "Path/pathSteps.json")
         
         // Check if we have cached data and version
         if let cachedVersion = SharedUserStorage.retrieve(forKey: .pathVersion, as: Int.self),
@@ -567,6 +568,7 @@ class FirestoreManager {
                     }
                     
                     logger.eventMessage("New path version found (v\(response.version)), updating cache")
+                    print("[Server][Path] fetchPathSteps: success server=\(Config.serverLabel) version=\(response.version) (from version check)")
                     // Version is newer, cache and return the new data
                     SharedUserStorage.save(value: response.version, forKey: .pathVersion)
                     SharedUserStorage.save(value: response, forKey: .pathStepsCache)
@@ -598,7 +600,7 @@ class FirestoreManager {
             do {
                 let decoder = JSONDecoder()
                 let response = try decoder.decode(PathStepsResponse.self, from: data)
-                
+                print("[Server][Path] fetchPathSteps: success server=\(Config.serverLabel) version=\(response.version)")
                 // Cache the new data
                 SharedUserStorage.save(value: response.version, forKey: .pathVersion)
                 SharedUserStorage.save(value: response, forKey: .pathStepsCache)
