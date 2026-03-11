@@ -10,10 +10,12 @@ import Foundation
 
 private let kTag = "[Server][AI]"
 
-/// Context sent with AI request for path/explore guidance
+/// Context sent with AI request for path/explore guidance and meditation modifications
 struct AIServerRequestContext: Encodable {
     var pathInfo: PathInfo?
     var exploreInfo: ExploreInfo?
+    /// Duration of last meditation; used when user modifies (e.g. "remove breathwork") so server preserves duration
+    var lastMeditationDuration: Int?
 
     struct PathInfo: Encodable {
         let nextStepTitle: String

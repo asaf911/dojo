@@ -202,7 +202,7 @@ class AIRequestManager: ObservableObject {
                 logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
 
                 // Build context for path/explore guidance; capture step/session for notifications
-                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool) in
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?) in
                     ExploreRecommendationManager.shared.loadAudioFiles()
                     let pm = PathProgressManager.shared
                     let em = ExploreRecommendationManager.shared
@@ -227,10 +227,17 @@ class AIRequestManager: ObservableObject {
                         )
                         session = s
                     }
-                    return (path, explore, nextStep, session, pm.allStepsCompleted)
+                    let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
+                        ? strongSelf.lastMeditation?.meditationConfiguration.duration
+                        : nil
+                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur)
                 }
 
-                let context = AIServerRequestContext(pathInfo: pathInfo, exploreInfo: exploreInfo)
+                let context = AIServerRequestContext(
+                    pathInfo: pathInfo,
+                    exploreInfo: exploreInfo,
+                    lastMeditationDuration: lastMeditationDuration
+                )
                 let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
 
                 let response = try await AIRequestService.shared.processAIRequest(
@@ -682,6 +689,17 @@ class AIRequestManager: ObservableObject {
         let triggers = ["pre-recorded", "prerecorded", "pre recorded"]
         let isExplicit = triggers.contains { lower.contains($0) }
         return isExplicit
+    }
+
+    /// Detects modification requests (e.g. "remove breathwork", "no breathwork") so we can pass lastMeditationDuration
+    private func isModificationRequest(_ prompt: String) -> Bool {
+        let lower = prompt.lowercased()
+        let signals = [
+            "remove breath", "remove breathwork", "no breathwork", "without breathwork",
+            "skip breath", "no breath", "add ", "extend", "make it longer", "make it shorter",
+            "change ", "switch ", "replace ", "different "
+        ]
+        return signals.contains { lower.contains($0) }
     }
 }
 

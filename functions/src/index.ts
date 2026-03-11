@@ -1097,7 +1097,11 @@ export const postAIRequest = functions.runWith({
           prompt: body.prompt ?? "",
           voiceId: (body as { voiceId?: string }).voiceId,
           conversationHistory: body.conversationHistory,
-          context: body.context as { pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null; exploreInfo?: { sessionTitle: string; timeOfDay: string } | null },
+          context: body.context as {
+            pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null;
+            exploreInfo?: { sessionTitle: string; timeOfDay: string } | null;
+            lastMeditationDuration?: number;
+          },
         },
         () => Promise.resolve(loadCatalogs()),
         apiKey

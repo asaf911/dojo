@@ -19,6 +19,7 @@ export interface AIRequestContext {
     sessionTitle: string;
     timeOfDay: string;
   } | null;
+  lastMeditationDuration?: number;
 }
 
 export interface AIRequestBody {
@@ -288,6 +289,7 @@ export async function processAIRequest(
       conversationHistory,
       catalogs,
       apiKey,
+      lastMeditationDuration: context.lastMeditationDuration,
     });
     const pkg = buildMeditationPackage(meditation, catalogs, voiceId);
     functions.logger.info(`${TAG} success intent=meditation id=${pkg.id} duration=${pkg.duration} usedFallback=${usedFallback}`);
