@@ -121,8 +121,9 @@ enum OfflineAssetChecker {
         }
         
         if url.scheme == "gs" {
-            // Firebase Storage URL - use storage reference name
-            let ref = Config.storage(for: urlString).reference(forURL: urlString)
+            // Firebase Storage URL - use decoded string (spaces not %20) to match actual object path
+            let gsUrlString = urlString.removingPercentEncoding ?? urlString
+            let ref = Config.storage(for: urlString).reference(forURL: gsUrlString)
             return ref.name.isEmpty ? URL(fileURLWithPath: ref.fullPath).lastPathComponent : ref.name
         } else {
             // HTTP/HTTPS URL - decode and extract filename

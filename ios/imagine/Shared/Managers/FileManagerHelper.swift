@@ -29,7 +29,9 @@ class FileManagerHelper {
     func downloadFile(from url: URL, setDownloading: @escaping (Bool) -> Void, completion: @escaping (URL?) -> Void) {
         setDownloading(true)
         if url.scheme == "gs" {
-            let storageRef = Config.storage(for: url.absoluteString).reference(forURL: url.absoluteString)
+            // Use decoded URL: Swift's URL encodes spaces as %20, but Firebase Storage expects the actual path (spaces, not %20)
+            let gsUrlString = url.absoluteString.removingPercentEncoding ?? url.absoluteString
+            let storageRef = Config.storage(for: url.absoluteString).reference(forURL: gsUrlString)
             // Derive a stable, clean filename from the storage reference
             let cleanName = storageRef.name.isEmpty
                 ? URL(fileURLWithPath: storageRef.fullPath).lastPathComponent
@@ -102,7 +104,8 @@ class FileManagerHelper {
         // Predict a clean filename for cache hit check prior to download
         let predictedName: String = {
             if remoteURL.scheme == "gs" {
-                let ref = Config.storage(for: remoteURL.absoluteString).reference(forURL: remoteURL.absoluteString)
+                let gsUrlString = remoteURL.absoluteString.removingPercentEncoding ?? remoteURL.absoluteString
+                let ref = Config.storage(for: remoteURL.absoluteString).reference(forURL: gsUrlString)
                 return ref.name.isEmpty ? URL(fileURLWithPath: ref.fullPath).lastPathComponent : ref.name
             } else {
                 let decodedTail = remoteURL.lastPathComponent.removingPercentEncoding
