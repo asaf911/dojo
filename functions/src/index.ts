@@ -1102,6 +1102,7 @@ export const postAIRequest = functions.runWith({
             pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null;
             exploreInfo?: { sessionTitle: string; timeOfDay: string } | null;
             lastMeditationDuration?: number;
+            recentBackgroundSounds?: string[];
           },
         },
         () => Promise.resolve(loadCatalogs()),

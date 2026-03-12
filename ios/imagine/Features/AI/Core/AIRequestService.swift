@@ -16,6 +16,8 @@ struct AIServerRequestContext: Encodable {
     var exploreInfo: ExploreInfo?
     /// Duration of last meditation; used when user modifies (e.g. "remove breathwork") so server preserves duration
     var lastMeditationDuration: Int?
+    /// Last N background sound IDs used; server down-weights these for variety
+    var recentBackgroundSounds: [String]?
 
     struct PathInfo: Encodable {
         let nextStepTitle: String
@@ -38,12 +40,13 @@ struct AIRequestResponse: Decodable {
     enum Content: Decodable {
         case meditation(MeditationPackage)
         case text(String)
-        case history
+        case history(historyQueryType: String?)
 
         enum CodingKeys: String, CodingKey {
             case type
             case meditation
             case text
+            case historyQueryType
         }
 
         init(from decoder: Decoder) throws {
@@ -57,7 +60,8 @@ struct AIRequestResponse: Decodable {
                 let t = try container.decode(String.self, forKey: .text)
                 self = .text(t)
             case "history":
-                self = .history
+                let historyQueryType = try container.decodeIfPresent(String.self, forKey: .historyQueryType)
+                self = .history(historyQueryType: historyQueryType)
             default:
                 throw DecodingError.dataCorruptedError(
                     forKey: .type,

@@ -189,6 +189,8 @@ enum UserStorageKey: String, CaseIterable {
     
     // Heart rate session counter (local mirror of Mixpanel total_hr_sessions for event enrichment)
     case totalHRSessions                 // Int counter
+    // All-time lowest recorded heart rate during a session (AllTimeLowestNadir)
+    case allTimeLowestNadir
 
     // Fitbit BLE pairing
     case fitbitDeviceUUID                // String — CBPeripheral identifier UUID

@@ -34,6 +34,7 @@ final class SessionHistoryManager: ObservableObject {
     private init() {
         loadSessions()
         migrateFromLegacyIfNeeded()
+        migrateAllTimeLowestNadirIfNeeded()
     }
     
     // MARK: - Public Recording Methods
@@ -168,6 +169,9 @@ final class SessionHistoryManager: ObservableObject {
         trimSessions()
         saveSessions()
         
+        // Update all-time lowest nadir if this session has a lower value
+        updateAllTimeLowestNadirIfNeeded(for: session)
+        
         // Upload to Firebase
         SessionFirebaseSync.shared.uploadSession(session)
         
@@ -192,6 +196,9 @@ final class SessionHistoryManager: ObservableObject {
         sessions.sort { $0.createdAt > $1.createdAt }
         trimSessions()
         saveSessions()
+        
+        // Recalculate all-time lowest in case merged sessions have a lower nadir
+        recalculateAllTimeLowestNadir()
         
         print("🔄 HISTORY_SYNC: Merge complete - total local sessions: \(sessions.count)")
     }
@@ -229,6 +236,64 @@ final class SessionHistoryManager: ObservableObject {
         return filtered
     }
     
+    /// Get the last N sessions that have heart rate data (for comparison, AI context, etc.)
+    func getLastNHeartRateSessions(_ count: Int) -> [MeditationSession] {
+        return Array(getSessionsWithHeartRate().prefix(count))
+    }
+    
+    /// Get the all-time lowest recorded heart rate during a session (stored for quick lookup).
+    func getAllTimeLowestNadir() -> AllTimeLowestNadir? {
+        return SharedUserStorage.retrieve(forKey: .allTimeLowestNadir, as: AllTimeLowestNadir.self)
+    }
+    
+    // MARK: - All-Time Lowest Nadir
+    
+    private func updateAllTimeLowestNadirIfNeeded(for session: MeditationSession) {
+        guard let hr = session.heartRate else { return }
+        let nadirBPM: Double? = hr.nadir?.bpm ?? hr.minBPM
+        guard let bpm = nadirBPM, bpm > 0 else { return }
+        
+        let stored = getAllTimeLowestNadir()
+        if stored == nil || bpm < stored!.bpm {
+            let record = AllTimeLowestNadir(
+                bpm: bpm,
+                sessionId: session.id,
+                date: session.createdAt,
+                sessionTitle: session.title,
+                minuteOffset: hr.nadir?.minuteOffset ?? 0
+            )
+            SharedUserStorage.save(value: record, forKey: .allTimeLowestNadir)
+        }
+    }
+    
+    /// One-time migration: populate all-time lowest nadir from existing sessions if not yet set
+    private func migrateAllTimeLowestNadirIfNeeded() {
+        guard getAllTimeLowestNadir() == nil else { return }
+        recalculateAllTimeLowestNadir()
+    }
+    
+    private func recalculateAllTimeLowestNadir() {
+        let sessionsWithHR = getSessionsWithHeartRate()
+        let candidates = sessionsWithHR.compactMap { session -> (MeditationSession, Double)? in
+            let bpm = session.heartRate?.nadir?.bpm ?? session.heartRate?.minBPM
+            guard let b = bpm, b > 0 else { return nil }
+            return (session, b)
+        }
+        guard let lowest = candidates.min(by: { $0.1 < $1.1 }),
+              let hr = lowest.0.heartRate else {
+            SharedUserStorage.delete(forKey: .allTimeLowestNadir)
+            return
+        }
+        let record = AllTimeLowestNadir(
+            bpm: lowest.1,
+            sessionId: lowest.0.id,
+            date: lowest.0.createdAt,
+            sessionTitle: lowest.0.title,
+            minuteOffset: hr.nadir?.minuteOffset ?? 0
+        )
+        SharedUserStorage.save(value: record, forKey: .allTimeLowestNadir)
+    }
+    
     /// Get total session count
     var totalSessionCount: Int {
         sessions.count
@@ -249,6 +314,7 @@ final class SessionHistoryManager: ObservableObject {
             print("📜 HISTORY_CLEAR: clearHistory() called - removing \(countBefore) sessions from local storage")
             self.objectWillChange.send()
             self.sessions.removeAll()
+            SharedUserStorage.delete(forKey: .allTimeLowestNadir)
             self.saveSessions()
             print("📜 HISTORY_CLEAR: Local sessions cleared - count now \(self.sessions.count)")
             print("📜 HISTORY_CLEAR: Firebase data preserved - will sync on next app launch")
@@ -268,6 +334,11 @@ final class SessionHistoryManager: ObservableObject {
     /// Delete a specific session (local + Firebase)
     func deleteSession(id: UUID) {
         print("📜 HISTORY_DELETE: Deleting session \(id.uuidString.prefix(8))...")
+        
+        // If we're deleting the session that held all-time lowest nadir, recalculate
+        if let stored = getAllTimeLowestNadir(), stored.sessionId == id {
+            recalculateAllTimeLowestNadir()
+        }
         
         // Remove locally
         sessions.removeAll { $0.id == id }

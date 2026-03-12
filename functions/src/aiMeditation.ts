@@ -46,6 +46,31 @@ function pickRandomFromCatalog<T extends { id?: string }>(
   return filtered[Math.floor(Math.random() * filtered.length)];
 }
 
+/** Weighted random: recently used items get lower weight (recentWeight) to reduce repetition */
+function pickWeightedRandomFromCatalog<T extends { id?: string }>(
+  items: T[],
+  excludeId?: string,
+  recentlyUsedIds?: string[],
+  recentWeight = 0.3
+): T | undefined {
+  const filtered = excludeId
+    ? items.filter((item) => item.id !== excludeId)
+    : items;
+  if (filtered.length === 0) return undefined;
+  const recentSet = new Set(recentlyUsedIds ?? []);
+  const weights = filtered.map((item) =>
+    item.id && recentSet.has(item.id) ? recentWeight : 1.0
+  );
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) return filtered[Math.floor(Math.random() * filtered.length)];
+  let r = Math.random() * total;
+  for (let i = 0; i < filtered.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return filtered[i];
+  }
+  return filtered[filtered.length - 1];
+}
+
 interface AIMetadataResponse {
   title?: string;
   description?: string;
@@ -140,12 +165,17 @@ Select the beat that best matches what the user asked for. Use valid IDs only.`;
 function buildFallbackMetadata(
   duration: number,
   prefs: { isSleep: boolean; isEvening: boolean },
-  catalogs: LoadedCatalogs
+  catalogs: LoadedCatalogs,
+  recentBackgroundSounds?: string[]
 ): { title: string; description: string; backgroundSoundId: string; binauralBeatId: string } {
   const soundIds = catalogs.backgroundSounds.map((s) => s.id);
   const beatIds = catalogs.binauralBeats.map((b) => b.id);
   const bgId =
-    pickRandomFromCatalog(catalogs.backgroundSounds, "None")?.id ??
+    pickWeightedRandomFromCatalog(
+      catalogs.backgroundSounds,
+      "None",
+      recentBackgroundSounds
+    )?.id ??
     soundIds.find((id) => id !== "None") ??
     "SP";
   const bbId =
@@ -165,6 +195,8 @@ export interface GenerateAIMeditationInput {
   lastMeditationDuration?: number;
   catalogs: LoadedCatalogs;
   apiKey: string;
+  /** Last N background sound IDs used; down-weighted for variety */
+  recentBackgroundSounds?: string[];
 }
 
 export async function generateAIMeditation(
@@ -177,6 +209,7 @@ export async function generateAIMeditation(
     lastMeditationDuration,
     catalogs,
     apiKey,
+    recentBackgroundSounds,
   } = input;
 
   const duration =
@@ -217,7 +250,11 @@ export async function generateAIMeditation(
       title: ai.title?.trim() || "Custom Meditation",
       description: ai.description?.trim() || "A guided meditation tailored to your request.",
       backgroundSoundId:
-        pickRandomFromCatalog(catalogs.backgroundSounds, "None")?.id ??
+        pickWeightedRandomFromCatalog(
+          catalogs.backgroundSounds,
+          "None",
+          recentBackgroundSounds
+        )?.id ??
         soundIds.find((id) => id !== "None") ??
         "SP",
       binauralBeatId:
@@ -232,7 +269,12 @@ export async function generateAIMeditation(
     functions.logger.warn(
       `${TAG_AI} AI metadata call failed - ${errMsg}, using fallback`
     );
-    metadata = buildFallbackMetadata(duration, prefs, catalogs);
+    metadata = buildFallbackMetadata(
+      duration,
+      prefs,
+      catalogs,
+      recentBackgroundSounds
+    );
     usedFallback = true;
   }
 

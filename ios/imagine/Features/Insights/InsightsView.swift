@@ -22,11 +22,6 @@ struct InsightsView: View {
     @State private var longestSessionDuration: Double = 0.0
     @State private var dailyStats: [DailyStat] = []
     
-    // 7-day average daily minutes & comparison
-    @State private var last7DaysAvgMinutes: Double = 0.0
-    @State private var prev7DaysAvgMinutes: Double = 0.0
-    @State private var percentChange: Double = 0.0
-    
     // Use presentationMode for custom back button action.
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.toggleMenu) private var toggleMenu
@@ -61,7 +56,6 @@ struct InsightsView: View {
         .onAppear {
             // First load from local cache for immediate display
             loadStats()
-            load14DayStats()
             
             // Then sync from Firebase to ensure data is fresh and user-specific
             // This is critical when switching between users to prevent stale/mixed data
@@ -103,10 +97,9 @@ struct InsightsView: View {
                             value: "\(sessionCount)"
                         )
                         StatCardView(
-                            title: "7D Avg",
-                            value: String(format: "%.1f", last7DaysAvgMinutes),
-                            unit: "m",
-                            percentageChange: percentChange
+                            title: "Lowest HR",
+                            value: lowestHRDisplayValue,
+                            unit: lowestHRDisplayUnit
                         )
                     }
                     StatCardView(
@@ -153,23 +146,15 @@ struct InsightsView: View {
         }
     }
     
-    private func load14DayStats() {
-        StatsManager.shared.fetchLast14DaysStats { finalStats in
-            DispatchQueue.main.async {
-                if finalStats.count < 14 { return }
-                let last7 = Array(finalStats.suffix(7))
-                let prev7 = Array(finalStats.dropLast(7).suffix(7))
-                
-                let sm = StatsManager.shared
-                let avgCurrent = sm.averageDailyMinutes(for: last7)
-                let avgPrevious = sm.averageDailyMinutes(for: prev7)
-                let pctChange = sm.computePercentageChange(from: avgPrevious, to: avgCurrent)
-                
-                self.last7DaysAvgMinutes = avgCurrent
-                self.prev7DaysAvgMinutes = avgPrevious
-                self.percentChange = pctChange
-            }
+    private var lowestHRDisplayValue: String {
+        guard let nadir = SessionHistoryManager.shared.getAllTimeLowestNadir() else {
+            return "N/A"
         }
+        return "\(Int(nadir.bpm))"
+    }
+    
+    private var lowestHRDisplayUnit: String? {
+        SessionHistoryManager.shared.getAllTimeLowestNadir() != nil ? " bpm" : nil
     }
     
     /// Syncs stats from Firebase and reloads the view.

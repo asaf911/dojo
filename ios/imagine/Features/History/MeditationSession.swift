@@ -37,6 +37,33 @@ enum SessionOutcome: String, Codable {
     case abandoned     // Stopped early (<75%)
 }
 
+// MARK: - Heart Rate Nadir (Session Minimum)
+
+struct NadirContent: Codable, Equatable {
+    let contentType: String
+    let practiceId: String?
+    let practiceTitle: String
+    let cueId: String?
+    let cueName: String?
+}
+
+struct HeartRateNadir: Codable, Equatable {
+    let bpm: Double
+    let minuteOffset: Double
+    let timestamp: Date?
+    let contentAtTime: NadirContent?
+}
+
+/// Stored record of the lowest heart rate recorded during any session (all-time).
+/// Used for awareness and quick lookup without scanning full history.
+struct AllTimeLowestNadir: Codable, Equatable {
+    let bpm: Double
+    let sessionId: UUID
+    let date: Date
+    let sessionTitle: String
+    let minuteOffset: Double
+}
+
 // MARK: - Heart Rate Data
 
 struct SessionHeartRateData: Codable, Equatable {
@@ -49,6 +76,7 @@ struct SessionHeartRateData: Codable, Equatable {
     let readingCount: Int         // Number of HR readings
     let source: String?           // "watch" or "airpods"
     let samples: [HeartRateSamplePoint]  // Individual sample points for graphing and AI analysis
+    let nadir: HeartRateNadir?    // Lowest BPM during session with metadata
     
     var hasValidData: Bool {
         startBPM != nil && endBPM != nil && readingCount > 0
@@ -73,7 +101,8 @@ struct SessionHeartRateData: Codable, Equatable {
         changePercent: Double? = nil,
         readingCount: Int = 0,
         source: String? = nil,
-        samples: [HeartRateSamplePoint] = []
+        samples: [HeartRateSamplePoint] = [],
+        nadir: HeartRateNadir? = nil
     ) {
         self.startBPM = startBPM
         self.endBPM = endBPM
@@ -84,6 +113,7 @@ struct SessionHeartRateData: Codable, Equatable {
         self.readingCount = readingCount
         self.source = source
         self.samples = samples
+        self.nadir = nadir
     }
     
     /// Create from PracticeBPMTracker results
@@ -92,8 +122,10 @@ struct SessionHeartRateData: Codable, Equatable {
         let tracker = PracticeBPMTracker.shared
         let first = tracker.bestFirstThreeAverage  // Uses locked value if available
         let last = tracker.bestLastThreeAverage    // Uses locked value if available
+        let minBPMVal = tracker.bestMinBPM
+        let maxBPMVal = tracker.bestMaxBPM
         
-        print("🧠 AI_DEBUG HISTORY fromTracker: hasLocked=\(tracker.hasLockedResults) first=\(Int(first)) last=\(Int(last)) avg=\(Int(tracker.bestOverallAverage))")
+        print("🧠 AI_DEBUG HISTORY fromTracker: hasLocked=\(tracker.hasLockedResults) first=\(Int(first)) last=\(Int(last)) avg=\(Int(tracker.bestOverallAverage)) min=\(Int(minBPMVal))")
         
         guard first > 0 || last > 0 else {
             print("🧠 AI_DEBUG HISTORY fromTracker: returning nil - no valid HR data")
@@ -106,18 +138,57 @@ struct SessionHeartRateData: Codable, Equatable {
         }()
         
         let samples = tracker.graphSamples
+        
+        // Build nadir when we have min BPM and valid data
+        let nadir: HeartRateNadir? = {
+            guard minBPMVal > 0 else { return nil }
+            let minuteOffset = tracker.bestNadirMinuteOffset
+            let timestamp = tracker.nadirTimestamp
+            
+            let contentAtTime: NadirContent? = {
+                if let context = SessionContextManager.shared.currentContext {
+                    let cueId: String?
+                    let cueName: String?
+                    if context.contentType == .customMeditation,
+                       let cueInfo = CuePlaybackManager.shared.getCurrentCueInfo() {
+                        cueId = cueInfo.id
+                        cueName = nil  // Cue name lookup would require CatalogsManager
+                    } else {
+                        cueId = nil
+                        cueName = nil
+                    }
+                    return NadirContent(
+                        contentType: context.contentType.rawValue,
+                        practiceId: context.practiceId,
+                        practiceTitle: context.practiceTitle,
+                        cueId: cueId,
+                        cueName: cueName
+                    )
+                }
+                return nil
+            }()
+            
+            return HeartRateNadir(
+                bpm: minBPMVal,
+                minuteOffset: minuteOffset,
+                timestamp: timestamp,
+                contentAtTime: contentAtTime
+            )
+        }()
+        
         let result = SessionHeartRateData(
             startBPM: first > 0 ? first : nil,
             endBPM: last > 0 ? last : nil,
             averageBPM: tracker.bestOverallAverage > 0 ? tracker.bestOverallAverage : nil,
-            minBPM: nil,
-            maxBPM: nil,
+            minBPM: minBPMVal > 0 ? minBPMVal : nil,
+            maxBPM: maxBPMVal > 0 ? maxBPMVal : nil,
             changePercent: change,
             readingCount: tracker.hasLockedResults ? tracker.finalSampleCount : tracker.sampleCount,
             source: nil, // Could be determined from connectivity state
-            samples: samples
+            samples: samples,
+            nadir: nadir
         )
-        print("🧠 AI_DEBUG HISTORY fromTracker: created SessionHeartRateData start=\(Int(result.startBPM ?? 0)) end=\(Int(result.endBPM ?? 0)) samples=\(samples.count)")
+        print("🧠 AI_DEBUG HISTORY fromTracker: created SessionHeartRateData start=\(Int(result.startBPM ?? 0)) end=\(Int(result.endBPM ?? 0)) min=\(Int(result.minBPM ?? 0)) nadir=\(nadir != nil) samples=\(samples.count)")
         return result
     }
 }
@@ -347,6 +418,9 @@ extension MeditationSession {
                 let change = end - start
                 let sign = change >= 0 ? "+" : ""
                 parts.append("HR: \(Int(start))->\(Int(end)) (\(sign)\(Int(change)))")
+            }
+            if let nadir = hr.nadir {
+                parts.append("Lowest: \(Int(nadir.bpm)) bpm at \(String(format: "%.1f", nadir.minuteOffset)) min")
             }
         }
         

@@ -51,6 +51,8 @@ class AIRequestManager: ObservableObject {
     @Published var awaitingMeditationConfirmation: Bool = false
     // Persist last meditation so short follow-ups can modify it even across new prompts
     private var lastMeditation: AITimerResponse?
+    /// Last N background sound IDs (max 5, FIFO); sent to server for weighted random variety
+    private var recentBackgroundSoundIds: [String] = []
     
     func generateMeditation(prompt: String, conversationHistory: [ChatMessage] = [], variationSeed: Int? = nil, maxDuration: Int? = nil) {
         var trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -184,7 +186,6 @@ class AIRequestManager: ObservableObject {
         // Run AI work off the main actor for immediate responsiveness
         let trimmedPromptCopy = trimmedPrompt
         let historyCopy = conversationHistory
-        let maxDurationCopy = maxDuration
         let historyRouter = self.historyQueryRouter
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let strongSelf = self else { return }
@@ -202,7 +203,7 @@ class AIRequestManager: ObservableObject {
                 logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
 
                 // Build context for path/explore guidance; capture step/session for notifications
-                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?) in
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?) in
                     ExploreRecommendationManager.shared.loadAudioFiles()
                     let pm = PathProgressManager.shared
                     let em = ExploreRecommendationManager.shared
@@ -230,13 +231,15 @@ class AIRequestManager: ObservableObject {
                     let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
                         ? strongSelf.lastMeditation?.meditationConfiguration.duration
                         : nil
-                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur)
+                    let recent: [String]? = strongSelf.recentBackgroundSoundIds.isEmpty ? nil : strongSelf.recentBackgroundSoundIds
+                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent)
                 }
 
                 let context = AIServerRequestContext(
                     pathInfo: pathInfo,
                     exploreInfo: exploreInfo,
-                    lastMeditationDuration: lastMeditationDuration
+                    lastMeditationDuration: lastMeditationDuration,
+                    recentBackgroundSounds: recentBackgroundSounds
                 )
                 let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
 
@@ -279,10 +282,17 @@ class AIRequestManager: ObservableObject {
                     }
                 }
 
-                // Handle history: server returns intent only; client runs local query
+                // Handle history: server returns intent + optional historyQueryType (AI-interpreted); client runs local query
                 if intent == "history" {
-                    logger.aiChat("🧠 AI_DEBUG HISTORY intent from server: \(trimmedPromptCopy)")
-                    let queryResult = historyRouter.executeQuery(for: trimmedPromptCopy)
+                    let historyQueryType: String?
+                    if case .history(let qType) = response.content {
+                        historyQueryType = qType
+                        logger.aiChat("🧠 AI_DEBUG HISTORY intent from server: \(trimmedPromptCopy) historyQueryType=\(qType ?? "nil")")
+                    } else {
+                        historyQueryType = nil
+                        logger.aiChat("🧠 AI_DEBUG HISTORY intent from server: \(trimmedPromptCopy)")
+                    }
+                    let queryResult = historyRouter.executeQuery(for: trimmedPromptCopy, historyQueryType: historyQueryType)
                     let formattedResponse = historyRouter.formatForAIResponse(queryResult)
                     AnalyticsManager.shared.logEvent("ai_history_query", parameters: [
                         "user_prompt": trimmedPromptCopy,
@@ -445,6 +455,15 @@ class AIRequestManager: ObservableObject {
                         logger.aiChat("🧠 AI_DEBUG RESP id=\(strongSelf.lastRequestContext?.request_id ?? ctx.request_id) type=meditation dur=\(timerResponse.meditationConfiguration.duration)m cues=\(cuesSummary) bg=\(timerResponse.meditationConfiguration.backgroundSound.id)")
                         strongSelf.generatedMeditation = timerResponse
                         strongSelf.lastMeditation = timerResponse
+                        // Track recent background sounds for weighted random variety
+                        let bgId = timerResponse.meditationConfiguration.backgroundSound.id
+                        if !bgId.isEmpty && bgId != "None" {
+                            strongSelf.recentBackgroundSoundIds.removeAll { $0 == bgId }
+                            strongSelf.recentBackgroundSoundIds.append(bgId)
+                            if strongSelf.recentBackgroundSoundIds.count > 5 {
+                                strongSelf.recentBackgroundSoundIds.removeFirst()
+                            }
+                        }
                         strongSelf.showResult = true
                         
                         // Unified analytics: response (meditation) with original request inline

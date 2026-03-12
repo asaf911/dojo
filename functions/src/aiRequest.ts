@@ -20,6 +20,8 @@ export interface AIRequestContext {
     timeOfDay: string;
   } | null;
   lastMeditationDuration?: number;
+  /** Last N background sound IDs used; server down-weights these for variety */
+  recentBackgroundSounds?: string[];
 }
 
 export interface AIRequestBody {
@@ -29,12 +31,21 @@ export interface AIRequestBody {
   context?: AIRequestContext;
 }
 
+/** History sub-intent: which specific query the client should run. AI interprets user meaning. */
+export type HistoryQueryType =
+  | "last_session_nadir"   // Lowest HR during most recent session
+  | "all_time_nadir"       // Lowest HR during any session (all-time)
+  | "most_recent_session" // General info about last session
+  | "heart_rate_trend"    // HR averages/trends over recent sessions
+  | "total_stats"         // Total sessions, time, etc.
+  | "other";              // Fallback: client uses keyword matching
+
 export interface AIRequestResponse {
   intent: string;
   content:
     | { type: "meditation"; meditation: MeditationPackage }
     | { type: "text"; text: string }
-    | { type: "history" };
+    | { type: "history"; historyQueryType?: HistoryQueryType };
 }
 
 interface MeditationPackage {
@@ -195,6 +206,57 @@ function heuristicClassify(prompt: string): string {
   return "conversation";
 }
 
+const VALID_HISTORY_QUERY_TYPES: HistoryQueryType[] = [
+  "last_session_nadir",
+  "all_time_nadir",
+  "most_recent_session",
+  "heart_rate_trend",
+  "total_stats",
+  "other",
+];
+
+async function classifyHistorySubIntent(
+  prompt: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  apiKey: string
+): Promise<HistoryQueryType> {
+  const systemPrompt = `You are a classifier for a meditation app's history queries. The user has asked about their personal meditation/session data. Classify what they want to know into exactly one of:
+
+- last_session_nadir: User asks about the LOWEST heart rate DURING their most recent/last session (e.g. "what was my lowest in the last session", "nadir in my last meditation", "lowest hr last time", "what was the nadir" when previous message was about last session)
+- all_time_nadir: User asks about their LOWEST heart rate ever across ALL sessions (e.g. "all time lowest", "lowest ever", "best relaxation", "my lowest heart rate during any session")
+- most_recent_session: User asks about their last/most recent session in general (not specifically nadir)
+- heart_rate_trend: User asks about averages, trends, how HR changes over time
+- total_stats: User asks about total sessions, how many, how much time, overall stats
+- other: Anything else (client will use keyword fallback)
+
+IMPORTANT:
+- "What was my lowest in the last session?" -> last_session_nadir
+- "But what was the nadir?" (after asking about last session) -> last_session_nadir (conversation context)
+- "What was my all-time lowest?" or "lowest ever" -> all_time_nadir
+- "Nadir" alone with no "last/previous" context -> all_time_nadir
+- Consider the conversation history: if the previous exchange was about the last session, "the nadir" likely means last session nadir
+
+Respond ONLY with compact JSON: {"historyQueryType":"last_session_nadir|all_time_nadir|most_recent_session|heart_rate_trend|total_stats|other"}`;
+
+  try {
+    const content = await callOpenAI(prompt, systemPrompt, conversationHistory, apiKey);
+    let s = content.trim();
+    if (s.startsWith("```json")) s = s.slice(7);
+    if (s.startsWith("```")) s = s.slice(3);
+    if (s.endsWith("```")) s = s.slice(0, -3);
+    s = s.trim();
+    const first = s.indexOf("{");
+    const last = s.lastIndexOf("}");
+    if (first >= 0 && last > first) s = s.slice(first, last + 1);
+    const parsed = JSON.parse(s) as { historyQueryType?: string };
+    const v = (parsed.historyQueryType ?? "other").toLowerCase().replace(/-/g, "_");
+    const match = VALID_HISTORY_QUERY_TYPES.find((t) => t === v);
+    return match ?? "other";
+  } catch {
+    return "other";
+  }
+}
+
 function randomUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -284,7 +346,9 @@ export async function processAIRequest(
   functions.logger.info(`${TAG} classified intent=${intent}`);
 
   if (intent === "history") {
-    return { intent: "history", content: { type: "history" } };
+    const historyQueryType = await classifyHistorySubIntent(prompt, conversationHistory, apiKey);
+    functions.logger.info(`${TAG} history sub-intent=${historyQueryType}`);
+    return { intent: "history", content: { type: "history", historyQueryType } };
   }
 
   if (intent === "meditation") {
@@ -296,6 +360,7 @@ export async function processAIRequest(
       catalogs,
       apiKey,
       lastMeditationDuration: context.lastMeditationDuration,
+      recentBackgroundSounds: context.recentBackgroundSounds,
     });
     const pkg = buildMeditationPackage(meditation, catalogs, voiceId);
     functions.logger.info(`${TAG} success intent=meditation id=${pkg.id} duration=${pkg.duration} usedFallback=${usedFallback}`);

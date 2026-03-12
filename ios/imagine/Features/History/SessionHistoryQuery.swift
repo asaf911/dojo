@@ -136,6 +136,66 @@ final class SessionHistoryQuery {
         )
     }
     
+    /// Find the session with the lowest heart rate during the session (session nadir - may differ from ending).
+    /// Uses stored all-time lowest when available for quick lookup.
+    func lowestSessionNadir() -> HistoryQueryResponse {
+        // Quick path: use stored all-time lowest if we have the session
+        if let stored = historyManager.getAllTimeLowestNadir(),
+           let session = historyManager.getSession(by: stored.sessionId),
+           session.hasHeartRateData {
+            let minuteOffset = stored.minuteOffset
+            var summary = "Your lowest recorded heart rate during a session was \(Int(stored.bpm)) bpm during '\(stored.sessionTitle)' on \(session.formattedDate)."
+            if minuteOffset > 0 {
+                summary += " It occurred around \(String(format: "%.1f", minuteOffset)) minutes into the session."
+            }
+            return HistoryQueryResponse(
+                success: true,
+                sessions: [session],
+                summary: summary,
+                metadata: ["nadirBPM": stored.bpm, "minuteOffset": minuteOffset, "title": stored.sessionTitle]
+            )
+        }
+        
+        let sessionsWithHR = historyManager.getSessionsWithHeartRate()
+        guard !sessionsWithHR.isEmpty else {
+            return .empty(message: "You don't have any sessions with heart rate data yet. Complete a meditation with your Apple Watch connected to start tracking your heart rate.")
+        }
+        
+        // Prefer nadir.bpm, fallback to minBPM for older sessions without nadir
+        let sorted = sessionsWithHR
+            .compactMap { session -> (MeditationSession, Double)? in
+                if let nadirBPM = session.heartRate?.nadir?.bpm, nadirBPM > 0 {
+                    return (session, nadirBPM)
+                }
+                if let minBPM = session.heartRate?.minBPM, minBPM > 0 {
+                    return (session, minBPM)
+                }
+                return nil
+            }
+            .sorted { $0.1 < $1.1 }
+        
+        guard let lowest = sorted.first else {
+            return .empty(message: "No sessions with session minimum heart rate found. Complete more sessions with heart rate tracking to see your lowest HR during a session.")
+        }
+        
+        let session = lowest.0
+        let nadirBPM = lowest.1
+        let hr = session.heartRate!
+        let minuteOffset = hr.nadir?.minuteOffset ?? 0
+        
+        var summary = "Your lowest recorded heart rate during a session was \(Int(nadirBPM)) bpm during '\(session.title)' on \(session.formattedDate)."
+        if minuteOffset > 0 {
+            summary += " It occurred around \(String(format: "%.1f", minuteOffset)) minutes into the \(session.formattedDuration) session."
+        }
+        
+        return HistoryQueryResponse(
+            success: true,
+            sessions: [session],
+            summary: summary,
+            metadata: ["nadirBPM": nadirBPM, "minuteOffset": minuteOffset, "title": session.title]
+        )
+    }
+    
     /// Find the session with the lowest ending heart rate
     func lowestEndHeartRate() -> HistoryQueryResponse {
         let sessionsWithHR = historyManager.getSessionsWithHeartRate()
@@ -152,7 +212,7 @@ final class SessionHistoryQuery {
             return .empty(message: "No sessions with valid ending heart rate found. Make sure you complete your meditation sessions with your Apple Watch connected.")
         }
         
-        let summary = "Your lowest ending heart rate was \(Int(endBPM)) bpm during '\(best.title)' on \(best.formattedDate). This \(best.formattedDuration) session achieved great relaxation."
+        let summary = "Your lowest ending heart rate was \(Int(endBPM)) bpm during '\(best.title)' on \(best.formattedDate). It was recorded at the end of the \(best.formattedDuration) session."
         
         return HistoryQueryResponse(
             success: true,
@@ -188,8 +248,8 @@ final class SessionHistoryQuery {
         )
     }
     
-    /// Find the session with the best heart rate reduction
-    func bestHeartRateReduction() -> HistoryQueryResponse {
+    /// Find the session with the largest heart rate reduction (start to end)
+    func largestHeartRateReduction() -> HistoryQueryResponse {
         let sessionsWithHR = historyManager.getSessionsWithHeartRate()
         
         guard !sessionsWithHR.isEmpty else {
@@ -209,7 +269,7 @@ final class SessionHistoryQuery {
         }
         
         let percentReduction = (reduction / startBPM) * 100
-        let summary = "Your best heart rate reduction was \(Int(reduction)) bpm (\(Int(percentReduction))%) during '\(best.title)' on \(best.formattedDate). HR went from \(Int(startBPM)) to \(Int(endBPM)) bpm."
+        let summary = "Your largest heart rate reduction was \(Int(reduction)) bpm (\(Int(percentReduction))%) during '\(best.title)' on \(best.formattedDate). HR went from \(Int(startBPM)) to \(Int(endBPM)) bpm."
         
         return HistoryQueryResponse(
             success: true,
@@ -234,7 +294,7 @@ final class SessionHistoryQuery {
             if sessionsWithHR.isEmpty {
                 return .empty(message: "You don't have any sessions with heart rate data yet. Complete a meditation with your Apple Watch connected to start tracking your heart rate.")
             }
-            return .empty(message: "You need at least 2 sessions with heart rate data to see trends. Complete one more session to unlock this insight!")
+            return .empty(message: "You need at least 2 sessions with heart rate data to see trends. Complete one more session to view your heart rate patterns.")
         }
         
         let reductions = sessionsWithHR.compactMap { $0.heartRate?.bpmReduction }
@@ -306,6 +366,35 @@ final class SessionHistoryQuery {
     
     // MARK: - Recency Queries
     
+    /// Get the nadir (lowest HR during session) from the most recent session with heart rate data
+    func lastSessionNadir() -> HistoryQueryResponse {
+        let sessionsWithHR = historyManager.getSessionsWithHeartRate()
+        
+        guard let recent = sessionsWithHR.first else {
+            return .empty(message: "You don't have any sessions with heart rate data yet. Complete a meditation with your Apple Watch connected to start tracking your heart rate.")
+        }
+        
+        let nadirBPM: Double? = recent.heartRate?.nadir?.bpm ?? recent.heartRate?.minBPM
+        guard let bpm = nadirBPM, bpm > 0 else {
+            return .empty(message: "Your most recent session with heart rate data doesn't have nadir information. Complete a new session to see your lowest HR during the session.")
+        }
+        
+        let hr = recent.heartRate!
+        let minuteOffset = hr.nadir?.minuteOffset ?? 0
+        
+        var summary = "Your lowest heart rate in your last session was \(Int(bpm)) bpm during '\(recent.title)' on \(recent.formattedDate)."
+        if minuteOffset > 0 {
+            summary += " It occurred around \(String(format: "%.1f", minuteOffset)) minutes into the \(recent.formattedDuration) session."
+        }
+        
+        return HistoryQueryResponse(
+            success: true,
+            sessions: [recent],
+            summary: summary,
+            metadata: ["nadirBPM": bpm, "minuteOffset": minuteOffset, "title": recent.title]
+        )
+    }
+    
     /// Get the most recent session
     func mostRecentSession() -> HistoryQueryResponse {
         let allSessions = historyManager.getAllSessions()
@@ -318,6 +407,11 @@ final class SessionHistoryQuery {
         
         if let hr = recent.heartRate, hr.hasValidData, let start = hr.startBPM, let end = hr.endBPM {
             summary += " Your heart rate went from \(Int(start)) to \(Int(end)) bpm."
+            if let nadir = hr.nadir {
+                summary += " Your lowest during the session was \(Int(nadir.bpm)) bpm around \(String(format: "%.1f", nadir.minuteOffset)) minutes in."
+            } else if let minBPM = hr.minBPM {
+                summary += " Your lowest during the session was \(Int(minBPM)) bpm."
+            }
         }
         
         return HistoryQueryResponse(

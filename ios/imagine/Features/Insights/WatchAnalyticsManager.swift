@@ -49,6 +49,8 @@ class WatchAnalyticsManager {
         practiceDuration: Int? = nil,
         contentType: String? = nil,
         heartRateResults: (startBPM: Double, endBPM: Double, avgBPM: Double, sampleCount: Int, duration: TimeInterval)? = nil,
+        minBPM: Double? = nil,
+        nadirMinuteOffset: Double? = nil,
         error: HeartRateError? = nil
     ) {
 
@@ -92,7 +94,7 @@ class WatchAnalyticsManager {
             // Successful measurement
             let changePercent = results.startBPM > 0 ? ((results.endBPM - results.startBPM) / results.startBPM) * 100 : 0
 
-            parameters.merge([
+            var successParams: [String: Any] = [
                 "measurement_success": true,
                 "start_heart_rate": Int(round(results.startBPM)),
                 "end_heart_rate": Int(round(results.endBPM)),
@@ -103,7 +105,14 @@ class WatchAnalyticsManager {
                 "measurement_duration_seconds": Int(results.duration),
                 "heart_rate_range": getHeartRateRange(results.avgBPM),
                 "measurement_quality": getMeasurementQuality(sampleCount: results.sampleCount, duration: results.duration)
-            ]) { _, new in new }
+            ]
+            if let min = minBPM, min > 0 {
+                successParams["min_heart_rate"] = Int(round(min))
+            }
+            if let offset = nadirMinuteOffset, offset >= 0 {
+                successParams["nadir_minute_offset"] = round(offset * 10) / 10
+            }
+            parameters.merge(successParams) { _, new in new }
 
             // Add hr_session_number (1-indexed: this is the Nth successful HR session)
             let currentHRCount = SharedUserStorage.retrieve(forKey: .totalHRSessions, as: Int.self) ?? 0

@@ -112,6 +112,64 @@ extension MeditationSession {
     }
 }
 
+// MARK: - NadirContent Firestore Conversion
+
+extension NadirContent {
+    
+    func toFirestoreData() -> [String: Any] {
+        var data: [String: Any] = [
+            "contentType": contentType,
+            "practiceTitle": practiceTitle
+        ]
+        if let v = practiceId { data["practiceId"] = v }
+        if let v = cueId { data["cueId"] = v }
+        if let v = cueName { data["cueName"] = v }
+        return data
+    }
+    
+    static func fromFirestoreData(_ data: [String: Any]) -> NadirContent {
+        return NadirContent(
+            contentType: data["contentType"] as? String ?? "",
+            practiceId: data["practiceId"] as? String,
+            practiceTitle: data["practiceTitle"] as? String ?? "",
+            cueId: data["cueId"] as? String,
+            cueName: data["cueName"] as? String
+        )
+    }
+}
+
+// MARK: - HeartRateNadir Firestore Conversion
+
+extension HeartRateNadir {
+    
+    func toFirestoreData() -> [String: Any] {
+        var data: [String: Any] = [
+            "bpm": bpm,
+            "minuteOffset": minuteOffset
+        ]
+        if let ts = timestamp {
+            data["timestamp"] = Timestamp(date: ts)
+        }
+        if let content = contentAtTime {
+            data["contentAtTime"] = content.toFirestoreData()
+        }
+        return data
+    }
+    
+    static func fromFirestoreData(_ data: [String: Any]) -> HeartRateNadir {
+        let timestamp: Date? = (data["timestamp"] as? Timestamp)?.dateValue()
+        let contentAtTime: NadirContent? = (data["contentAtTime"] as? [String: Any])
+            .map { NadirContent.fromFirestoreData($0) }
+        
+        return HeartRateNadir(
+            bpm: data["bpm"] as? Double ?? 0,
+            minuteOffset: data["minuteOffset"] as? Double ?? 0,
+            timestamp: timestamp,
+            contentAtTime: contentAtTime
+        )
+    }
+}
+
 // MARK: - SessionHeartRateData Firestore Conversion
 
 extension SessionHeartRateData {
@@ -129,6 +187,10 @@ extension SessionHeartRateData {
         if let v = maxBPM { data["maxBPM"] = v }
         if let v = changePercent { data["changePercent"] = v }
         if let v = source { data["source"] = v }
+        
+        if let n = nadir {
+            data["nadir"] = n.toFirestoreData()
+        }
         
         // Convert samples array
         data["samples"] = samples.map { sample in
@@ -151,6 +213,9 @@ extension SessionHeartRateData {
             return HeartRateSamplePoint(minuteOffset: offset, bpm: bpm)
         }
         
+        let nadir: HeartRateNadir? = (data["nadir"] as? [String: Any])
+            .map { HeartRateNadir.fromFirestoreData($0) }
+        
         return SessionHeartRateData(
             startBPM: data["startBPM"] as? Double,
             endBPM: data["endBPM"] as? Double,
@@ -160,7 +225,8 @@ extension SessionHeartRateData {
             changePercent: data["changePercent"] as? Double,
             readingCount: data["readingCount"] as? Int ?? 0,
             source: data["source"] as? String,
-            samples: samples
+            samples: samples,
+            nadir: nadir
         )
     }
 }

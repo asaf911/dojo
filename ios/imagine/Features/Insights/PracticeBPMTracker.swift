@@ -28,6 +28,9 @@ class PracticeBPMTracker: ObservableObject {
     @Published var overallAverage: Double = 0         // Average of all readings
     @Published var heartRateChange: Double = 0        // Percentage change (first3 to last3)
     @Published var sampleCount: Int = 0
+    @Published var minBPM: Double = 0
+    @Published var maxBPM: Double = 0
+    @Published var nadirMinuteOffset: Double = 0     // Minutes into session when lowest BPM occurred
     
     // MARK: - Final Session Results (Locked After Practice Ends)
     @Published var finalFirstThreeAverage: Double = 0
@@ -35,6 +38,9 @@ class PracticeBPMTracker: ObservableObject {
     @Published var finalOverallAverage: Double = 0
     @Published var finalHeartRateChange: Double = 0
     @Published var finalSampleCount: Int = 0
+    @Published var finalMinBPM: Double = 0
+    @Published var finalMaxBPM: Double = 0
+    @Published var finalNadirMinuteOffset: Double = 0
     @Published var hasLockedResults: Bool = false     // True when final results are locked
     
     // MARK: - Internal Tracking
@@ -127,6 +133,8 @@ class PracticeBPMTracker: ObservableObject {
         let finalLast = finalLastThreeAverage
         let finalAvg = finalOverallAverage
         let finalCount = finalSampleCount
+        let finalMin = finalMinBPM
+        let finalNadirOffset = finalNadirMinuteOffset
         
         // Capture session_id to link heart_rate_session_complete with session_start/session_complete
         let sessionId = SessionContextManager.shared.currentContext?.sessionId
@@ -148,6 +156,8 @@ class PracticeBPMTracker: ObservableObject {
                         sampleCount: finalCount,
                         duration: duration
                     ),
+                    minBPM: finalMin > 0 ? finalMin : nil,
+                    nadirMinuteOffset: finalNadirOffset >= 0 ? finalNadirOffset : nil,
                     error: nil
                 )
             } else {
@@ -188,6 +198,9 @@ class PracticeBPMTracker: ObservableObject {
         overallAverage = 0
         heartRateChange = 0
         sampleCount = 0
+        minBPM = 0
+        maxBPM = 0
+        nadirMinuteOffset = 0
     }
     
     private func resetFinalResults() {
@@ -196,6 +209,9 @@ class PracticeBPMTracker: ObservableObject {
         finalOverallAverage = 0
         finalHeartRateChange = 0
         finalSampleCount = 0
+        finalMinBPM = 0
+        finalMaxBPM = 0
+        finalNadirMinuteOffset = 0
         hasLockedResults = false
     }
     
@@ -208,9 +224,12 @@ class PracticeBPMTracker: ObservableObject {
         finalOverallAverage = overallAverage
         finalHeartRateChange = heartRateChange
         finalSampleCount = sampleCount
+        finalMinBPM = minBPM
+        finalMaxBPM = maxBPM
+        finalNadirMinuteOffset = nadirMinuteOffset
         hasLockedResults = true
         
-        HRDebugLogger.log(.bpmTracker, "Final results LOCKED: \(finalSampleCount) readings, first3=\(String(format: "%.0f", finalFirstThreeAverage)), last3=\(String(format: "%.0f", finalLastThreeAverage)), avg=\(String(format: "%.0f", finalOverallAverage)), change=\(String(format: "%.1f", finalHeartRateChange))%")
+        HRDebugLogger.log(.bpmTracker, "Final results LOCKED: \(finalSampleCount) readings, first3=\(String(format: "%.0f", finalFirstThreeAverage)), last3=\(String(format: "%.0f", finalLastThreeAverage)), avg=\(String(format: "%.0f", finalOverallAverage)), min=\(Int(finalMinBPM)), change=\(String(format: "%.1f", finalHeartRateChange))%")
     }
     
     /// Calculate metrics as readings come in (for live updates)
@@ -246,6 +265,16 @@ class PracticeBPMTracker: ObservableObject {
         // Calculate percentage change
         if firstThreeAverage > 0 {
             heartRateChange = ((lastThreeAverage - firstThreeAverage) / firstThreeAverage) * 100
+        }
+        
+        // Min, max, and nadir (minute offset when lowest BPM occurred)
+        if let minVal = bpmValues.min(), let maxVal = bpmValues.max() {
+            minBPM = minVal
+            maxBPM = maxVal
+            if let startTime = sessionStartTime,
+               let nadirReading = allReadings.first(where: { $0.bpm == minVal }) {
+                nadirMinuteOffset = nadirReading.timestamp.timeIntervalSince(startTime) / 60.0
+            }
         }
     }
     
@@ -321,6 +350,32 @@ class PracticeBPMTracker: ObservableObject {
     /// Get the appropriate overall average (final if locked, otherwise live)
     var bestOverallAverage: Double {
         return hasLockedResults ? finalOverallAverage : overallAverage
+    }
+    
+    /// Get the appropriate min BPM (final if locked, otherwise live)
+    var bestMinBPM: Double {
+        return hasLockedResults ? finalMinBPM : minBPM
+    }
+    
+    /// Get the appropriate max BPM (final if locked, otherwise live)
+    var bestMaxBPM: Double {
+        return hasLockedResults ? finalMaxBPM : maxBPM
+    }
+    
+    /// Minute offset when lowest BPM occurred (final if locked, otherwise live)
+    var bestNadirMinuteOffset: Double {
+        return hasLockedResults ? finalNadirMinuteOffset : nadirMinuteOffset
+    }
+    
+    /// Absolute timestamp when nadir occurred (nil if no session start or no data)
+    var nadirTimestamp: Date? {
+        guard let start = sessionStartTime, hasAnyData else { return nil }
+        return start.addingTimeInterval(bestNadirMinuteOffset * 60)
+    }
+    
+    /// Session start time (for nadir timestamp and content-at-time lookup)
+    var sessionStartTimeForNadir: Date? {
+        return sessionStartTime
     }
     
     // MARK: - Legacy Compatibility (for existing code)

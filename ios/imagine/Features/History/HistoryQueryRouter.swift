@@ -19,10 +19,29 @@ final class HistoryQueryRouter {
     
     // MARK: - Query Execution
     
-    /// Execute a history query based on natural language input
-    func executeQuery(for prompt: String) -> HistoryQueryResponse {
-        print("🧠 AI_DEBUG HISTORY executeQuery prompt='\(prompt)'")
+    /// Execute a history query. When historyQueryType is provided (from server AI classification), use it directly.
+    /// Otherwise fall back to keyword matching on the prompt.
+    func executeQuery(for prompt: String, historyQueryType: String? = nil) -> HistoryQueryResponse {
+        print("🧠 AI_DEBUG HISTORY executeQuery prompt='\(prompt)' historyQueryType=\(historyQueryType ?? "nil")")
+        
+        // Server-provided AI-interpreted query type takes precedence
+        if let qType = historyQueryType, qType != "other" {
+            if let result = executeByQueryType(qType) {
+                return result
+            }
+        }
+        
         let lower = prompt.lowercased()
+        
+        // Last/previous session nadir — MUST run before generic "nadir" (which means all-time)
+        // Covers: "nadir in last session", "my last nadir", "previous session lowest", etc.
+        if containsAny(lower, ["last session", "last meditation", "last practice", "most recent", "previous session", "previous meditation", "my last", "in my last"]) &&
+           containsAny(lower, ["nadir", "lowest", "minimum", "low"]) {
+            return queryService.lastSessionNadir()
+        }
+        if containsAny(lower, ["last nadir", "previous nadir", "nadir in my last", "lowest in last", "lowest in previous"]) {
+            return queryService.lastSessionNadir()
+        }
         
         // Average heart rate queries
         if containsAny(lower, ["average heart rate", "avg heart rate", "average hr", "avg hr", "average bpm", "avg bpm", "mean heart rate", "mean hr"]) {
@@ -36,7 +55,11 @@ final class HistoryQueryRouter {
             return queryService.heartRateTrend()
         }
         
-        // Heart rate extremes
+        // Heart rate extremes - session nadir (lowest during session)
+        if containsAny(lower, ["lowest heart rate during session", "lowest hr during session", "session nadir", "nadir", "lowest during session", "lowest bpm during", "all time lowest", "lowest recorded"]) {
+            return queryService.lowestSessionNadir()
+        }
+        
         if containsAny(lower, ["lowest heart rate", "lowest hr", "lowest bpm", "lowest ending", "best relaxation"]) {
             return queryService.lowestEndHeartRate()
         }
@@ -45,8 +68,8 @@ final class HistoryQueryRouter {
             return queryService.highestStartHeartRate()
         }
         
-        if containsAny(lower, ["best reduction", "biggest drop", "most reduced", "best hr change", "greatest decrease"]) {
-            return queryService.bestHeartRateReduction()
+        if containsAny(lower, ["largest reduction", "biggest drop", "most reduced", "largest hr change", "greatest decrease", "best reduction", "best hr change"]) {
+            return queryService.largestHeartRateReduction()
         }
         
         if containsAny(lower, ["heart rate trend", "hr trend", "bpm trend", "heart rate over time", "heart rate progress"]) {
@@ -127,6 +150,24 @@ final class HistoryQueryRouter {
         // Default: show overall stats
         print("🧠 AI_DEBUG HISTORY executeQuery fallback to totalStats")
         return queryService.totalStats()
+    }
+    
+    /// Execute query by server-provided historyQueryType (AI-interpreted). Returns nil for "other" or unknown.
+    private func executeByQueryType(_ qType: String) -> HistoryQueryResponse? {
+        switch qType {
+        case "last_session_nadir":
+            return queryService.lastSessionNadir()
+        case "all_time_nadir":
+            return queryService.lowestSessionNadir()
+        case "most_recent_session":
+            return queryService.mostRecentSession()
+        case "heart_rate_trend":
+            return queryService.heartRateTrend()
+        case "total_stats":
+            return queryService.totalStats()
+        default:
+            return nil
+        }
     }
     
     /// Format a query response for display in chat
