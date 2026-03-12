@@ -45,6 +45,11 @@ struct RecommendationContext {
     /// When true, the next Custom meditation is the user's first — use goal + hurdle in prompt.
     let isFirstCustomMeditation: Bool
 
+    /// When true: first-ever recommendation on Personal track.
+    /// Primary = 5 min (faster time-to-value), Secondary = 10 min.
+    /// Only affects Custom-generated sessions; Explore keeps catalog duration.
+    let isFirstPersonalRecommendation: Bool
+
     init(
         timeOfDay: ExploreRecommendationManager.TimeOfDay = .current(),
         hurdleContext: HurdleRecommendationContext? = nil,
@@ -53,7 +58,8 @@ struct RecommendationContext {
         contextMessage: String? = nil,
         isFirstWelcome: Bool = false,
         goal: String? = nil,
-        isFirstCustomMeditation: Bool = false
+        isFirstCustomMeditation: Bool = false,
+        isFirstPersonalRecommendation: Bool = false
     ) {
         self.timeOfDay = timeOfDay
         self.hurdleContext = hurdleContext
@@ -63,6 +69,7 @@ struct RecommendationContext {
         self.isFirstWelcome = isFirstWelcome
         self.goal = goal
         self.isFirstCustomMeditation = isFirstCustomMeditation
+        self.isFirstPersonalRecommendation = isFirstPersonalRecommendation
     }
 }
 
@@ -198,7 +205,8 @@ extension RecommendationContextEngine {
 
             // No hurdle-matched Explore — Custom is more personalised than a generic Explore session.
             logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: No Explore hurdle-match → generating Custom")
-            guard let custom = await generateCustom(duration: 10, context: context) else {
+            let primaryDuration = context.isFirstPersonalRecommendation ? 5 : 10
+            guard let custom = await generateCustom(duration: primaryDuration, context: context) else {
                 logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Custom generation failed")
                 return nil
             }
@@ -248,9 +256,11 @@ extension RecommendationContextEngine {
                 }
 
                 // No Explore available — shorter Custom duration as contrast-by-commitment.
-                logger.aiChat("🎯 CTX_ENGINE [CONTRAST]: Primary=Custom, no Explore → 5-min Custom secondary")
-                guard let shortCustom = await generateCustom(duration: 5, context: context) else { return nil }
-                let shortMessage = await messageService.generateCustomSecondary(duration: 5, timeOfDay: timeOfDayName)
+                // First Personal: secondary = 10 min (flipped for faster primary time-to-value).
+                let secondaryDuration = context.isFirstPersonalRecommendation ? 10 : 5
+                logger.aiChat("🎯 CTX_ENGINE [CONTRAST]: Primary=Custom, no Explore → \(secondaryDuration)-min Custom secondary")
+                guard let shortCustom = await generateCustom(duration: secondaryDuration, context: context) else { return nil }
+                let shortMessage = await messageService.generateCustomSecondary(duration: secondaryDuration, timeOfDay: timeOfDayName)
                 return RecommendationItem(type: .custom(shortCustom), introMessage: shortMessage)
             }
         }

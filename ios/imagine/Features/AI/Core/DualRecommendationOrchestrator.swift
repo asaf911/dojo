@@ -120,7 +120,8 @@ class DualRecommendationOrchestrator: ObservableObject {
             contextMessage: context.contextMessage,
             isFirstWelcome: context.isFirstWelcome,
             goal: context.goal,
-            isFirstCustomMeditation: secondaryIsFirstCustom
+            isFirstCustomMeditation: secondaryIsFirstCustom,
+            isFirstPersonalRecommendation: context.isFirstPersonalRecommendation
         )
 
         let secondary: RecommendationItem?
@@ -199,7 +200,8 @@ class DualRecommendationOrchestrator: ObservableObject {
             contextMessage: contextMessage,
             isFirstWelcome: isFirstWelcome,
             goal: goal,
-            isFirstCustomMeditation: !hasReceivedFirst
+            isFirstCustomMeditation: !hasReceivedFirst,
+            isFirstPersonalRecommendation: mode == .personal && isFirstWelcome
         )
     }
 
