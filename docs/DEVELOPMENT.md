@@ -70,6 +70,17 @@ The iOS app prints `[Server]`-tagged logs so you can validate which server is in
 - `[Server][Storage]` — Audio files fetch from Firebase Storage
 - `[Server][Path]` — Path steps fetch
 
+## AI Agent / Cursor Response Convention
+
+At the end of each response that involves code or config changes, include a short **environment status**:
+
+- **Dev** — updated / will need deploy / not affected
+- **Prod** — updated / will need deploy / not affected
+- **Content bucket** — updated / not affected
+- **iOS** — updated / not affected
+
+Example: `Env: Dev + Prod functions need deploy; Content bucket unchanged; iOS unchanged.`
+
 ## Configuration Reference
 
 - **`.firebaserc`** — Defines project aliases (`default`, `dev`).
