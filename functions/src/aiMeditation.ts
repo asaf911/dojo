@@ -63,8 +63,13 @@ async function callOpenAIMetadata(
 ): Promise<AIMetadataResponse> {
   const beatsList =
     catalogs.binauralBeats.length > 0
-      ? catalogs.binauralBeats.map((b) => b.id).join(", ")
-      : "BB2, BB4, BB6, BB10, BB14, BB40";
+      ? catalogs.binauralBeats
+          .map((b) => {
+            const category = b.name.match(/\(([^)]+)\)/)?.[1] ?? b.id;
+            return `${b.id} (${category})`;
+          })
+          .join(", ")
+      : "BB2 (Sleep), BB4 (Imagination), BB6 (Vision), BB10 (Relaxation), BB14 (Focus), BB40 (Gratitude)";
 
   const systemPrompt = `You generate meditation metadata only. The structure is already fixed.
 
@@ -74,8 +79,11 @@ Duration: ${duration} min. User said: "${userPrompt}"
 Return JSON only with these exact keys:
 { "title": "short title", "description": "brief description", "binauralBeatId": "ID" }
 
-AVAILABLE BEATS: ${beatsList}
-Select the binaural beat that best fits the session type (sleep, focus, relaxation, etc.). Use valid IDs from the list.`;
+BINAURAL BEATS (each has a purpose - match user intent to the closest beat):
+${beatsList}
+
+Examples: gratitude -> BB40, focus -> BB14, sleep -> BB2, relaxation -> BB10, imagination/creativity -> BB4, vision/intention -> BB6.
+Select the beat that best matches what the user asked for. Use valid IDs only.`;
 
   const messages: Array<{ role: string; content: string }> = [
     { role: "system", content: systemPrompt },
