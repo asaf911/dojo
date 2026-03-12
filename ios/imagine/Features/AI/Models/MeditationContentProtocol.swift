@@ -140,17 +140,18 @@ extension MeditationContent {
 
 /// Converts Firebase Storage gs:// URLs to HTTPS URLs
 func convertGsUrlToHttps(_ gsUrl: String) -> URL? {
+    // Resolve to content bucket (rewrites dev bucket URLs to prod)
+    let resolved = Config.resolveMediaUrl(gsUrl)
     // Convert gs:// URL to https:// URL for Firebase Storage
     // Format: gs://bucket-name/path/to/file.jpg
     // Becomes: https://firebasestorage.googleapis.com/v0/b/bucket-name/o/path%2Fto%2Ffile.jpg?alt=media
-    
     let gsPrefix = "gs://"
-    guard gsUrl.hasPrefix(gsPrefix) else {
+    guard resolved.hasPrefix(gsPrefix) else {
         // Already an https URL or other format
-        return URL(string: gsUrl)
+        return URL(string: resolved)
     }
     
-    let withoutPrefix = gsUrl.dropFirst(gsPrefix.count)
+    let withoutPrefix = resolved.dropFirst(gsPrefix.count)
     let components = withoutPrefix.split(separator: "/", maxSplits: 1)
     
     guard components.count == 2 else { return nil }

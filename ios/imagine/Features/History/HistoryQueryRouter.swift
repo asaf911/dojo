@@ -3,7 +3,7 @@
 //  Dojo
 //
 //  Executes history queries based on natural language input.
-//  Intent detection is handled by AI classification in AIService.
+//  Intent detection is handled by server (POST /ai/request); client runs local query when intent=history.
 //
 
 import Foundation

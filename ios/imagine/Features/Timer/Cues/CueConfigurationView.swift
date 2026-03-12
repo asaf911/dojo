@@ -13,7 +13,7 @@ struct CueConfigurationView: View {
     @Binding var cueSettings: [CueSetting]
     
     private let maxCues = 10
-    @ObservedObject var cueManager = CueManager.shared
+    @ObservedObject var catalogsManager = CatalogsManager.shared
     
     // Helper function to display the current trigger as text.
     private func displayText(for setting: CueSetting) -> String {
@@ -41,7 +41,7 @@ struct CueConfigurationView: View {
                 HStack(alignment: .center, spacing: 6) {
                     // Cue sound selection using CueIndicatorView.
                     Menu {
-                        ForEach(cueManager.cues) { cue in
+                        ForEach(catalogsManager.cues) { cue in
                             Button(cue.name) {
                                 cueSettings[index].cue = cue
                             }
@@ -146,7 +146,7 @@ struct CueConfigurationView: View {
         .padding(.vertical, 10)
         .onAppear {
             if ConnectivityHelper.isConnectedToInternet() {
-                cueManager.fetchCues()
+                catalogsManager.fetchCatalogs(triggerContext: "CueConfigurationView|pull-to-refresh")
             }
         }
     }
@@ -155,7 +155,7 @@ struct CueConfigurationView: View {
     
     private func addCue() {
         // Default to the first available cue if present; otherwise fallback.
-        let defaultCue: Cue = !cueManager.cues.isEmpty ? cueManager.cues.first! : Cue(id: "None", name: "None", url: "")
+        let defaultCue: Cue = !catalogsManager.cues.isEmpty ? catalogsManager.cues.first! : Cue(id: "None", name: "None", url: "")
         
         // Determine the next available trigger:
         // 1. If no cue is set to Start, assign Start.

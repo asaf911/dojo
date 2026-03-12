@@ -137,6 +137,7 @@ enum UserStorageKey: String, CaseIterable {
     case hasCompletedFirstSession        // Bool - true after first session_complete
     // Feature flags
     case devModeEnabled
+    case useDevServer  // Bool - when true, app uses dev Firebase project (Cloud Functions + Storage)
     case hrMonitoringEnabled
     case aiPendingPostSessionMessage
     case userProfile
@@ -204,4 +205,7 @@ enum UserStorageKey: String, CaseIterable {
     // Tracks the last observed RevenueCat periodType ("trial", "intro", "normal").
     // Used to detect trial→paid conversion so af_subscribe fires exactly once.
     case lastKnownPeriodType
+
+    // Narration voice for custom meditations (dev mode). Values: "Asaf" | "Dan"
+    case narrationVoiceId
 }

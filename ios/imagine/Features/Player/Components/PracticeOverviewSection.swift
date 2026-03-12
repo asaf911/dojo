@@ -162,7 +162,7 @@ struct PracticeOverviewSection_Previews: PreviewProvider {
                         backgroundSound: BackgroundSound(id: "B1", name: "Dharapani", url: "test"),
                         binauralBeat: BinauralBeat(id: "BB1", name: "10 Hz (Relaxation)", url: "test", description: nil),
                         cueSettings: [
-                            CueSetting(triggerType: .start, cue: Cue(id: "C1", name: "Settling In", url: "test")),
+                            CueSetting(triggerType: .start, cue: Cue(id: "C1", name: "General Introduction", url: "test")),
                             CueSetting(triggerType: .minute, minute: 1, cue: Cue(id: "C2", name: "Perfect Breath (1m)", url: "test")),
                             CueSetting(triggerType: .minute, minute: 2, cue: Cue(id: "C3", name: "Body Scan (7m)", url: "test")),
                             CueSetting(triggerType: .minute, minute: 9, cue: Cue(id: "C4", name: "Mantra", url: "test")),

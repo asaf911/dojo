@@ -43,6 +43,7 @@ struct DojoApp: App {
         // GeneralBackgroundMusicController uses .ambient for lobby music.
         
         print("📊 TRACKING: [INIT] DojoApp initialization complete")
+        print("[Server][Config] Active server: \(Config.serverLabel)")
     }
     
     var body: some Scene {
@@ -66,6 +67,7 @@ struct DojoApp: App {
                     .environmentObject(GlobalErrorManager.shared) // Inject global error manager
                     .onFirstAppear {
                         print("DojoApp: onFirstAppear called")
+                        print("[Server][Config] Active server: \(Config.serverLabel)")
                         // Set the shared NavigationCoordinator instance
                         NavigationCoordinator.shared = navigationCoordinator
                         // Set the shared AudioPlayerManager instance

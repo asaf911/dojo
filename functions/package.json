@@ -1,12 +1,15 @@
 {
   "name": "functions",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/ai_composition_guidelines.json lib/ && cp -r catalogs lib/",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
+    "deploy:prod": "firebase deploy --only functions",
+    "deploy:dev": "firebase use dev && firebase deploy --only functions",
+    "deploy:dev-to-prod": "firebase use default && firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "engines": {

@@ -51,8 +51,9 @@ class AppFunctions {
     }
     
     private static func fetchAudioFilesFromServer(completion: @escaping ([AudioFile]) -> Void) {
-        let storage = Storage.storage()
-        let storageRef = storage.reference(forURL: serverPath() + Config.audioFileJsonFileName)
+        print("[Server][Storage] fetchAudioFiles: start server=\(Config.serverLabel)")
+        let storage = Config.contentStorage
+        let storageRef = storage.reference(forURL: Config.contentStoragePath + Config.audioFileJsonFileName)
         
         storageRef.getData(maxSize: 10 * 1024 * 1024) { data, error in
             if let error = error {
@@ -74,6 +75,7 @@ class AppFunctions {
             do {
                 let decoder = JSONDecoder()
                 let audioFiles = try decoder.decode([AudioFile].self, from: data)
+                print("[Server][Storage] fetchAudioFiles: success server=\(Config.serverLabel) count=\(audioFiles.count)")
                 logger.eventMessage("Successfully decoded audio files from server.")
                 processImageURLs(for: audioFiles) { updatedAudioFiles in
                     DispatchQueue.main.async {
@@ -158,9 +160,10 @@ class AppFunctions {
         let dispatchGroup = DispatchGroup()
         
         for index in updatedAudioFiles.indices {
-            if let imageFile = updatedAudioFiles[index].imageFile, imageFile.hasPrefix(serverPath()) {
+            if let imageFile = updatedAudioFiles[index].imageFile, imageFile.hasPrefix("gs://") {
                 dispatchGroup.enter()
-                let storageRef = Storage.storage().reference(forURL: imageFile)
+                let resolvedUrl = Config.resolveMediaUrl(imageFile)
+                let storageRef = Config.contentStorage.reference(forURL: resolvedUrl)
                 storageRef.downloadURL { url, error in
                     if let error = error {
                         logger.eventMessage("Failed to download image URL: \(error.localizedDescription)")
@@ -267,6 +270,9 @@ class AppFunctions {
         if categories.contains(.libraryData) {
             clearLibraryData()
         }
+        if categories.contains(.catalogs) {
+            CatalogsManager.shared.clearCache()
+        }
         if categories.contains(.downloadedAudio) {
             clearDownloadedAudioFiles()
         }
@@ -321,14 +327,6 @@ class AppFunctions {
         @unknown default:
             logger.eventMessage("Unknown decoding error: \(error)")
         }
-    }
-    
-    private static func serverPath() -> String {
-        #if DEVENV
-        return Config.storagePathPrefix + Config.devServerPath
-        #else
-        return Config.storagePathPrefix + Config.productionServerPath
-        #endif
     }
 }
 

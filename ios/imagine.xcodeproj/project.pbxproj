@@ -101,7 +101,6 @@
 		A514337C2D5462C200105271 /* MeditationAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337B2D5462B500105271 /* MeditationAudioManager.swift */; };
 		A514337E2D5462ED00105271 /* BackgroundSoundSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */; };
 		A51434162D554AD400105271 /* BackgroundSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434152D554AC900105271 /* BackgroundSound.swift */; };
-		A51434182D554B0A00105271 /* BackgroundSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51434172D554B0000105271 /* BackgroundSoundManager.swift */; };
 		A51F61E92DDDA24300DA9CEB /* UserIdentityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */; };
 		A51F64B82DE2D36800DA9CEB /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64B62DE2D36800DA9CEB /* PlayerView.swift */; };
 		A51F64BC2DE2E5DF00DA9CEB /* PlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */; };
@@ -132,7 +131,6 @@
 		A56848402D8CBBD0007BFF17 /* GeneralBackgroundMusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A568483F2D8CBBCF007BFF17 /* GeneralBackgroundMusicController.swift */; };
 		A56A5DF92D6C4E1B00508EB1 /* PracticeBadges.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DF82D6C4E1100508EB1 /* PracticeBadges.swift */; };
 		A56A5DFC2D6D95DC00508EB1 /* Cue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFB2D6D95CF00508EB1 /* Cue.swift */; };
-		A56A5DFE2D6D960000508EB1 /* CueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFD2D6D95F000508EB1 /* CueManager.swift */; };
 		A56A5E002D6D962800508EB1 /* CueConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */; };
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
@@ -217,8 +215,8 @@
 		A7CB15E19007A1638E89C375 /* DailyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E2CA88607C23D3A50BE6800 /* DailyStats.swift */; };
 		AEB58E082A151E68280AF78C /* MediaSessionProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F059D00A7BCB38F73601E75 /* MediaSessionProtocol.swift */; };
 		AFMGR00022E8F000100000001 /* AppsFlyerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFMGR00012E8F000100000001 /* AppsFlyerManager.swift */; };
+		AIREQ001F00000100000001 /* AIRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AIREQ001F00000100000002 /* AIRequestService.swift */; };
 		B1A1A1A12F00000100AAAAAA /* ThinkingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */; };
-		B1E2C3D52F00000100AAAAAA /* AssistantsAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2C3D42F00000100AAAAAA /* AssistantsAIService.swift */; };
 		B211CA907177F10959DD6D1D /* JourneyPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5EE1D42B8780FD4D6C1C08 /* JourneyPhase.swift */; };
 		B467EF59E98773AD292FECE4 /* SessionHistoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCDDD51DE98D6EB915C3639 /* SessionHistoryQuery.swift */; };
 		B62F5D1141715141CDE098FC /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D57F3366E32AA6519AD0E5 /* HealthKitManager.swift */; };
@@ -226,14 +224,12 @@
 		B90D3816EE4D55569B045F32 /* AnalyticsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */; };
 		B99E39F42E6D9108E6EB220A /* OnboardingAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DEBFA0CFCE36629E887E534 /* OnboardingAnalytics.swift */; };
 		BB87153CB7CD4F0D98FA6155 /* OnboardingUnifiedFooter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9C58FF55BB6E75EEF623DC /* OnboardingUnifiedFooter.swift */; };
-		BBF000052FFF000100000001 /* BinauralBeatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000032FFF000100000001 /* BinauralBeatManager.swift */; };
 		BBF000062FFF000100000001 /* BinauralBeat.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000042FFF000100000001 /* BinauralBeat.swift */; };
 		BBF000072FFF000100000001 /* BinauralBeatAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000022FFF000100000001 /* BinauralBeatAudioManager.swift */; };
 		BBF000082FFF000100000001 /* BinauralBeatSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000012FFF000100000001 /* BinauralBeatSelectionView.swift */; };
 		BBF100012FFF000100000001 /* CustomMeditationVolumeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */; };
 		BBF100122FFF000100000001 /* CustomSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF100112FFF000100000001 /* CustomSlider.swift */; };
 		BC170C0F24430000B2993614 /* AppAudioLifecycleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC170C0F24420000B2993614 /* AppAudioLifecycleController.swift */; };
-		C0A1B0112F00010000AAAAAA /* AIMeditationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A1B0012F00010000AAAAAA /* AIMeditationGenerator.swift */; };
 		C1555CCB16DEF470065B519D /* MeditationSession+Firebase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CFFFFDFD27F7B1FD4D2E720 /* MeditationSession+Firebase.swift */; };
 		C16B9FADE1B63545F0A8BDB7 /* OnboardingPrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F811C6BD7AF9A141692DC55 /* OnboardingPrimaryButton.swift */; };
 		C16B9FADE1B63545F0A8BDB8 /* PurpleFadeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F811C6BD7AF9A141692DC56 /* PurpleFadeOverlay.swift */; };
@@ -244,6 +240,8 @@
 		C1E5F1242F12345600AAAAAA /* OnboardingResponseCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E5F1142F12345600AAAAAA /* OnboardingResponseCollector.swift */; };
 		C21E85E3A2E63C103CBF9912 /* RecommendationContextEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F935BB35868118A707C8596C /* RecommendationContextEngine.swift */; };
 		C4DB25F1BB32F2A55A2A9D75 /* OnboardingConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 333AC32243B627B6F6E735BF /* OnboardingConfiguration.swift */; };
+		C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0012F000100000001 /* CatalogsManager.swift */; };
+		C5A1B0032F000100000002 /* MeditationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A1B0042F000100000002 /* MeditationsService.swift */; };
 		C68990B377ABB6EAE33A980C /* OneSignalTagManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5326CB287938C21921A4297C /* OneSignalTagManager.swift */; };
 		C724E42341AB735D1E8A6BB8 /* MockAnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B16B5811E58280114D33AAA /* MockAnalyticsService.swift */; };
 		C860242BCF88C7631FD05D54 /* PhoneConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86ED4A96D89531645315D892 /* PhoneConnectivityManager.swift */; };
@@ -314,6 +312,7 @@
 		HURDLE0CONTENT0BUILD001 /* HurdleScreenContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = HURDLE0CONTENT0SWIFT01 /* HurdleScreenContent.swift */; };
 		KB0100012FFF000100000001 /* ChatKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = KB0100022FFF000100000001 /* ChatKeyboardController.swift */; };
 		LEGACY_CONTINUE_BTN_BLD01 /* LegacyContinueButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */; };
+		MPA1C0MP2F00000100000002 /* MeditationPackage+AICompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */; };
 		ONBOARDING_ANSWERS_BLD01 /* OnboardingAnswers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */; };
 		PATH_ENGAGEMENT_MGR_BLD01 /* PathEngagementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */; };
 		PE1234567890ABCDEF1234567 /* PromptEducationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PE1234567890ABCDEF1234568 /* PromptEducationView.swift */; };
@@ -504,7 +503,6 @@
 		A514337B2D5462B500105271 /* MeditationAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationAudioManager.swift; sourceTree = "<group>"; };
 		A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundSelectionView.swift; sourceTree = "<group>"; };
 		A51434152D554AC900105271 /* BackgroundSound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSound.swift; sourceTree = "<group>"; };
-		A51434172D554B0000105271 /* BackgroundSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSoundManager.swift; sourceTree = "<group>"; };
 		A51F61E82DDDA24300DA9CEB /* UserIdentityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIdentityManager.swift; sourceTree = "<group>"; };
 		A51F64B62DE2D36800DA9CEB /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		A51F64BB2DE2E5DF00DA9CEB /* PlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerControlsView.swift; sourceTree = "<group>"; };
@@ -529,7 +527,6 @@
 		A568483F2D8CBBCF007BFF17 /* GeneralBackgroundMusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralBackgroundMusicController.swift; sourceTree = "<group>"; };
 		A56A5DF82D6C4E1100508EB1 /* PracticeBadges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeBadges.swift; sourceTree = "<group>"; };
 		A56A5DFB2D6D95CF00508EB1 /* Cue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cue.swift; sourceTree = "<group>"; };
-		A56A5DFD2D6D95F000508EB1 /* CueManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueManager.swift; sourceTree = "<group>"; };
 		A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueConfigurationView.swift; sourceTree = "<group>"; };
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
@@ -610,10 +607,10 @@
 		A5FCAA482C69BE5E00EE2A12 /* PracticeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeManager.swift; sourceTree = "<group>"; };
 		AEB78F33966E2099BE470F47 /* PracticeBPMTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PracticeBPMTracker.swift; path = imagine/Features/Insights/PracticeBPMTracker.swift; sourceTree = SOURCE_ROOT; };
 		AFMGR00012E8F000100000001 /* AppsFlyerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppsFlyerManager.swift; sourceTree = "<group>"; };
+		AIREQ001F00000100000002 /* AIRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRequestService.swift; sourceTree = "<group>"; };
 		B0C76AE88B7ED6C882ABC954 /* CustomContentAdapter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomContentAdapter.swift; sourceTree = "<group>"; };
 		B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingIndicatorView.swift; sourceTree = "<group>"; };
 		B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsServiceProtocol.swift; sourceTree = "<group>"; };
-		B1E2C3D42F00000100AAAAAA /* AssistantsAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantsAIService.swift; sourceTree = "<group>"; };
 		B36CFA61BDB83691B4FA7C13 /* ProductJourneyManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProductJourneyManager.swift; sourceTree = "<group>"; };
 		B3FB30E6D09AC203A37C5936 /* FitbitHRProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FitbitHRProvider.swift; sourceTree = "<group>"; };
 		B64A5BD069478A86C6E10B88 /* AuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
@@ -625,7 +622,6 @@
 		BB97D178F8CAA55F883E8FB4 /* SubscriptionAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionAnalytics.swift; sourceTree = "<group>"; };
 		BBF000012FFF000100000001 /* BinauralBeatSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatSelectionView.swift; sourceTree = "<group>"; };
 		BBF000022FFF000100000001 /* BinauralBeatAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatAudioManager.swift; sourceTree = "<group>"; };
-		BBF000032FFF000100000001 /* BinauralBeatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatManager.swift; sourceTree = "<group>"; };
 		BBF000042FFF000100000001 /* BinauralBeat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeat.swift; sourceTree = "<group>"; };
 		BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomMeditationVolumeStore.swift; sourceTree = "<group>"; };
 		BBF100112FFF000100000001 /* CustomSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSlider.swift; sourceTree = "<group>"; };
@@ -636,7 +632,6 @@
 		BE81B5F52CEC8A3A52EF5D87 /* StatsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StatsManager.swift; path = imagine/Features/Insights/StatsManager.swift; sourceTree = SOURCE_ROOT; };
 		BF13A980C3BE94E1AA05C091 /* SubscriptionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionState.swift; sourceTree = "<group>"; };
 		C0023DB63D898F4881E3B113 /* InsightsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = InsightsView.swift; path = imagine/Features/Insights/InsightsView.swift; sourceTree = SOURCE_ROOT; };
-		C0A1B0012F00010000AAAAAA /* AIMeditationGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIMeditationGenerator.swift; sourceTree = "<group>"; };
 		C1503FD8BE39D8C183510FE0 /* ReadyScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadyScreen.swift; sourceTree = "<group>"; };
 		C1CAFC390552484FB103F8B3 /* HeartRateProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HeartRateProvider.swift; path = imagine/Features/Insights/Providers/HeartRateProvider.swift; sourceTree = SOURCE_ROOT; };
 		C1E5F1102F12345600AAAAAA /* SenseiOnboardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenseiOnboardingModels.swift; sourceTree = "<group>"; };
@@ -645,6 +640,8 @@
 		C1E5F1132F12345600AAAAAA /* SenseiOnboardingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenseiOnboardingState.swift; sourceTree = "<group>"; };
 		C1E5F1142F12345600AAAAAA /* OnboardingResponseCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingResponseCollector.swift; sourceTree = "<group>"; };
 		C50905438DE82B35D7E7AEA5 /* SideMenuItemView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SideMenuItemView.swift; path = imagine/UI/Navigation/SideMenuItemView.swift; sourceTree = SOURCE_ROOT; };
+		C5A1B0012F000100000001 /* CatalogsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogsManager.swift; sourceTree = "<group>"; };
+		C5A1B0042F000100000002 /* MeditationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationsService.swift; sourceTree = "<group>"; };
 		C7E8B0825A87494EE6D8A6BB /* DualRecommendationModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualRecommendationModels.swift; sourceTree = "<group>"; };
 		C874775EE06E3E138F83930B /* WelcomeScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
 		C922028CD04E4CCBB564F37D /* AIChatMessageList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatMessageList.swift; sourceTree = "<group>"; };
@@ -701,6 +698,7 @@
 		HURDLE0CONTENT0SWIFT01 /* HurdleScreenContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HurdleScreenContent.swift; sourceTree = "<group>"; };
 		KB0100022FFF000100000001 /* ChatKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatKeyboardController.swift; sourceTree = "<group>"; };
 		LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyContinueButton.swift; sourceTree = "<group>"; };
+		MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MeditationPackage+AICompat.swift"; sourceTree = "<group>"; };
 		ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAnswers.swift; sourceTree = "<group>"; };
 		PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathEngagementManager.swift; sourceTree = "<group>"; };
 		PE1234567890ABCDEF1234568 /* PromptEducationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptEducationView.swift; sourceTree = "<group>"; };
@@ -1386,11 +1384,11 @@
 			isa = PBXGroup;
 			children = (
 				A5A1D03B2E0C689A00F45A3F /* AIService.swift */,
-				B1E2C3D42F00000100AAAAAA /* AssistantsAIService.swift */,
+				MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */,
 				CG0100012F00000100000001 /* CompositionGuidelines.swift */,
 				A5A1D03D2E0C689A00F45A3F /* AIRequestManager.swift */,
+				AIREQ001F00000100000002 /* AIRequestService.swift */,
 				F0B1C2D32F70000100123456 /* BinauralBeatSelector.swift */,
-				C0A1B0012F00010000AAAAAA /* AIMeditationGenerator.swift */,
 				FA1000143A00000100000001 /* HeartRateStreamingManager.swift */,
 				FA1000163A00000100000001 /* MeditationHRAnalyzer.swift */,
 				FA2000183A00000100000001 /* PostPracticeMessageBuilder.swift */,
@@ -1434,10 +1432,10 @@
 			isa = PBXGroup;
 			children = (
 				A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */,
-				A51434172D554B0000105271 /* BackgroundSoundManager.swift */,
+				C5A1B0012F000100000001 /* CatalogsManager.swift */,
+				C5A1B0042F000100000002 /* MeditationsService.swift */,
 				A51434152D554AC900105271 /* BackgroundSound.swift */,
 				BBF100002FFF000100000001 /* CustomMeditationVolumeStore.swift */,
-				BBF000032FFF000100000001 /* BinauralBeatManager.swift */,
 				BBF000042FFF000100000001 /* BinauralBeat.swift */,
 				A5A1D3912E178F0B00F45A3F /* Cues */,
 			);
@@ -1467,7 +1465,6 @@
 			isa = PBXGroup;
 			children = (
 				A56A5DFB2D6D95CF00508EB1 /* Cue.swift */,
-				A56A5DFD2D6D95F000508EB1 /* CueManager.swift */,
 				A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */,
 			);
 			path = Cues;
@@ -2192,7 +2189,6 @@
 				FA1000043A00000100000001 /* HeartRateStreamingManager.swift in Sources */,
 				FA1000063A00000100000001 /* MeditationHRAnalyzer.swift in Sources */,
 				F0B1C2D42F70000100123456 /* BinauralBeatSelector.swift in Sources */,
-				BBF000052FFF000100000001 /* BinauralBeatManager.swift in Sources */,
 				BBF000062FFF000100000001 /* BinauralBeat.swift in Sources */,
 				BBF000072FFF000100000001 /* BinauralBeatAudioManager.swift in Sources */,
 				BBF000082FFF000100000001 /* BinauralBeatSelectionView.swift in Sources */,
@@ -2225,11 +2221,11 @@
 				A5F1A0082E7D000800A50008 /* Authentication+Dependencies.swift in Sources */,
 				A53A05F52D9DCD4500E25959 /* AuthenticationAnalyticsManager.swift in Sources */,
 				A5A1D03E2E0C689A00F45A3F /* AIService.swift in Sources */,
-				C0A1B0112F00010000AAAAAA /* AIMeditationGenerator.swift in Sources */,
-				B1E2C3D52F00000100AAAAAA /* AssistantsAIService.swift in Sources */,
+				MPA1C0MP2F00000100000002 /* MeditationPackage+AICompat.swift in Sources */,
 				CG0100032F00000100000001 /* CompositionGuidelines.swift in Sources */,
 				A5A1D03F2E0C689A00F45A3F /* AIChatView.swift in Sources */,
 				A5A1D0402E0C689A00F45A3F /* AIRequestManager.swift in Sources */,
+				AIREQ001F00000100000001 /* AIRequestService.swift in Sources */,
 				2F816E18F5B54ED79850E939 /* ChatMessage.swift in Sources */,
 				CHATLIST0001BUILD0001 /* ChatListItem.swift in Sources */,
 				CHATDIV00001BUILD0001 /* ChatDateDivider.swift in Sources */,
@@ -2257,9 +2253,9 @@
 				0A5HAPTIC12345678901234 /* HapticManager.swift in Sources */,
 				A53A05682D9CAEB500E25959 /* AuthServiceButton.swift in Sources */,
 				A57C44052DD29965007B495B /* AccountCreationValueView.swift in Sources */,
-				A56A5DFE2D6D960000508EB1 /* CueManager.swift in Sources */,
 				A5EA2B9E2DA87E79009505D4 /* FooterView.swift in Sources */,
-				A51434182D554B0A00105271 /* BackgroundSoundManager.swift in Sources */,
+				C5A1B0022F000100000001 /* CatalogsManager.swift in Sources */,
+				C5A1B0032F000100000002 /* MeditationsService.swift in Sources */,
 				A53A05662D9CAD1600E25959 /* AuthDividerView.swift in Sources */,
 				A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */,
 				A58C21882B196127000EC608 /* AudioPlayerManager.swift in Sources */,
@@ -2810,14 +2806,15 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 226;
+				CURRENT_PROJECT_VERSION = 231;
+				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				GOOGLE_SERVICE_CONFIG_PLIST = "imagine/Resources/Plists/Firebase/GoogleService-Info-Production.plist";
 				INFOPLIST_FILE = "imagine/Resources/imagine-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Dojo;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Uses Face ID for secure and quick login";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app reads your meditation sessions from Apple Health to provide personalized insights and track your mindfulness activities.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Your meditation sessions will be shared with Apple Health to track your mindfulness activities.";
@@ -2831,7 +2828,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meditationchef.imagine;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -2853,14 +2850,15 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 226;
+				CURRENT_PROJECT_VERSION = 231;
+				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				GOOGLE_SERVICE_CONFIG_PLIST = "imagine/Resources/Plists/Firebase/GoogleService-Info-Production.plist";
 				INFOPLIST_FILE = "imagine/Resources/imagine-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Dojo;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Uses Face ID for secure and quick login";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app reads your meditation sessions from Apple Health to provide personalized insights and track your mindfulness activities.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Your meditation sessions will be shared with Apple Health to track your mindfulness activities.";
@@ -2874,7 +2872,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meditationchef.imagine;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -2960,7 +2958,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 224;
+				CURRENT_PROJECT_VERSION = 226;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PushNotificationService/Info.plist;
@@ -2986,7 +2984,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 224;
+				CURRENT_PROJECT_VERSION = 226;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PushNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PushNotificationService;

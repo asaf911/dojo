@@ -258,9 +258,7 @@ struct AIChatContainerView: View {
         Task {
             await manager.refreshRules()
             // Warm catalogs
-            BackgroundSoundManager.shared.fetchBackgroundSounds()
-            CueManager.shared.fetchCues()
-            BinauralBeatManager.shared.fetchBinauralBeats()
+            CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|onAppear preload")
         }
         
         // Check for pending meditation from subscription flow and auto-play
@@ -1335,9 +1333,9 @@ struct AIChatContainerView: View {
         Task { @MainActor in
             // 1) Make sure BB catalog is loaded before mapping
             // Skip network fetch if already have cached beats OR if offline (use cached data)
-            if BinauralBeatManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
+            if CatalogsManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    BinauralBeatManager.shared.fetchBinauralBeats { _ in
+                    CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|play meditation resolve") { _ in
                         continuation.resume()
                     }
                 }
@@ -1350,7 +1348,7 @@ struct AIChatContainerView: View {
                let qItems = components.queryItems,
                let v = qItems.first(where: { $0.name == "bb" })?.value {
                 bbIdFromLink = v
-                if let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
+                if let beat = CatalogsManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
                     resolvedBeat = beat
                 }
             }
@@ -1650,9 +1648,9 @@ struct AIChatContainerView: View {
         // Resolve binaural beat from deep link (matching playMeditationDirectly pattern)
         Task { @MainActor in
             // Make sure BB catalog is loaded before mapping
-            if BinauralBeatManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
+            if CatalogsManager.shared.beats.isEmpty && NetworkMonitor.shared.isConnected {
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    BinauralBeatManager.shared.fetchBinauralBeats { _ in
+                    CatalogsManager.shared.fetchCatalogs(triggerContext: "AIChatContainerView|dual custom play resolve") { _ in
                         continuation.resume()
                     }
                 }
@@ -1665,7 +1663,7 @@ struct AIChatContainerView: View {
                let qItems = components.queryItems,
                let v = qItems.first(where: { $0.name == "bb" })?.value {
                 bbIdFromLink = v
-                if let beat = BinauralBeatManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
+                if let beat = CatalogsManager.shared.beats.first(where: { $0.id == bbIdFromLink }) {
                     resolvedBeat = beat
                 }
             }

@@ -3,7 +3,7 @@ import SwiftUI
 struct BackgroundSoundSelectionView: View {
     // Bind to the selected background sound.
     @Binding var selectedSound: BackgroundSound
-    @ObservedObject var soundManager = BackgroundSoundManager.shared
+    @ObservedObject var catalogsManager = CatalogsManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -18,7 +18,7 @@ struct BackgroundSoundSelectionView: View {
                         selectedSound = BackgroundSound(id: "None", name: "None", url: "")
                     }
                     // List the sounds from the remote JSON, excluding any off/none placeholders.
-                    ForEach(soundManager.sounds.filter { sound in
+                    ForEach(catalogsManager.sounds.filter { sound in
                         let lower = sound.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                         return lower != "no background music" && lower != "none" && sound.id != "None"
                     }) { sound in
@@ -41,7 +41,7 @@ struct BackgroundSoundSelectionView: View {
         .padding(.top, 10)
         .onAppear {
             if ConnectivityHelper.isConnectedToInternet() {
-                soundManager.fetchBackgroundSounds()
+                catalogsManager.fetchCatalogs(triggerContext: "BackgroundSoundSelectionView|pull-to-refresh")
             }
         }
     }

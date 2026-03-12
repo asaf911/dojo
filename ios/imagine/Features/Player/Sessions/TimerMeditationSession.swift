@@ -266,9 +266,8 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             print("🧠 AI_DEBUG [SESSION] Audio interruption BEGAN - wasPlaying=\(isPlaying)")
             wasPlayingBeforeInterruption = isPlaying
             if isPlaying {
-                // Pause timer but don't call full pause() to avoid side effects
-                timerManager.pause()
-                // Audio players are automatically paused by iOS
+                // Use full pause() - AVAudioEngine/AVAudioPlayerNode (cues) are NOT auto-paused by iOS
+                pause()
             }
             
         case .ended:
@@ -296,29 +295,27 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     private func resumeAfterInterruption() {
         print("🧠 AI_DEBUG [SESSION] Resuming after interruption...")
         
-        // Resume timer
         timerManager.start()
-        
-        // Resume background music
-        if hasBackgroundSound {
-            backgroundSoundManager.resume()
-            print("🧠 AI_DEBUG [SESSION] Resumed background sound")
-        }
-        
-        // Resume binaural beats
-        if hasBinauralBeat {
-            binauralBeatManager.resume()
-            print("🧠 AI_DEBUG [SESSION] Resumed binaural beats")
-        }
-        
-        // Resume cue if one was playing
-        CuePlaybackManager.shared.resume()
-        print("🧠 AI_DEBUG [SESSION] Resumed cue playback")
+        resumeAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
         
         print("🧠 AI_DEBUG [SESSION] All audio layers resumed after interruption")
+    }
+    
+    /// Pauses all audio layers (background, binaural, cues). Single place for coordination.
+    private func pauseAllAudio() {
+        if hasBackgroundSound { backgroundSoundManager.pause() }
+        if hasBinauralBeat { binauralBeatManager.pause() }
+        CuePlaybackManager.shared.pause()
+    }
+    
+    /// Resumes all audio layers (background, binaural, cues). Single place for coordination.
+    private func resumeAllAudio() {
+        if hasBackgroundSound { backgroundSoundManager.resume() }
+        if hasBinauralBeat { binauralBeatManager.resume() }
+        CuePlaybackManager.shared.resume()
     }
     
     // MARK: - MeditationSession Protocol Methods
@@ -369,14 +366,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         }
         
         timerManager.pause()
-        
-        if hasBackgroundSound {
-            backgroundSoundManager.pause()
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.pause()
-        }
-        CuePlaybackManager.shared.pause()
+        pauseAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: false)
@@ -400,14 +390,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         }
         
         timerManager.start()
-        
-        if hasBackgroundSound {
-            backgroundSoundManager.resume()
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.resume()
-        }
-        CuePlaybackManager.shared.resume()
+        resumeAllAudio()
         
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
@@ -547,7 +530,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // Handle start cues: mark as played if skipped past their window
         for setting in config.cueSettings where setting.triggerType == .start {
-            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue.id) {
+            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue) {
                 // Start cue window is 0 to cueDuration
                 // If we skipped from within the window to past it, mark as played
                 if TimeInterval(oldElapsed) < cueDuration && TimeInterval(newElapsed) >= cueDuration {
@@ -611,7 +594,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // For start cues: reset if we skipped back into or before their window
         for setting in config.cueSettings where setting.triggerType == .start {
-            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue.id) {
+            if let cueDuration = CuePlaybackManager.shared.getPreloadedDuration(for: setting.cue) {
                 // If we were past the start cue window and now we're inside or before it
                 if TimeInterval(oldElapsed) >= cueDuration && TimeInterval(newElapsed) < cueDuration && playedCues.contains(setting.id) {
                     playedCues.remove(setting.id)
@@ -652,7 +635,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // Check start cues first (they trigger at elapsed=0, window is 0 to duration)
         for setting in config.cueSettings where setting.triggerType == .start {
-            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue.id) else {
+            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
                 print("🧠 AI_DEBUG [SKIP] No preloaded duration for start cue \(setting.cue.id)")
                 continue
             }
@@ -685,7 +668,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             let triggerTime = TimeInterval(min * 60)
             
             // Get the cue's duration from preloaded data
-            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue.id) else {
+            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
                 print("🧠 AI_DEBUG [SKIP] No preloaded duration for cue \(setting.cue.id)")
                 continue
             }

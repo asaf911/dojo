@@ -9,6 +9,7 @@ import Foundation
 
 enum ClearCacheCategory: CaseIterable {
     case libraryData
+    case catalogs  // Meditation catalogs (soundscapes, binaural beats, cues)
     case downloadedAudio
     case downloadedImages
     case completedPractices
@@ -22,6 +23,8 @@ enum ClearCacheCategory: CaseIterable {
         switch self {
         case .libraryData:
             return "Library Data"
+        case .catalogs:
+            return "Meditation Catalogs"
         case .downloadedAudio:
             return "Downloaded Audio Files"
         case .downloadedImages:
@@ -45,6 +48,8 @@ enum ClearCacheCategory: CaseIterable {
         switch self {
         case .libraryData:
             return "Clear locally stored metadata (audio files list)."
+        case .catalogs:
+            return "Clear cached soundscapes, binaural beats, and cues. Fresh data will be fetched when you next open Create or Sensei."
         case .downloadedAudio:
             return "Remove all downloaded audio files."
         case .downloadedImages:
@@ -70,6 +75,8 @@ enum ClearCacheCategory: CaseIterable {
         case .libraryData:
             SharedUserStorage.delete(forKey: .audioFilesKey)
             logger.eventMessage("Library Data cache cleared.")
+        case .catalogs:
+            CatalogsManager.shared.clearCache()
         case .downloadedAudio:
             let fileManager = FileManager.default
             if let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {

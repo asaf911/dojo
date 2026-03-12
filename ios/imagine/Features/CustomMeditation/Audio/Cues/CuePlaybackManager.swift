@@ -21,28 +21,44 @@ class CuePlaybackManager {
     
     private var volume: Float = 1.0
     
-    // MARK: - Per-Module Volume Boost
+    // MARK: - Volume Boost
     
-    /// Per-module-prefix volume boost in dB. Positive = louder.
-    /// Used to compensate for modules recorded at lower levels.
+    /// Legacy per-module boost (IM, NF). These may have been amplified at file level; do not change.
     private static let moduleVolumeBoostDB: [String: Float] = [
         "IM": 18.0,  // I AM Mantra: +18dB to match other module levels
         "NF": 18.0   // Nostril Focus: +18dB to match other module levels
     ]
+    
+    /// Boost for Asaf's voice in NEW content (not pre-amplified before upload).
+    /// Legacy modules (IM, NF) use moduleVolumeBoostDB instead.
+    private static let asafVoiceBoostDB: Float = 18.0
     
     /// Converts a dB value to a linear gain multiplier.
     private static func linearGain(forDB db: Float) -> Float {
         pow(10.0, db / 20.0)
     }
     
-    /// Returns the linear gain boost for a given module ID based on its prefix.
-    private static func boostGain(for moduleId: String) -> Float {
+    /// Legacy: per-module boost for IM, NF (unchanged).
+    private static func boostGainForLegacyModule(for moduleId: String) -> Float {
         for (prefix, db) in moduleVolumeBoostDB {
             if moduleId.hasPrefix(prefix) {
                 return linearGain(forDB: db)
             }
         }
-        return 1.0  // No boost for other modules
+        return 1.0
+    }
+    
+    /// Asaf voice boost for new content (URL contains /asaf/).
+    private static func asafVoiceBoostGain(for cue: Cue) -> Float {
+        guard cue.url.localizedCaseInsensitiveContains("/asaf/") else { return 1.0 }
+        return linearGain(forDB: asafVoiceBoostDB)
+    }
+    
+    /// Combined boost: legacy modules first, then Asaf voice for new content.
+    private static func boostGain(for cue: Cue) -> Float {
+        let legacy = boostGainForLegacyModule(for: cue.id)
+        if legacy > 1.0 { return legacy }
+        return asafVoiceBoostGain(for: cue)
     }
     
     /// Applies the current user volume multiplied by the per-module boost to the engine mixer.
@@ -51,6 +67,13 @@ class CuePlaybackManager {
     }
     
     // MARK: - State Tracking for Skip/Seek
+    
+    /// Generation counter to ignore stale completion handlers from previous buffers.
+    /// When we stop a cue and start a new one, playerNode.stop() triggers the OLD buffer's
+    /// completion handler. That handler schedules DispatchQueue.main.async { playbackFinished = true },
+    /// which can run AFTER we've started the new cue - incorrectly setting playbackFinished = true.
+    /// By incrementing this before each schedule, we ignore stale completions.
+    private var playbackGeneration: Int = 0
     
     /// ID of the currently playing cue
     private(set) var currentCueId: String?
@@ -80,8 +103,14 @@ class CuePlaybackManager {
     
     // MARK: - Preloading System
     
-    /// Preloaded cue data: local file URL and exact duration
+    /// Preloaded cue data: local file URL and exact duration.
+    /// Cache key combines cue.id and cue.url so different voices (different URLs) get separate entries.
     private var preloadedCues: [String: (localURL: URL, duration: TimeInterval)] = [:]
+    
+    /// Cache key that includes URL so same cue ID with different voice (URL) gets a separate cache entry.
+    private func preloadCacheKey(for cue: Cue) -> String {
+        "\(cue.id)|\(cue.url)"
+    }
     
     // MARK: - Init
     
@@ -112,8 +141,9 @@ class CuePlaybackManager {
             return
         }
         
-        // Check if already preloaded
-        if let cached = preloadedCues[cue.id] {
+        // Check if already preloaded (key includes URL so different voices get separate entries)
+        let cacheKey = preloadCacheKey(for: cue)
+        if let cached = preloadedCues[cacheKey] {
             print("🧠 AI_DEBUG [CUE] Already preloaded \(cue.id): duration=\(String(format: "%.1f", cached.duration))s")
             completion(cached.duration)
             return
@@ -129,6 +159,7 @@ class CuePlaybackManager {
         
         FileManagerHelper.shared.ensureLocalFile(for: remoteURL, setDownloading: { _ in }, completion: { [weak self] localURL in
             guard let self = self, let localURL = localURL else {
+                print("[Server][Cue] Failed to download cue \(cue.id) (\(cue.name)) url=\(cue.url)")
                 print("🧠 AI_DEBUG [CUE] Failed to download cue \(cue.id)")
                 completion(nil)
                 return
@@ -138,7 +169,7 @@ class CuePlaybackManager {
             do {
                 let audioFile = try AVAudioFile(forReading: localURL)
                 let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+                self.preloadedCues[self.preloadCacheKey(for: cue)] = (localURL: localURL, duration: duration)
                 print("🧠 AI_DEBUG [CUE] Preloaded \(cue.id): duration=\(String(format: "%.1f", duration))s")
                 completion(duration)
             } catch {
@@ -153,9 +184,9 @@ class CuePlaybackManager {
     ///   - cues: Array of Cues to preload.
     ///   - completion: Called when all cues have been processed.
     func preloadCues(_ cues: [Cue], completion: @escaping () -> Void) {
-        // Filter out "None" cues and duplicates
+        // Filter out "None" cues and duplicates (by id+url so same cue with different voice is separate)
         let validCues = cues.filter { $0.id != "None" && $0.name != "None" && !$0.url.isEmpty }
-        let uniqueCues = Array(Set(validCues.map { $0.id })).compactMap { id in validCues.first { $0.id == id } }
+        let uniqueCues = Array(Set(validCues.map { preloadCacheKey(for: $0) })).compactMap { key in validCues.first { preloadCacheKey(for: $0) == key } }
         
         guard !uniqueCues.isEmpty else {
             completion()
@@ -178,8 +209,9 @@ class CuePlaybackManager {
     }
     
     /// Gets the preloaded duration for a cue if available.
-    func getPreloadedDuration(for cueId: String) -> TimeInterval? {
-        preloadedCues[cueId]?.duration
+    /// Uses cue.id and cue.url so different voices are looked up correctly.
+    func getPreloadedDuration(for cue: Cue) -> TimeInterval? {
+        preloadedCues[preloadCacheKey(for: cue)]?.duration
     }
     
     // MARK: - Playback Methods
@@ -196,9 +228,10 @@ class CuePlaybackManager {
             return
         }
         
-        // Check if we have preloaded data
-        if let preloaded = preloadedCues[cue.id] {
-            playFromLocalURL(preloaded.localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+        // Check if we have preloaded data (key includes URL so different voices get correct file)
+        let cacheKey = preloadCacheKey(for: cue)
+        if let preloaded = preloadedCues[cacheKey] {
+            playFromLocalURL(preloaded.localURL, cue: cue, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             return
         }
         
@@ -218,21 +251,22 @@ class CuePlaybackManager {
             print("[DEBUG] Cue ensureLocalFile downloading: \(downloading)")
         }, completion: { [weak self] localURL in
             guard let self = self, let localURL = localURL else {
+                print("[Server][Cue] Failed to download cue \(cue.id) (\(cue.name)) url=\(cue.url)")
                 print("[DEBUG] Failed to download cue file.")
                 return
             }
-            self.playFromLocalURL(localURL, cueId: cue.id, cueName: cue.name, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
+            self.playFromLocalURL(localURL, cue: cue, sessionElapsedTime: sessionElapsedTime, startPaused: startPaused)
             
-            // Cache for future use
+            // Cache for future use (key includes URL so different voices get separate entries)
             if let audioFile = self.currentAudioFile {
                 let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-                self.preloadedCues[cue.id] = (localURL: localURL, duration: duration)
+                self.preloadedCues[self.preloadCacheKey(for: cue)] = (localURL: localURL, duration: duration)
             }
         })
     }
     
     /// Internal method to play from a local URL using AVAudioEngine.
-    private func playFromLocalURL(_ localURL: URL, cueId: String, cueName: String, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
+    private func playFromLocalURL(_ localURL: URL, cue: Cue, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
         do {
             // Stop any current playback
             playerNode.stop()
@@ -244,13 +278,14 @@ class CuePlaybackManager {
             engine.disconnectNodeOutput(playerNode)
             engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
             
-            // Calculate and apply per-module volume boost
-            currentBoostGain = Self.boostGain(for: cueId)
+            // Calculate and apply volume boost (legacy modules first, then Asaf voice for new content)
+            currentBoostGain = Self.boostGain(for: cue)
             updateEngineVolume()
             
             if currentBoostGain > 1.0 {
-                let db = Self.moduleVolumeBoostDB.first { cueId.hasPrefix($0.key) }?.value ?? 0
-                print("🧠 AI_DEBUG [CUE] Volume boost for \(cueId): +\(String(format: "%.0f", db))dB (x\(String(format: "%.2f", currentBoostGain)))")
+                let legacyDB = Self.moduleVolumeBoostDB.first { cue.id.hasPrefix($0.key) }?.value
+                let source = legacyDB != nil ? "legacy +\(Int(legacyDB!))dB" : "Asaf voice +\(Int(Self.asafVoiceBoostDB))dB"
+                print("🧠 AI_DEBUG [CUE] Volume boost for \(cue.id): \(source) (x\(String(format: "%.2f", currentBoostGain)))")
             }
             
             // Start engine if needed
@@ -259,25 +294,30 @@ class CuePlaybackManager {
             }
             
             // Track cue state
-            currentCueId = cueId
+            currentCueId = cue.id
             cueStartSessionTime = sessionElapsedTime
             playbackFinished = false
+            playbackGeneration += 1
+            let generation = playbackGeneration
             
             let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
             
-            // Schedule the audio file and mark playback finished on completion
+            // Schedule the audio file and mark playback finished on completion.
+            // Only apply if we're still on this generation (prevents stale completion from
+            // previous cue when playerNode.stop() triggered its handler during cue switch).
             playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
                 DispatchQueue.main.async {
-                    self?.playbackFinished = true
+                    guard let self = self, self.playbackGeneration == generation else { return }
+                    self.playbackFinished = true
                 }
             }
             
             if startPaused {
                 // Don't start playing - just load and prepare (ready for resume)
-                print("🧠 AI_DEBUG [CUE] Loaded \(cueId) (\(cueName)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+                print("🧠 AI_DEBUG [CUE] Loaded \(cue.id) (\(cue.name)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
             } else {
                 playerNode.play()
-                print("🧠 AI_DEBUG [CUE] Playing \(cueId) (\(cueName)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+                print("🧠 AI_DEBUG [CUE] Playing \(cue.id) (\(cue.name)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
             }
         } catch {
             print("🧠 AI_DEBUG [CUE] Error playing cue: \(error.localizedDescription)")
@@ -304,11 +344,14 @@ class CuePlaybackManager {
         let wasPlaying = playerNode.isPlaying && !playbackFinished
         playerNode.stop()
         playbackFinished = false
+        playbackGeneration += 1
+        let generation = playbackGeneration
         
         // Reschedule from the target frame offset
         playerNode.scheduleSegment(audioFile, startingFrame: clampedFrame, frameCount: remainingFrames, at: nil) { [weak self] in
             DispatchQueue.main.async {
-                self?.playbackFinished = true
+                guard let self = self, self.playbackGeneration == generation else { return }
+                self.playbackFinished = true
             }
         }
         
@@ -324,6 +367,7 @@ class CuePlaybackManager {
     /// Stops the current cue and clears tracking state.
     func stop() {
         let wasPlaying = currentCueId
+        playbackGeneration += 1
         playerNode.stop()
         currentAudioFile = nil
         playbackFinished = true
@@ -352,7 +396,7 @@ class CuePlaybackManager {
     /// Fades out the currently playing cue sound over the specified duration.
     /// - Parameter fadeDuration: The duration over which to fade out the cue.
     func fadeOutCurrentCue(withDuration fadeDuration: TimeInterval = 1.0) {
-        guard playerNode.isPlaying, !playbackFinished else { return }
+        guard currentCueId != nil, !playbackFinished else { return }
         let fadeSteps = Int(fadeDuration / 0.1)
         let startVolume = engine.mainMixerNode.outputVolume
         let stepVolume = startVolume / Float(fadeSteps)
@@ -376,8 +420,9 @@ class CuePlaybackManager {
     
     /// Pauses the currently playing cue sound.
     func pause() {
-        print("🧠 AI_DEBUG [CUE] pause() called - isPlaying=\(playerNode.isPlaying), cueId=\(currentCueId ?? "none")")
-        if playerNode.isPlaying && !playbackFinished {
+        let shouldPause = currentCueId != nil && !playbackFinished
+        print("🧠 AI_DEBUG [CUE] pause() called - cueId=\(currentCueId ?? "none"), playbackFinished=\(playbackFinished), playerNode.isPlaying=\(playerNode.isPlaying) -> \(shouldPause ? "PAUSING" : "skipped (no active cue)")")
+        if shouldPause {
             playerNode.pause()
             print("🧠 AI_DEBUG [CUE] Paused \(currentCueId ?? "unknown") at \(String(format: "%.1f", currentPosition))s")
         }

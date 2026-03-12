@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "voices": [
+    { "id": "Asaf", "name": "Asaf" },
+    { "id": "Dan", "name": "Dan" }
+  ]
+}

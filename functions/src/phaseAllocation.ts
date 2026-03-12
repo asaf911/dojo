@@ -1,0 +1,167 @@
+/**
+ * Deterministic phase allocation for meditation structure.
+ * Flow: Intro > Breath > Relax > Focus > Insight
+ */
+
+export interface SessionPreferences {
+  noBreathwork: boolean;
+  isSleep: boolean;
+  isMorning: boolean;
+  isEvening: boolean;
+}
+
+export interface PhaseAllocation {
+  intro: 1;
+  breath: number;
+  relax: number;
+  focus: number;
+  insight: number;
+}
+
+/** Lookup table for 1-10 min (from user spec) */
+const ALLOCATION_1_10: Record<number, Omit<PhaseAllocation, "intro">> = {
+  1: { breath: 0, relax: 0, focus: 0, insight: 0 },
+  2: { breath: 1, relax: 0, focus: 0, insight: 0 },
+  3: { breath: 1, relax: 1, focus: 0, insight: 0 },
+  4: { breath: 1, relax: 2, focus: 0, insight: 0 },
+  5: { breath: 1, relax: 2, focus: 1, insight: 0 },
+  6: { breath: 1, relax: 2, focus: 2, insight: 0 },
+  7: { breath: 1, relax: 2, focus: 2, insight: 1 },
+  8: { breath: 1, relax: 2, focus: 2, insight: 2 },
+  9: { breath: 2, relax: 2, focus: 2, insight: 2 },
+  10: { breath: 2, relax: 2, focus: 2, insight: 3 },
+};
+
+/**
+ * Allocates minutes to each phase based on duration and preferences.
+ * noBreathwork: breath=0, redistribute proportionally to relax/focus/insight.
+ */
+export function allocatePhases(
+  duration: number,
+  prefs: SessionPreferences
+): PhaseAllocation {
+  const d = Math.max(1, Math.min(60, Math.floor(duration)));
+  let breath: number;
+  let relax: number;
+  let focus: number;
+  let insight: number;
+
+  if (d <= 10) {
+    const base = ALLOCATION_1_10[d];
+    breath = base.breath;
+    relax = base.relax;
+    focus = base.focus;
+    insight = base.insight;
+  } else {
+    const remaining = d - 1;
+    breath = Math.max(0, Math.floor(remaining * 0.2));
+    relax = Math.max(0, Math.floor(remaining * 0.25));
+    focus = Math.max(0, Math.floor(remaining * 0.25));
+    insight = Math.max(0, remaining - breath - relax - focus);
+  }
+
+  if (prefs.noBreathwork && breath > 0) {
+    const total = relax + focus + insight;
+    if (total > 0) {
+      const r = relax / total;
+      const f = focus / total;
+      const i = insight / total;
+      const dr = Math.floor(breath * r);
+      const df = Math.floor(breath * f);
+      const di = Math.floor(breath * i);
+      let remainder = breath - dr - df - di;
+      relax += dr;
+      focus += df;
+      insight += di;
+      while (remainder > 0) {
+        if (relax >= focus && relax >= insight) {
+          relax++;
+        } else if (focus >= insight) {
+          focus++;
+        } else {
+          insight++;
+        }
+        remainder--;
+      }
+    } else {
+      relax += breath;
+    }
+    breath = 0;
+  }
+
+  return {
+    intro: 1,
+    breath: Math.min(5, breath),
+    relax: Math.min(10, relax),
+    focus: Math.min(10, focus),
+    insight: Math.min(10, insight),
+  };
+}
+
+/**
+ * Extracts session preferences from user prompt (regex-based).
+ */
+export function extractSessionPreferences(prompt: string): SessionPreferences {
+  const lower = prompt.toLowerCase();
+  return {
+    noBreathwork:
+      /no\s*breathwork|without\s*breathwork|skip\s*breath(ing)?|no\s*breath(ing)?|remove\s*breath(work|ing)?/.test(
+        lower
+      ) ||
+      lower.includes("no breath") ||
+      lower.includes("without breath") ||
+      lower.includes("remove breath"),
+    isSleep:
+      /sleep|nap|bedtime|night|fall asleep|drift off|slumber|insomnia|rest/.test(
+        lower
+      ),
+    isMorning: /morning|wake up|start day|energize|sunrise/.test(lower),
+    isEvening: /evening|wind down|after work|sunset|end of day/.test(lower),
+  };
+}
+
+/**
+ * Extracts duration in minutes from user prompt.
+ * Matches: "20m", "20 min", "20 minute", "20-minute", "20min", "20 minutes"
+ * Fallback: null if not found.
+ */
+export function extractDurationFromPrompt(prompt: string): number | null {
+  const patterns = [
+    /\b(\d+)\s*[-]?\s*(?:min(?:ute)?s?|m)\b/i,
+    /\b(?:a\s+)?(\d+)\s*[-]?\s*minute\s+meditation\b/i,
+    /\b(\d+)\s*[-]?\s*minute\b/i,
+    /\b(\d+)\s*m\b/i,
+    /\b(\d+)\s*min\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n >= 1 && n <= 60) return n;
+    }
+  }
+
+  if (/^\d+$/.test(prompt.trim())) {
+    const n = parseInt(prompt.trim(), 10);
+    if (n >= 1 && n <= 60) return n;
+  }
+
+  return null;
+}
+
+/**
+ * Extracts duration from conversation history (last assistant message).
+ * Used when prompt is a modification (e.g. "remove breathwork") and doesn't contain duration.
+ */
+export function extractDurationFromConversationHistory(
+  history: Array<{ role: string; content: string }>
+): number | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].role === "assistant") {
+      const n = extractDurationFromPrompt(history[i].content);
+      if (n != null) return n;
+    }
+  }
+  return null;
+}

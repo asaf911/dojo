@@ -23,27 +23,16 @@ class DeepLinkHandler {
             // Ensure catalogs are loaded before decoding so ids (bs, bb, cues) resolve to models
             let group = DispatchGroup()
             group.enter()
-            BackgroundSoundManager.shared.fetchBackgroundSounds { _ in group.leave() }
-            group.enter()
-            CueManager.shared.fetchCues { _ in group.leave() }
-            group.enter()
-            BinauralBeatManager.shared.fetchBinauralBeats { _ in group.leave() }
+            CatalogsManager.shared.fetchCatalogs(triggerContext: "DeepLinkHandler|incoming link resolve") { _ in group.leave() }
             group.notify(queue: .main) {
                 guard let queryItems = urlComponents?.queryItems,
                       let meditationConfiguration = MeditationConfiguration(queryItems: queryItems) else {
                     logger.errorMessage("Failed to parse MeditationConfiguration from deep link after prefetch.")
                     return
                 }
-                let mirror = Mirror(reflecting: meditationConfiguration)
-                var bbId: String = "None"
-                if let beatChild = mirror.children.first(where: { $0.label == "binauralBeat" }) {
-                    let beatMirror = Mirror(reflecting: beatChild.value)
-                    if let id = beatMirror.children.first(where: { $0.label == "id" })?.value as? String {
-                        bbId = id
-                    }
-                }
-                logger.eventMessage("Parsed meditation configuration from deep link after prefetch: dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)")
-                navigationCoordinator.applyDeepLinkMeditationConfiguration(meditationConfiguration)
+                let bbId = meditationConfiguration.binauralBeat?.id ?? "None"
+                logger.eventMessage("Parsed meditation configuration from deep link: dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)")
+                navigationCoordinator.showPlayerFromDeepLink(meditationConfiguration: meditationConfiguration)
             }
             return
         }
