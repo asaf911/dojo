@@ -222,9 +222,15 @@ function buildMeditationPackage(
   let bgId = meditation.backgroundSoundId;
   let bg = soundMap.get(bgId);
   if (!bg) {
-    const first = catalogs.backgroundSounds[0];
-    bgId = first?.id ?? "SP";
-    bg = first ?? { id: "SP", name: "Spa", url: "" };
+    const nonNone = catalogs.backgroundSounds.filter((s) => s.id !== "None");
+    const pick = nonNone[Math.floor(Math.random() * nonNone.length)];
+    bgId = pick?.id ?? nonNone[0]?.id ?? "SP";
+    bg =
+      catalogs.backgroundSounds.find((s) => s.id === bgId) ?? {
+        id: "SP",
+        name: "Spa",
+        url: "",
+      };
   }
 
   const bbId = meditation.binauralBeatId ?? "None";

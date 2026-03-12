@@ -35,6 +35,17 @@ export interface LoadedCatalogs {
 
 const TAG_AI = "[Server][Meditations-AI]";
 
+function pickRandomFromCatalog<T extends { id?: string }>(
+  items: T[],
+  excludeId?: string
+): T | undefined {
+  const filtered = excludeId
+    ? items.filter((item) => item.id !== excludeId)
+    : items;
+  if (filtered.length === 0) return undefined;
+  return filtered[Math.floor(Math.random() * filtered.length)];
+}
+
 interface AIMetadataResponse {
   title?: string;
   description?: string;
@@ -50,13 +61,6 @@ async function callOpenAIMetadata(
   catalogs: LoadedCatalogs,
   apiKey: string
 ): Promise<AIMetadataResponse> {
-  const soundsList =
-    catalogs.backgroundSounds.length > 0
-      ? catalogs.backgroundSounds
-          .filter((s) => s.id !== "None")
-          .map((s) => s.id)
-          .join(", ")
-      : "LI, SP, OC, DH, BD";
   const beatsList =
     catalogs.binauralBeats.length > 0
       ? catalogs.binauralBeats.map((b) => b.id).join(", ")
@@ -68,10 +72,10 @@ Given this meditation structure: ${structureContext}
 Duration: ${duration} min. User said: "${userPrompt}"
 
 Return JSON only with these exact keys:
-{ "title": "short title", "description": "brief description", "backgroundSoundId": "ID", "binauralBeatId": "ID" }
+{ "title": "short title", "description": "brief description", "binauralBeatId": "ID" }
 
-AVAILABLE: SOUNDS: ${soundsList} | BEATS: ${beatsList}
-Use valid IDs from the lists. Default to SP and BB10 if unsure.`;
+AVAILABLE BEATS: ${beatsList}
+Select the binaural beat that best fits the session type (sleep, focus, relaxation, etc.). Use valid IDs from the list.`;
 
   const messages: Array<{ role: string; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -132,8 +136,12 @@ function buildFallbackMetadata(
 ): { title: string; description: string; backgroundSoundId: string; binauralBeatId: string } {
   const soundIds = catalogs.backgroundSounds.map((s) => s.id);
   const beatIds = catalogs.binauralBeats.map((b) => b.id);
-  const bgId = soundIds.includes("SP") ? "SP" : soundIds[0] ?? "SP";
-  const bbId = beatIds.includes("BB10") ? "BB10" : beatIds[0] ?? "BB10";
+  const bgId =
+    pickRandomFromCatalog(catalogs.backgroundSounds, "None")?.id ??
+    soundIds.find((id) => id !== "None") ??
+    "SP";
+  const bbId =
+    pickRandomFromCatalog(catalogs.binauralBeats)?.id ?? beatIds[0] ?? "BB10";
   return {
     title: "Custom Meditation",
     description: "A guided meditation tailored to your request.",
@@ -195,17 +203,21 @@ export async function generateAIMeditation(
       catalogs,
       apiKey
     );
-    const soundIds = catalogs.backgroundSounds.map((s) => s.id);
     const beatIds = catalogs.binauralBeats.map((b) => b.id);
+    const soundIds = catalogs.backgroundSounds.map((s) => s.id);
     metadata = {
       title: ai.title?.trim() || "Custom Meditation",
       description: ai.description?.trim() || "A guided meditation tailored to your request.",
-      backgroundSoundId: ai.backgroundSoundId && soundIds.includes(ai.backgroundSoundId)
-        ? ai.backgroundSoundId
-        : soundIds.includes("SP") ? "SP" : soundIds[0] ?? "SP",
-      binauralBeatId: ai.binauralBeatId && beatIds.includes(ai.binauralBeatId)
-        ? ai.binauralBeatId
-        : beatIds.includes("BB10") ? "BB10" : beatIds[0] ?? "BB10",
+      backgroundSoundId:
+        pickRandomFromCatalog(catalogs.backgroundSounds, "None")?.id ??
+        soundIds.find((id) => id !== "None") ??
+        "SP",
+      binauralBeatId:
+        ai.binauralBeatId && beatIds.includes(ai.binauralBeatId)
+          ? ai.binauralBeatId
+          : pickRandomFromCatalog(catalogs.binauralBeats)?.id ??
+            beatIds[0] ??
+            "BB10",
     };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);

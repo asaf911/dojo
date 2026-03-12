@@ -837,16 +837,17 @@ export const postMeditations = functions.runWith({
         const backgroundSound = soundMap.get(meditation.backgroundSoundId);
         if (!backgroundSound) {
           functions.logger.warn(
-            `${TAG_AI} postMeditations: invalid backgroundSoundId from AI: ${meditation.backgroundSoundId}, using first available`
+            `${TAG_AI} postMeditations: invalid backgroundSoundId from AI: ${meditation.backgroundSoundId}, using random`
           );
-          const first = catalogs.backgroundSounds[0];
-          if (!first) {
+          const nonNone = catalogs.backgroundSounds.filter((s) => s.id !== "None");
+          if (nonNone.length === 0) {
             res.status(500).send(
               JSON.stringify({ error: "No background sounds in catalog" })
             );
             return;
           }
-          meditation.backgroundSoundId = first.id;
+          const pick = nonNone[Math.floor(Math.random() * nonNone.length)];
+          meditation.backgroundSoundId = pick.id;
         }
 
         const bg = soundMap.get(meditation.backgroundSoundId)!;
