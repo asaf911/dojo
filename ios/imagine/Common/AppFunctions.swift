@@ -52,8 +52,8 @@ class AppFunctions {
     
     private static func fetchAudioFilesFromServer(completion: @escaping ([AudioFile]) -> Void) {
         print("[Server][Storage] fetchAudioFiles: start server=\(Config.serverLabel)")
-        let storage = Config.activeStorage
-        let storageRef = storage.reference(forURL: serverPath() + Config.audioFileJsonFileName)
+        let storage = Config.contentStorage
+        let storageRef = storage.reference(forURL: Config.contentStoragePath + Config.audioFileJsonFileName)
         
         storageRef.getData(maxSize: 10 * 1024 * 1024) { data, error in
             if let error = error {
@@ -160,9 +160,10 @@ class AppFunctions {
         let dispatchGroup = DispatchGroup()
         
         for index in updatedAudioFiles.indices {
-            if let imageFile = updatedAudioFiles[index].imageFile, imageFile.hasPrefix(serverPath()) {
+            if let imageFile = updatedAudioFiles[index].imageFile, imageFile.hasPrefix("gs://") {
                 dispatchGroup.enter()
-                let storageRef = Config.activeStorage.reference(forURL: imageFile)
+                let resolvedUrl = Config.resolveMediaUrl(imageFile)
+                let storageRef = Config.contentStorage.reference(forURL: resolvedUrl)
                 storageRef.downloadURL { url, error in
                     if let error = error {
                         logger.eventMessage("Failed to download image URL: \(error.localizedDescription)")
@@ -326,10 +327,6 @@ class AppFunctions {
         @unknown default:
             logger.eventMessage("Unknown decoding error: \(error)")
         }
-    }
-    
-    private static func serverPath() -> String {
-        Config.storagePathPrefix + Config.activeServerPath
     }
 }
 

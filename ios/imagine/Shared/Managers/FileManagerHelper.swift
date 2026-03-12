@@ -31,7 +31,8 @@ class FileManagerHelper {
         if url.scheme == "gs" {
             // Use decoded URL: Swift's URL encodes spaces as %20, but Firebase Storage expects the actual path (spaces, not %20)
             let gsUrlString = url.absoluteString.removingPercentEncoding ?? url.absoluteString
-            let storageRef = Config.storage(for: url.absoluteString).reference(forURL: gsUrlString)
+            let resolvedUrl = Config.resolveMediaUrl(gsUrlString)
+            let storageRef = Config.contentStorage.reference(forURL: resolvedUrl)
             // Derive a stable, clean filename from the storage reference
             let cleanName = storageRef.name.isEmpty
                 ? URL(fileURLWithPath: storageRef.fullPath).lastPathComponent
@@ -105,7 +106,8 @@ class FileManagerHelper {
         let predictedName: String = {
             if remoteURL.scheme == "gs" {
                 let gsUrlString = remoteURL.absoluteString.removingPercentEncoding ?? remoteURL.absoluteString
-                let ref = Config.storage(for: remoteURL.absoluteString).reference(forURL: gsUrlString)
+                let resolvedUrl = Config.resolveMediaUrl(gsUrlString)
+                let ref = Config.contentStorage.reference(forURL: resolvedUrl)
                 return ref.name.isEmpty ? URL(fileURLWithPath: ref.fullPath).lastPathComponent : ref.name
             } else {
                 let decodedTail = remoteURL.lastPathComponent.removingPercentEncoding

@@ -64,6 +64,26 @@ struct Config {
         return Storage.storage()
     }
 
+    // MARK: - Single Content Bucket (prod)
+
+    /// Content bucket for MP3s, images, audioFiles.json, pathSteps.json. Always prod.
+    static var contentStorage: Storage {
+        Storage.storage()
+    }
+
+    /// Content bucket path (gs://). Always prod.
+    static var contentStoragePath: String {
+        "gs://imagine-c6162.appspot.com/"
+    }
+
+    /// Rewrites dev bucket media URLs to content bucket. Use before fetching MP3s or images.
+    static func resolveMediaUrl(_ url: String) -> String {
+        if url.contains("imaginedev-e5fd3.appspot.com") {
+            return url.replacingOccurrences(of: "imaginedev-e5fd3.appspot.com", with: "imagine-c6162.appspot.com")
+        }
+        return url
+    }
+
     /// Active storage path (bucket) based on useDevServer flag. Used for Firebase Storage refs.
     static var activeServerPath: String {
         SharedUserStorage.retrieve(forKey: .useDevServer, as: Bool.self, defaultValue: false)

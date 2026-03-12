@@ -22,9 +22,9 @@ The iOS app can switch between production and dev backends at **runtime** via a 
 
 When "Use Dev Server" is ON:
 - Cloud Functions URLs point to `us-central1-imaginedev-e5fd3.cloudfunctions.net`
-- Firebase Storage paths use `imaginedev-e5fd3.appspot.com`
+- Content (MP3s, images, audioFiles.json, pathSteps.json) is always fetched from the prod bucket (`imagine-c6162.appspot.com`)
 
-When OFF (default): the app uses production (`imagine-c6162`).
+When OFF (default): the app uses production (`imagine-c6162`) for both Cloud Functions and content.
 
 ## Deploy Commands
 
@@ -45,14 +45,17 @@ From the `functions/` directory:
 5. When satisfied, promote to production: `cd functions && npm run deploy:dev-to-prod`
 6. Turn off "Use Dev Server" in the app to use production again.
 
-## Firebase Functions: Storage Bucket
+## Single Content Bucket
 
-The functions code uses `GCLOUD_PROJECT` (set by Firebase at runtime) to determine the storage bucket. Each deployment automatically uses its project's bucket:
+All content (MP3s, images, `audioFiles.json`, `pathSteps.json`) lives in the **production bucket** (`imagine-c6162.appspot.com`). Both dev and prod Cloud Functions return media URLs pointing to this bucket. The iOS app always fetches content from prod, regardless of the "Use Dev Server" toggle.
 
-- Deploy to dev → functions use `imaginedev-e5fd3.appspot.com`
-- Deploy to prod → functions use `imagine-c6162.appspot.com`
+The toggle only affects which Cloud Functions backend is called (getCatalogs, postMeditations, postAIRequest). The dev bucket is no longer used for content.
 
-No code changes are needed when switching deploy targets.
+## Firebase Functions: Catalog Media URLs
+
+The functions code uses a fixed content bucket for catalog media URLs:
+
+- Both dev and prod deployments return `gs://imagine-c6162.appspot.com/...` for background music, cues, binaural beats, etc.
 
 **Note:** The dev Firebase project (`imaginedev-e5fd3`) must be on the Blaze (pay-as-you-go) plan to deploy Cloud Functions. If `deploy:dev` fails with an API error, upgrade at: https://console.firebase.google.com/project/imaginedev-e5fd3/usage/details
 

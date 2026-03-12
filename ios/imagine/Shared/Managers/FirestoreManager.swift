@@ -11,8 +11,6 @@ class FirestoreManager {
 
     private init() {}
 
-    private var storage: Storage { Config.activeStorage }
-
     // MARK: - User Data Functions
 
     /// Updates the user's timezone in Firestore.
@@ -538,7 +536,7 @@ class FirestoreManager {
     /// - Parameter completion: A closure that returns the PathStepsResponse if successful, nil otherwise
     func fetchPathSteps(completion: @escaping (PathStepsResponse?) -> Void) {
         print("[Server][Path] fetchPathSteps: start server=\(Config.serverLabel)")
-        let pathRef = storage.reference(forURL: Config.storagePathPrefix + Config.activeServerPath + "Path/pathSteps.json")
+        let pathRef = Config.contentStorage.reference(forURL: Config.contentStoragePath + "Path/pathSteps.json")
         
         // Check if we have cached data and version
         if let cachedVersion = SharedUserStorage.retrieve(forKey: .pathVersion, as: Int.self),

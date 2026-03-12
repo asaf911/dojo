@@ -504,9 +504,7 @@ export const proxyOpenAIChat = functions.runWith({
 // 5. getCatalogs — HTTP GET endpoint for aggregated meditation catalogs
 // ---------------------------------------------------------------------------
 
-const STORAGE_BUCKET = process.env.GCLOUD_PROJECT
-  ? `${process.env.GCLOUD_PROJECT}.appspot.com`
-  : "imagine-c6162.appspot.com";
+const CONTENT_STORAGE_BUCKET = "imagine-c6162.appspot.com";
 const CATALOG_FILE_NAMES = [
   "background_music",
   "binaural_beats",
@@ -540,7 +538,7 @@ interface VoiceItem {
 const DEPRECATED_CUE_IDS = new Set(["MA"]);
 
 function resolveStorageUrl(relativePath: string): string {
-  return `gs://${STORAGE_BUCKET}/${relativePath}`;
+  return `gs://${CONTENT_STORAGE_BUCKET}/${relativePath}`;
 }
 
 function resolveCueUrl(
