@@ -73,65 +73,9 @@ class AIRequestManager: ObservableObject {
             return
         }
         
-        // Handle quick yes/no in response to a conversational CTA
-        if awaitingMeditationConfirmation {
-            let lower = trimmedPrompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            // Normalize basic punctuation (keep words for regex contains checks)
-            let normalized = lower.trimmingCharacters(in: CharacterSet(charactersIn: ".!?,;:"))
-            let positiveSet: [String] = [
-                "y","yes","yeah","yea","yep","yup","sure","sure thing","ok","okay","okey","ok then","do it","go ahead","please do","sounds good","sounds great","sounds perfect","please","proceed","make it","create it","start it","start now","let's do it","let’s do it","let's go","let’s go","go for it","absolutely","definitely","works for me","fine","great"
-            ]
-            let negativeSet: [String] = [
-                "no","n","nope","not now","later","another idea","something else","other idea","pass","maybe later"
-            ]
-            var positive = positiveSet.contains { normalized == $0 }
-            let negative = negativeSet.contains { normalized == $0 }
-            // Also treat phrases like "yeah make something", "make one", "create something" as affirmative creation intents
-            if !positive {
-                let affirmRegex = try? NSRegularExpression(pattern: #"\b(yeah|yea|yep|yup|sure|ok|okay|absolutely|definitely)\b"#, options: .caseInsensitive)
-                let verbRegex = try? NSRegularExpression(pattern: #"\b(make|create|do|start|begin)\b"#, options: .caseInsensitive)
-                let hasAffirm = affirmRegex?.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: (lower as NSString).length)) != nil
-                let hasVerb = verbRegex?.firstMatch(in: lower, options: [], range: NSRange(location: 0, length: (lower as NSString).length)) != nil
-                positive = hasAffirm || hasVerb
-            }
-            if positive {
-                logger.aiChat("🧠 AI_DEBUG CTA affirmative detected awaitingConfirm=true raw=\(trimmedPrompt)")
-                // Transform into an explicit creation request so the assistant routes to meditation
-                if let idea = self.lastSuggestedIdea?.trimmingCharacters(in: .whitespacesAndNewlines), !idea.isEmpty {
-                    // Structured idea tags: extend_by:NN, extend_to:NN, create_duration:NN
-                    if let by = parseTaggedValue(prefix: "extend_by:", in: idea) {
-                        trimmedPrompt = "Extend the last meditation by \(by) minutes and regenerate accordingly. Keep modules contiguous."
-                    } else if let to = parseTaggedValue(prefix: "extend_to:", in: idea) {
-                        trimmedPrompt = "Set the last meditation duration to \(to) minutes and regenerate accordingly. Keep modules contiguous."
-                    } else if let dur = parseTaggedValue(prefix: "create_duration:", in: idea) {
-                        trimmedPrompt = "Create a \(dur)-minute meditation based on our last exchange."
-                    } else {
-                        // Heuristic fallback for natural-language ideas
-                        let s = idea.lowercased()
-                        if let num = extractFirstNumber(in: s), s.contains("extend") || s.contains("+") {
-                            trimmedPrompt = "Extend the last meditation by \(num) minutes and regenerate accordingly. Keep modules contiguous."
-                        } else if s.contains("meditation") || s.contains("session") || s.contains("minute") || s.contains("min") {
-                            trimmedPrompt = "Create a meditation matching this idea: \(idea). Use that idea directly, including any mentioned duration, focus, or background."
-                        } else {
-                            trimmedPrompt = "Create a 10-minute relaxation meditation based on our last exchange."
-                        }
-                    }
-                } else {
-                    // Provide a concrete default aligned to the last explain/clarify context
-                    trimmedPrompt = "Create a 10-minute meditation based on our last exchange, targeting anxiety relief with breath and grounding."
-                }
-                awaitingMeditationConfirmation = false
-            } else if negative {
-                logger.aiChat("🧠 AI_DEBUG CTA negative detected awaitingConfirm=true raw=\(trimmedPrompt)")
-                self.isLoading = false
-                self.error = nil
-                // Single follow-up suggestion UX with rotation to avoid repetition
-                self.conversationalResponse = nextAlternativeSuggestion()
-                self.showResult = false
-                awaitingMeditationConfirmation = false
-                return
-            }
-        }
+        // Always send user's raw prompt to AI — no keyword-based replacement.
+        // AI interprets intent (meditation vs conversation) and extracts duration from prompt or conversation history.
+        awaitingMeditationConfirmation = false
 
         // History queries are now handled via AI classification (intent == "history")
 
