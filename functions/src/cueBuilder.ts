@@ -48,8 +48,12 @@ export function buildCuesFromAllocation(
     cues.push({ id: "OH", trigger: String(currentMinute) });
     currentMinute += 1;
   } else if (focus > 0) {
-    const n = Math.max(IM_MIN, Math.min(IM_CAP, focus));
-    cues.push({ id: `IM${n}`, trigger: String(currentMinute) });
+    const n = Math.max(
+      allocation.focusType === "NF" ? 1 : IM_MIN,
+      Math.min(10, focus)
+    );
+    const prefix = allocation.focusType === "NF" ? "NF" : "IM";
+    cues.push({ id: `${prefix}${n}`, trigger: String(currentMinute) });
     currentMinute += n;
   }
 

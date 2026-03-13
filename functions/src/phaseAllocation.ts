@@ -10,12 +10,23 @@ export interface SessionPreferences {
   isEvening: boolean;
 }
 
+/** User-explicit structure requirements extracted by AI. Highest priority over defaults. */
+export interface UserStructureOverrides {
+  totalDuration?: number;
+  mantraMinutes?: number;
+  bodyScanMinutes?: number;
+  breathMinutes?: number;
+  focusType?: "IM" | "NF";
+}
+
 export interface PhaseAllocation {
   intro: 1;
   breath: number;
   relax: number;
   focus: number;
   insight: number;
+  /** When user explicitly requested mantra or nostril focus */
+  focusType?: "IM" | "NF";
 }
 
 /** Lookup table for 1-10 min (from user spec) */
@@ -95,6 +106,86 @@ export function allocatePhases(
     relax: Math.min(10, relax),
     focus: Math.min(10, focus),
     insight: Math.min(10, insight),
+    focusType: undefined,
+  };
+}
+
+/**
+ * Builds allocation from user-explicit overrides. User requests take highest priority.
+ * Remaining time (after intro + user-specified modules) is distributed to other phases.
+ */
+export function allocatePhasesFromOverrides(
+  duration: number,
+  overrides: UserStructureOverrides,
+  prefs: SessionPreferences
+): PhaseAllocation {
+  const d = Math.max(1, Math.min(60, Math.floor(duration)));
+  const intro = 1;
+  let breath = overrides.breathMinutes ?? 0;
+  let relax = overrides.bodyScanMinutes ?? 0;
+  let focus = overrides.mantraMinutes ?? 0;
+  let insight = 0;
+
+  let used = intro + breath + relax + focus;
+  let remaining = d - used;
+
+  if (remaining > 0) {
+    const needBreath = (overrides.breathMinutes == null) && !prefs.noBreathwork;
+    const needRelax = overrides.bodyScanMinutes == null;
+    const needFocus = overrides.mantraMinutes == null;
+
+    if (needBreath && needRelax && needFocus) {
+      const base = ALLOCATION_1_10[Math.min(d, 10)] ?? ALLOCATION_1_10[10];
+      breath = Math.min(5, base.breath);
+      relax = Math.min(10, base.relax);
+      focus = Math.min(10, base.focus);
+      insight = Math.min(10, base.insight);
+      return {
+        intro: 1,
+        breath,
+        relax,
+        focus,
+        insight,
+        focusType: overrides.focusType,
+      };
+    }
+    if (needBreath && !prefs.noBreathwork && remaining > 0) {
+      breath = Math.min(5, Math.min(remaining, Math.floor(remaining * 0.5)));
+      remaining -= breath;
+    }
+    if (needRelax && remaining > 0) {
+      relax = Math.min(10, remaining);
+      remaining -= relax;
+    }
+    if (needFocus && remaining > 0) {
+      focus = Math.min(10, Math.max(overrides.focusType === "NF" ? 1 : 2, focus + remaining));
+    }
+  }
+
+  if (remaining < 0) {
+    // User requested more than total duration — cap to fit
+    const over = -remaining;
+    if (focus >= over) {
+      focus -= over;
+    } else {
+      const reduceRelax = over - focus;
+      focus = 0;
+      relax = Math.max(0, relax - reduceRelax);
+    }
+  }
+
+  if (prefs.noBreathwork) {
+    relax += breath;
+    breath = 0;
+  }
+
+  return {
+    intro: 1,
+    breath: Math.min(5, breath),
+    relax: Math.min(10, relax),
+    focus: Math.min(10, focus),
+    insight: Math.min(10, insight),
+    focusType: overrides.focusType,
   };
 }
 

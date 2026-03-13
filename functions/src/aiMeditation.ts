@@ -6,9 +6,11 @@
 import * as functions from "firebase-functions";
 import {
   allocatePhases,
+  allocatePhasesFromOverrides,
   extractDurationFromConversationHistory,
   extractDurationFromPrompt,
   extractSessionPreferences,
+  type UserStructureOverrides,
 } from "./phaseAllocation";
 import { buildCuesFromAllocation } from "./cueBuilder";
 
@@ -76,6 +78,83 @@ interface AIMetadataResponse {
   description?: string;
   backgroundSoundId?: string;
   binauralBeatId?: string;
+}
+
+/** AI-extracted structure requirements. User requests take highest priority. */
+interface AIStructureRequirements {
+  totalDuration?: number;
+  mantraMinutes?: number;
+  bodyScanMinutes?: number;
+  breathMinutes?: number;
+  focusType?: "IM" | "NF";
+}
+
+async function extractUserStructureRequirements(
+  userPrompt: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  apiKey: string
+): Promise<AIStructureRequirements | null> {
+  const systemPrompt = `You extract meditation structure requirements from the user's message.
+The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath").
+Return JSON only with keys you can infer. Use null for unspecified. Focus type: "IM" for mantra/chant/affirmation, "NF" for nostril/alternate nostril.
+
+Examples:
+- "Make a 3m relaxation. 2m mantra" → {"totalDuration":3,"mantraMinutes":2,"focusType":"IM"}
+- "5 min with 2m body scan" → {"totalDuration":5,"bodyScanMinutes":2}
+- "10m meditation, 3 minutes mantra" → {"totalDuration":10,"mantraMinutes":3,"focusType":"IM"}
+- "just a quick 2 min" → {"totalDuration":2}
+- "5m" → {"totalDuration":5}
+
+Return ONLY valid JSON, e.g. {"totalDuration":3,"mantraMinutes":2,"focusType":"IM"}. No other text.`;
+
+  const messages: Array<{ role: string; content: string }> = [
+    { role: "system", content: systemPrompt },
+    ...conversationHistory,
+    { role: "user", content: userPrompt },
+  ];
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 150,
+        temperature: 0.3,
+      }),
+    });
+
+    const body = await response.text();
+    if (!response.ok) return null;
+
+    const parsed = JSON.parse(body);
+    const content = parsed?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== "string") return null;
+
+    let s = content.trim();
+    if (s.startsWith("```json")) s = s.slice(7);
+    if (s.startsWith("```")) s = s.slice(3);
+    if (s.endsWith("```")) s = s.slice(0, -3);
+    s = s.trim();
+    const first = s.indexOf("{");
+    const last = s.lastIndexOf("}");
+    if (first >= 0 && last > first) s = s.slice(first, last + 1);
+    s = s.replace(/,\s*}/g, "}");
+    s = s.replace(/,\s*]/g, "]");
+
+    const result = JSON.parse(s) as AIStructureRequirements;
+    const hasOverride =
+      result.mantraMinutes != null ||
+      result.bodyScanMinutes != null ||
+      result.breathMinutes != null;
+    return hasOverride ? result : null;
+  } catch {
+    return null;
+  }
 }
 
 async function callOpenAIMetadata(
@@ -212,19 +291,48 @@ export async function generateAIMeditation(
     recentBackgroundSounds,
   } = input;
 
-  const duration =
+  let duration =
     maxDuration ??
     extractDurationFromPrompt(prompt) ??
     lastMeditationDuration ??
     extractDurationFromConversationHistory(conversationHistory) ??
     10;
+
   const prefs = extractSessionPreferences(prompt);
-  const allocation = allocatePhases(duration, prefs);
+
+  // AI extracts user-explicit requirements (e.g. "2m mantra") — highest priority
+  const userOverrides = await extractUserStructureRequirements(
+    prompt.trim(),
+    conversationHistory,
+    apiKey
+  );
+
+  if (userOverrides?.totalDuration != null && userOverrides.totalDuration >= 1 && userOverrides.totalDuration <= 60) {
+    duration = userOverrides.totalDuration;
+  }
+
+  const overrides: UserStructureOverrides = {
+    totalDuration: duration,
+    mantraMinutes: userOverrides?.mantraMinutes,
+    bodyScanMinutes: userOverrides?.bodyScanMinutes,
+    breathMinutes: userOverrides?.breathMinutes,
+    focusType: userOverrides?.focusType,
+  };
+
+  const hasExplicitOverrides =
+    overrides.mantraMinutes != null ||
+    overrides.bodyScanMinutes != null ||
+    overrides.breathMinutes != null;
+
+  const allocation = hasExplicitOverrides
+    ? allocatePhasesFromOverrides(duration, overrides, prefs)
+    : allocatePhases(duration, prefs);
+
   const cues = buildCuesFromAllocation(allocation, prefs);
 
   const structureContext = cues.map((c) => `${c.id}@${c.trigger}`).join(", ");
   functions.logger.info(
-    `${TAG_AI} deterministic structure dur=${duration} cues=${cues.length}`
+    `${TAG_AI} structure dur=${duration} cues=${cues.length} userOverrides=${hasExplicitOverrides ? JSON.stringify(overrides) : "none"}`
   );
 
   let metadata: {
