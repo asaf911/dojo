@@ -274,16 +274,60 @@ private enum HeartRateGraphCardPreviewSamples {
         HeartRateSamplePoint(minuteOffset: 4, bpm: 72),
         HeartRateSamplePoint(minuteOffset: 5, bpm: 73)
     ]
+
+    /// Session minimum slightly below start (< 3 BPM delta) — MIN-path steady badge.
+    static let minPathSteady: [HeartRateSamplePoint] = [
+        HeartRateSamplePoint(minuteOffset: 0, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 1, bpm: 71),
+        HeartRateSamplePoint(minuteOffset: 2, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 3, bpm: 71),
+        HeartRateSamplePoint(minuteOffset: 4, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 5, bpm: 72)
+    ]
+
+    /// All readings at/above 72 so session min > passed start — MIN-path increase badge.
+    static let minPathIncrease: [HeartRateSamplePoint] = [
+        HeartRateSamplePoint(minuteOffset: 0, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 1, bpm: 74),
+        HeartRateSamplePoint(minuteOffset: 2, bpm: 75),
+        HeartRateSamplePoint(minuteOffset: 3, bpm: 76),
+        HeartRateSamplePoint(minuteOffset: 4, bpm: 77),
+        HeartRateSamplePoint(minuteOffset: 5, bpm: 78)
+    ]
 }
 
 private let heartRateGraphCardPreviewBackground = Color(red: 0.08, green: 0.08, blue: 0.12)
 
-#Preview("MIN path — START / MIN / END + BPM badge") {
+#Preview("MIN path — decrease") {
     HeartRateGraphCard(
         samples: HeartRateGraphCardPreviewSamples.relax,
         startBPM: 88,
         endBPM: 71,
         minBPM: 68
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
+}
+
+#Preview("MIN path — steady") {
+    HeartRateGraphCard(
+        samples: HeartRateGraphCardPreviewSamples.minPathSteady,
+        startBPM: 72,
+        endBPM: 72,
+        minBPM: 71
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
+}
+
+#Preview("MIN path — increase") {
+    HeartRateGraphCard(
+        samples: HeartRateGraphCardPreviewSamples.minPathIncrease,
+        startBPM: 68,
+        endBPM: 78,
+        minBPM: 72
     )
     .padding(16)
     .frame(width: 390)
