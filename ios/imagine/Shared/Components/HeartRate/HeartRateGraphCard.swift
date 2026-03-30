@@ -41,14 +41,6 @@ struct HeartRateGraphCard: View {
         endBPM < startBPM
     }
 
-    private var secondColumnBPM: Double {
-        usesMinPresentation ? (minBPM ?? endBPM) : endBPM
-    }
-
-    private var secondColumnLabel: String {
-        usesMinPresentation ? "MIN" : "END"
-    }
-
     private var bpmDeltaStartToMin: Double {
         guard let m = minBPM else { return 0 }
         return startBPM - m
@@ -76,7 +68,7 @@ struct HeartRateGraphCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header row: Heart icon + "HEART RATE" + START/END or START/MIN values
+            // Header row: START + END, or START + MIN + END when min is measured
             headerRow
 
             // Graph
@@ -121,44 +113,36 @@ struct HeartRateGraphCard: View {
 
     private var headerRow: some View {
         HStack(spacing: 0) {
-            // Heart icon
             Image("heartIcon")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 18, height: 18)
                 .foregroundColor(.white)
 
-            // "HEART RATE" label
             Text("HEART RATE")
                 .font(Font.custom("Nunito", size: 14).weight(.semibold))
                 .foregroundColor(.foregroundLightGray)
                 .padding(.leading, 6)
 
-            Spacer()
+            Spacer(minLength: 4)
 
-            // START value
-            HStack(spacing: 3) {
-                Text("START")
-                    .font(Font.custom("Nunito", size: 10))
-                    .foregroundColor(.foregroundLightGray)
-                Text("\(Int(round(startBPM))) bpm")
-                    .font(Font.custom("Nunito", size: 10))
-                    .foregroundColor(.foregroundLightGray)
-            }
-
-            // Separator
-            Text("  ")
-
-            // MIN or END value
-            HStack(spacing: 3) {
-                Text(secondColumnLabel)
-                    .font(Font.custom("Nunito", size: 10))
-                    .foregroundColor(.foregroundLightGray)
-                Text("\(Int(round(secondColumnBPM))) bpm")
-                    .font(Font.custom("Nunito", size: 10))
-                    .foregroundColor(.foregroundLightGray)
-            }
+            Text(headerBpmSummaryString)
+                .font(Font.custom("Nunito", size: 10))
+                .foregroundColor(.foregroundLightGray)
+                .lineLimit(1)
+                .multilineTextAlignment(.trailing)
         }
+    }
+
+    /// e.g. `START 77 · MIN 59 · END 64 bpm` or `START 77 · END 64 bpm` (single `bpm` for the row).
+    private var headerBpmSummaryString: String {
+        let s = Int(round(startBPM))
+        let e = Int(round(endBPM))
+        if usesMinPresentation, let m = minBPM, m > 0 {
+            let mi = Int(round(m))
+            return "START \(s) · MIN \(mi) · END \(e) bpm"
+        }
+        return "START \(s) · END \(e) bpm"
     }
 
     // MARK: - Change Badge
@@ -176,10 +160,10 @@ struct HeartRateGraphCard: View {
     private var minPresentationBadge: some View {
         let absBPM = abs(bpmDeltaStartToMin)
         let changeText: String = {
-            if minPathIsSteady { return "HR Steady" }
-            if minPathIsDecrease { return "HR Decrease" }
-            if minPathIsIncrease { return "HR Increase" }
-            return "HR Steady"
+            if minPathIsSteady { return "No change in HR" }
+            if minPathIsDecrease { return "below where you started" }
+            if minPathIsIncrease { return "up from your start" }
+            return "No change in HR"
         }()
 
         HStack(spacing: 6) {
@@ -267,76 +251,77 @@ struct HeartRateGraphCard: View {
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-struct HeartRateGraphCard_Previews: PreviewProvider {
-    static var previews: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // MIN presentation + BPM delta
-                HeartRateGraphCard(
-                    samples: sampleDataRelax,
-                    startBPM: 88,
-                    endBPM: 71,
-                    minBPM: 68
-                )
-                .previewDisplayName("MIN path — decrease")
+private enum HeartRateGraphCardPreviewSamples {
+    static let relax: [HeartRateSamplePoint] = [
+        HeartRateSamplePoint(minuteOffset: 0, bpm: 88),
+        HeartRateSamplePoint(minuteOffset: 1, bpm: 85),
+        HeartRateSamplePoint(minuteOffset: 2, bpm: 82),
+        HeartRateSamplePoint(minuteOffset: 3, bpm: 78),
+        HeartRateSamplePoint(minuteOffset: 4, bpm: 75),
+        HeartRateSamplePoint(minuteOffset: 5, bpm: 73),
+        HeartRateSamplePoint(minuteOffset: 6, bpm: 70),
+        HeartRateSamplePoint(minuteOffset: 7, bpm: 68),
+        HeartRateSamplePoint(minuteOffset: 8, bpm: 71)
+    ]
 
-                // Legacy END + percent
-                HeartRateGraphCard(
-                    samples: sampleDataRelax,
-                    startBPM: 88,
-                    endBPM: 71,
-                    minBPM: nil
-                )
-                .previewDisplayName("Legacy END + %")
+    static let steady: [HeartRateSamplePoint] = [
+        HeartRateSamplePoint(minuteOffset: 0, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 1, bpm: 73),
+        HeartRateSamplePoint(minuteOffset: 2, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 3, bpm: 71),
+        HeartRateSamplePoint(minuteOffset: 4, bpm: 72),
+        HeartRateSamplePoint(minuteOffset: 5, bpm: 73)
+    ]
+}
 
-                // Steady session (legacy)
-                HeartRateGraphCard(
-                    samples: sampleDataSteady,
-                    startBPM: 72,
-                    endBPM: 73,
-                    minBPM: nil
-                )
-                .previewDisplayName("Steady legacy")
+private let heartRateGraphCardPreviewBackground = Color(red: 0.08, green: 0.08, blue: 0.12)
 
-                // Insufficient data
-                HeartRateGraphCard(
-                    samples: [],
-                    startBPM: 75,
-                    endBPM: 70,
-                    minBPM: nil
-                )
-                .previewDisplayName("No Graph Data")
-            }
-            .padding()
-        }
-        .background(Color(red: 0.08, green: 0.08, blue: 0.12))
-        .previewLayout(.sizeThatFits)
-    }
+#Preview("MIN path — START / MIN / END + BPM badge") {
+    HeartRateGraphCard(
+        samples: HeartRateGraphCardPreviewSamples.relax,
+        startBPM: 88,
+        endBPM: 71,
+        minBPM: 68
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
+}
 
-    static var sampleDataRelax: [HeartRateSamplePoint] {
-        [
-            HeartRateSamplePoint(minuteOffset: 0, bpm: 88),
-            HeartRateSamplePoint(minuteOffset: 1, bpm: 85),
-            HeartRateSamplePoint(minuteOffset: 2, bpm: 82),
-            HeartRateSamplePoint(minuteOffset: 3, bpm: 78),
-            HeartRateSamplePoint(minuteOffset: 4, bpm: 75),
-            HeartRateSamplePoint(minuteOffset: 5, bpm: 73),
-            HeartRateSamplePoint(minuteOffset: 6, bpm: 70),
-            HeartRateSamplePoint(minuteOffset: 7, bpm: 68),
-            HeartRateSamplePoint(minuteOffset: 8, bpm: 71)
-        ]
-    }
+#Preview("Legacy — START / END + percent") {
+    HeartRateGraphCard(
+        samples: HeartRateGraphCardPreviewSamples.relax,
+        startBPM: 88,
+        endBPM: 71,
+        minBPM: nil
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
+}
 
-    static var sampleDataSteady: [HeartRateSamplePoint] {
-        [
-            HeartRateSamplePoint(minuteOffset: 0, bpm: 72),
-            HeartRateSamplePoint(minuteOffset: 1, bpm: 73),
-            HeartRateSamplePoint(minuteOffset: 2, bpm: 72),
-            HeartRateSamplePoint(minuteOffset: 3, bpm: 71),
-            HeartRateSamplePoint(minuteOffset: 4, bpm: 72),
-            HeartRateSamplePoint(minuteOffset: 5, bpm: 73)
-        ]
-    }
+#Preview("Steady — legacy %") {
+    HeartRateGraphCard(
+        samples: HeartRateGraphCardPreviewSamples.steady,
+        startBPM: 72,
+        endBPM: 73,
+        minBPM: nil
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
+}
+
+#Preview("No graph — not enough samples") {
+    HeartRateGraphCard(
+        samples: [],
+        startBPM: 75,
+        endBPM: 70,
+        minBPM: nil
+    )
+    .padding(16)
+    .frame(width: 390)
+    .background(heartRateGraphCardPreviewBackground)
 }

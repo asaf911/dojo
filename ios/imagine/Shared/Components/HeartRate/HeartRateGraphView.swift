@@ -168,7 +168,7 @@ struct HeartRateGraphView: View {
                 .frame(height: graphHeight)
             }
             
-            // X-axis: session timeline (not HR metric names; MIN vs END is only in the card header).
+            // X-axis: session timeline — start vs end of the plotted window only.
             HStack {
                 Spacer().frame(width: yAxisLabelWidth + 4)
                 
@@ -176,15 +176,9 @@ struct HeartRateGraphView: View {
                     Text("START")
                         .font(Font.custom("Nunito", size: 10).weight(.semibold))
                         .foregroundColor(labelColor)
-                    
+
                     Spacer()
-                    
-                    Text("MID")
-                        .font(Font.custom("Nunito", size: 10).weight(.semibold))
-                        .foregroundColor(labelColor)
-                    
-                    Spacer()
-                    
+
                     Text("END")
                         .font(Font.custom("Nunito", size: 10).weight(.semibold))
                         .foregroundColor(labelColor)

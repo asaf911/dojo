@@ -347,57 +347,39 @@ struct HistoryCardView: View {
     
     private var heartRateSection: some View {
         HStack(spacing: 0) {
-            // Heart icon
             Image("heartIcon")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 18, height: 18)
                 .foregroundColor(.white)
-            
-            // "HEART RATE" label
+
             Text("HEART RATE")
                 .font(Font.custom("Nunito", size: 12).weight(.semibold))
                 .foregroundColor(.textGray)
                 .padding(.leading, 6)
-            
-            Spacer()
-            
-            // START value
-            if let startBPM = card.startBPM {
-                HStack(spacing: 3) {
-                    Text("START")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                    Text("\(startBPM) bpm")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                }
-            }
-            
-            // Separator
-            Text("  ")
-            
-            // MIN (when stored) or END (legacy)
-            if let minBPM = card.minBPM {
-                HStack(spacing: 3) {
-                    Text("MIN")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                    Text("\(minBPM) bpm")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                }
-            } else if let endBPM = card.endBPM {
-                HStack(spacing: 3) {
-                    Text("END")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                    Text("\(endBPM) bpm")
-                        .font(Font.custom("Nunito", size: 11))
-                        .foregroundColor(.textGray)
-                }
+
+            Spacer(minLength: 4)
+
+            if let summary = heartRateSectionBpmSummaryString {
+                Text(summary)
+                    .font(Font.custom("Nunito", size: 11))
+                    .foregroundColor(.textGray)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
             }
         }
+    }
+
+    /// Matches `HeartRateGraphCard` header: one `bpm` at end of the row.
+    private var heartRateSectionBpmSummaryString: String? {
+        guard let start = card.startBPM else { return nil }
+        if let minBPM = card.minBPM, let endBPM = card.endBPM {
+            return "START \(start) · MIN \(minBPM) · END \(endBPM) bpm"
+        }
+        if let endBPM = card.endBPM {
+            return "START \(start) · END \(endBPM) bpm"
+        }
+        return nil
     }
 }
 
