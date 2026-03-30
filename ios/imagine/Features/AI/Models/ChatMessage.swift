@@ -7,7 +7,16 @@ struct ChatHeartRateData: Codable, Equatable {
     let startBPM: Double
     let endBPM: Double
     let samples: [HeartRateSamplePoint]
-    
+    /// When non-nil, graph card shows MIN + BPM delta; omitted in persisted legacy messages.
+    let minBPM: Double?
+
+    init(startBPM: Double, endBPM: Double, samples: [HeartRateSamplePoint], minBPM: Double? = nil) {
+        self.startBPM = startBPM
+        self.endBPM = endBPM
+        self.samples = samples
+        self.minBPM = minBPM
+    }
+
     var changePercent: Double {
         guard startBPM > 0 else { return 0 }
         return ((endBPM - startBPM) / startBPM) * 100

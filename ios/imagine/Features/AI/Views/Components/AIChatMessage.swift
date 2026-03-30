@@ -155,7 +155,8 @@ struct AIChatMessage: View {
                                 HeartRateGraphCard(
                                     samples: hrData.samples,
                                     startBPM: hrData.startBPM,
-                                    endBPM: hrData.endBPM
+                                    endBPM: hrData.endBPM,
+                                    minBPM: hrData.minBPM
                                 )
                                 .padding(.bottom, 12)
                             }
@@ -180,7 +181,8 @@ struct AIChatMessage: View {
                                 HeartRateGraphCard(
                                     samples: hrData.samples,
                                     startBPM: hrData.startBPM,
-                                    endBPM: hrData.endBPM
+                                    endBPM: hrData.endBPM,
+                                    minBPM: hrData.minBPM
                                 )
                                 .padding(.bottom, 12)
                             }
@@ -280,7 +282,8 @@ struct AIChatMessage: View {
                     HeartRateGraphCard(
                         samples: hrData.samples,
                         startBPM: hrData.startBPM,
-                        endBPM: hrData.endBPM
+                        endBPM: hrData.endBPM,
+                        minBPM: hrData.minBPM
                     )
                     .padding(.vertical, 4)
                     .transition(.opacity.combined(with: .move(edge: .top)))

@@ -39,7 +39,8 @@ struct PostPracticeMessageInput {
 
 struct HeartRateContext {
     enum Quality {
-        case valid(start: Int, end: Int, changePercent: Double)  // 2+ samples - can show graph
+        /// `minBPM` optional: when non-nil and > 0, copy and graph use session minimum vs start.
+        case valid(start: Int, end: Int, changePercent: Double, minBPM: Int?)
         case minimal(avgBPM: Int)                                 // 1 sample - show average only
         case partial                                              // Data exists but unusable
         case none
@@ -57,7 +58,8 @@ struct HeartRateContext {
             let start = Int(round(results.firstThreeAverage))
             let end = Int(round(results.lastThreeAverage))
             let pct = results.heartRateChange
-            return HeartRateContext(quality: .valid(start: start, end: end, changePercent: pct))
+            let minBPM: Int? = results.minBPM > 0 ? Int(round(results.minBPM)) : nil
+            return HeartRateContext(quality: .valid(start: start, end: end, changePercent: pct, minBPM: minBPM))
         }
         
         // 1 sample: show average BPM (no graph)
@@ -92,6 +94,7 @@ struct PostPracticePolishContext {
     let isNewRecord: Bool
     let heartRateStartBPM: Int?
     let heartRateEndBPM: Int?
+    let heartRateMinBPM: Int?
     let heartRateChangePercent: Double?
     
     // Session type context for personalized polish
@@ -120,7 +123,7 @@ enum PostPracticeMessageBuilder {
         
         let streakMessage = buildStreakMessage(from: input.streak)
         
-        let (hrStart, hrEnd, hrChange, heartRateMessage) = buildHeartRateMessage(from: input.heartRate)
+        let (hrStart, hrEnd, hrChange, hrMin, heartRateMessage) = buildHeartRateMessage(from: input.heartRate)
         
         // Extract Path-specific metadata
         let (completedPathStepId, nextPathStepId, isPathComplete) = extractPathMetadata(from: input.sessionType)
@@ -134,6 +137,7 @@ enum PostPracticeMessageBuilder {
             heartRateSamples: input.heartRateSamples,
             heartRateStartBPM: hrStart,
             heartRateEndBPM: hrEnd,
+            heartRateMinBPM: hrMin,
             heartRateChangePercent: hrChange,
             expectsPolish: true,  // Always polish all sessions
             completedPathStepId: completedPathStepId,
@@ -164,6 +168,7 @@ enum PostPracticeMessageBuilder {
             isNewRecord: input.streak.isNewRecord,
             heartRateStartBPM: hrStart,
             heartRateEndBPM: hrEnd,
+            heartRateMinBPM: hrMin,
             heartRateChangePercent: hrChange,
             sessionContext: sessionContext
         )
@@ -263,23 +268,27 @@ enum PostPracticeMessageBuilder {
 
     /// Builds the heart rate analysis message (shown after graph)
     /// ~40-50 chars, sound human and warm
-    /// Returns: (startBPM, endBPM, changePercent, message)
-    private static func buildHeartRateMessage(from context: HeartRateContext?) -> (start: Int?, end: Int?, change: Double?, message: String?) {
+    /// Returns: (startBPM, endBPM, changePercent, minBPM for graph when measured, message)
+    private static func buildHeartRateMessage(from context: HeartRateContext?) -> (start: Int?, end: Int?, change: Double?, minBPM: Int?, message: String?) {
         guard let context else {
-            return (nil, nil, nil, nil)
+            return (nil, nil, nil, nil, nil)
         }
 
         switch context.quality {
         case .none:
-            return (nil, nil, nil, "❤️ HR data unavailable.")
+            return (nil, nil, nil, nil, "❤️ HR data unavailable.")
         case .partial:
-            return (nil, nil, nil, "❤️ Not enough HR samples collected.")
+            return (nil, nil, nil, nil, "❤️ Not enough HR samples collected.")
         case .minimal(let avgBPM):
             // Single reading - show as average, no change percent
-            return (avgBPM, avgBPM, 0, "❤️ Average HR: \(avgBPM) BPM during session.")
-        case .valid(let start, let end, let change):
+            return (avgBPM, avgBPM, 0, nil, "❤️ Average HR: \(avgBPM) BPM during session.")
+        case .valid(let start, let end, let change, let minBPM):
+            if let minBPM, minBPM > 0 {
+                let message = buildValidHeartRateAnalysisWithMin(start: start, min: minBPM)
+                return (start, end, change, minBPM, message)
+            }
             let message = buildValidHeartRateAnalysis(start: start, end: end, change: change)
-            return (start, end, change, message)
+            return (start, end, change, nil, message)
         }
     }
 
@@ -306,5 +315,25 @@ enum PostPracticeMessageBuilder {
         }
 
         return "❤️ HR rose from \(startSafe) to \(endSafe) BPM."
+    }
+
+    /// Valid HR with stored session minimum: emphasize start → min and absolute BPM change.
+    private static func buildValidHeartRateAnalysisWithMin(start: Int, min: Int) -> String {
+        let startSafe = max(0, start)
+        let minSafe = max(0, min)
+        guard startSafe > 0, minSafe > 0 else {
+            return "❤️ HR data unavailable."
+        }
+        let absBPM = abs(startSafe - minSafe)
+        if absBPM < 3 {
+            return "❤️ HR stayed steady around \(startSafe) BPM."
+        }
+        if minSafe < startSafe {
+            if absBPM >= 10 {
+                return "❤️ HR dropped from \(startSafe) to \(minSafe) (~\(absBPM) BPM). Nice!"
+            }
+            return "❤️ HR eased from \(startSafe) to \(minSafe) BPM (~\(absBPM) BPM)."
+        }
+        return "❤️ HR low was \(minSafe) BPM during the session."
     }
 }

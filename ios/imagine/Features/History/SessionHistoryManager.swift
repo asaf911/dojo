@@ -477,6 +477,8 @@ struct HistoryCardModel: Identifiable {
     let practiceId: String?  // For guided meditations - used to reopen in player
     let startBPM: Int?
     let endBPM: Int?
+    /// Session minimum when persisted (`minBPM` or `nadir`); nil keeps legacy END presentation.
+    let minBPM: Int?
     let samples: [HeartRateSamplePoint]  // Individual sample points for graph rendering
     
     var hasHeartRateData: Bool {
@@ -509,6 +511,12 @@ struct HistoryCardModel: Identifiable {
         self.practiceId = session.practiceId
         self.startBPM = session.heartRate?.startBPM.map { Int($0) }
         self.endBPM = session.heartRate?.endBPM.map { Int($0) }
+        let minDouble = session.heartRate.flatMap { hr -> Double? in
+            let v = hr.minBPM ?? hr.nadir?.bpm
+            guard let x = v, x > 0 else { return nil }
+            return x
+        }
+        self.minBPM = minDouble.map { Int($0.rounded()) }
         self.samples = session.heartRate?.samples ?? []
     }
     
@@ -523,6 +531,7 @@ struct HistoryCardModel: Identifiable {
         self.practiceId = legacy.practiceId
         self.startBPM = legacy.startBPM
         self.endBPM = legacy.endBPM
+        self.minBPM = nil
         self.samples = []  // Legacy sessions don't have sample data
     }
 }

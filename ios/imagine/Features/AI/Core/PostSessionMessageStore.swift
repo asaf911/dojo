@@ -25,6 +25,8 @@ struct PostPracticeReport: Codable, Equatable {
         var heartRateSamples: [HeartRateSamplePoint]?
         var heartRateStartBPM: Int?
         var heartRateEndBPM: Int?
+        /// When set, UI uses MIN + BPM delta vs start; when nil, legacy END + percent.
+        var heartRateMinBPM: Int?
         var heartRateChangePercent: Double?
         
         // State
@@ -240,6 +242,7 @@ final class PostSessionMessageStore {
             heartRateSamples: nil,
             heartRateStartBPM: nil,
             heartRateEndBPM: nil,
+            heartRateMinBPM: nil,
             heartRateChangePercent: nil,
             expectsPolish: status != .completed,
             completedPathStepId: nil,
@@ -272,6 +275,7 @@ final class PostSessionMessageStore {
             heartRateSamples: nil,
             heartRateStartBPM: nil,
             heartRateEndBPM: nil,
+            heartRateMinBPM: nil,
             heartRateChangePercent: nil,
             expectsPolish: false,
             completedPathStepId: nil,

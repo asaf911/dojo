@@ -65,7 +65,12 @@ final class PostPracticePolishService {
 
         let streakText = buildStreakMessage(context.streak, context.longestStreak, context.isNewRecord)
         var hrLine: String?
-        if let s = context.heartRateStartBPM, let e = context.heartRateEndBPM, let pct = context.heartRateChangePercent {
+        if let s = context.heartRateStartBPM,
+           let min = context.heartRateMinBPM, min > 0 {
+            hrLine = buildHRMessageMin(start: s, min: min)
+        } else if let s = context.heartRateStartBPM,
+                  let e = context.heartRateEndBPM,
+                  let pct = context.heartRateChangePercent {
             hrLine = buildHRMessage(s, e, pct)
         }
         let streakSection = "🔥 \(streakText)"
@@ -138,6 +143,17 @@ final class PostPracticePolishService {
         if pct < 0 && absPct >= 10.0 { return "HR dropped from \(start) to \(end). Nice!" }
         if pct < 0 { return "HR eased from \(start) to \(end) BPM." }
         return "HR rose from \(start) to \(end) BPM."
+    }
+
+    private func buildHRMessageMin(start: Int, min: Int) -> String? {
+        guard start > 0, min > 0 else { return "HR data unavailable." }
+        let absBPM = abs(start - min)
+        if absBPM < 3 { return "HR stayed steady around \(start) BPM." }
+        if min < start {
+            if absBPM >= 10 { return "HR dropped from \(start) to \(min) (~\(absBPM) BPM). Nice!" }
+            return "HR eased from \(start) to \(min) BPM (~\(absBPM) BPM)."
+        }
+        return "HR low was \(min) BPM during the session."
     }
 
     private func buildSessionContextText(_ context: PostPracticePolishContext.SessionContext?) -> String? {

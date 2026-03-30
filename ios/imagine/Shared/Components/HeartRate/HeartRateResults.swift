@@ -16,6 +16,8 @@ struct HeartRateResults {
     let firstThreeAverage: Double
     let lastThreeAverage: Double
     let heartRateChange: Double
+    /// Session minimum BPM from tracker (0 if unavailable). End/last-three averages remain in `lastThreeAverage`.
+    let minBPM: Double
     let sampleCount: Int
     let samples: [HeartRateSamplePoint]  // Raw samples for graphing
     
@@ -26,6 +28,7 @@ struct HeartRateResults {
         firstThreeAverage: 0,
         lastThreeAverage: 0,
         heartRateChange: 0,
+        minBPM: 0,
         sampleCount: 0,
         samples: []
     )
@@ -39,6 +42,7 @@ struct HeartRateResults {
             firstThreeAverage: tracker.bestFirstThreeAverage,
             lastThreeAverage: tracker.bestLastThreeAverage,
             heartRateChange: tracker.bestHeartRateChange,
+            minBPM: tracker.bestMinBPM,
             sampleCount: tracker.hasLockedResults ? tracker.finalSampleCount : tracker.sampleCount,
             samples: tracker.graphSamples
         )

@@ -11,6 +11,8 @@ struct HeartRateGraphView: View {
     let samples: [HeartRateSamplePoint]
     let startBPM: Double
     let endBPM: Double
+    /// Right x-axis label: `"END"` (legacy) or `"MIN"` when surfacing session minimum.
+    var trailingAxisLabel: String = "END"
     
     // Layout
     private let graphHeight: CGFloat = 140
@@ -161,7 +163,7 @@ struct HeartRateGraphView: View {
                     
                     Spacer()
                     
-                    Text("END")
+                    Text(trailingAxisLabel)
                         .font(Font.custom("Nunito", size: 10).weight(.semibold))
                         .foregroundColor(labelColor)
                 }
@@ -337,7 +339,8 @@ struct HeartRateGraphView_Previews: PreviewProvider {
         HeartRateGraphView(
             samples: sampleData,
             startBPM: 88,
-            endBPM: 71
+            endBPM: 71,
+            trailingAxisLabel: "MIN"
         )
         .padding()
         .background(Color(red: 0.08, green: 0.08, blue: 0.12))

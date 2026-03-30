@@ -1898,10 +1898,12 @@ struct AIChatContainerView: View {
                   let end = report.metadata.heartRateEndBPM else {
                 return nil
             }
+            let minInt = report.metadata.heartRateMinBPM
             return ChatHeartRateData(
                 startBPM: Double(start),
                 endBPM: Double(end),
-                samples: samples
+                samples: samples,
+                minBPM: minInt.flatMap { $0 > 0 ? Double($0) : nil }
             )
         }()
         

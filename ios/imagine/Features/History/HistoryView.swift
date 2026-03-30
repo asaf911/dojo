@@ -160,7 +160,8 @@ struct HistoryCardView: View {
                     HeartRateGraphCard(
                         samples: card.samples,
                         startBPM: Double(card.startBPM ?? 0),
-                        endBPM: Double(card.endBPM ?? 0)
+                        endBPM: Double(card.endBPM ?? 0),
+                        minBPM: card.minBPM.map(Double.init)
                     )
                     .padding(.top, 14)
                 } else {
@@ -376,8 +377,17 @@ struct HistoryCardView: View {
             // Separator
             Text("  ")
             
-            // END value
-            if let endBPM = card.endBPM {
+            // MIN (when stored) or END (legacy)
+            if let minBPM = card.minBPM {
+                HStack(spacing: 3) {
+                    Text("MIN")
+                        .font(Font.custom("Nunito", size: 11))
+                        .foregroundColor(.textGray)
+                    Text("\(minBPM) bpm")
+                        .font(Font.custom("Nunito", size: 11))
+                        .foregroundColor(.textGray)
+                }
+            } else if let endBPM = card.endBPM {
                 HStack(spacing: 3) {
                     Text("END")
                         .font(Font.custom("Nunito", size: 11))
@@ -413,6 +423,7 @@ struct HistoryView_Previews: PreviewProvider {
                             heartRate: SessionHeartRateData(
                                 startBPM: 88,
                                 endBPM: 71,
+                                minBPM: 68,
                                 readingCount: 10,
                                 samples: [
                                     HeartRateSamplePoint(minuteOffset: 0, bpm: 88),
@@ -449,6 +460,7 @@ struct HistoryView_Previews: PreviewProvider {
                             heartRate: SessionHeartRateData(
                                 startBPM: 75,
                                 endBPM: 62,
+                                minBPM: 62,
                                 readingCount: 8,
                                 samples: [
                                     HeartRateSamplePoint(minuteOffset: 0, bpm: 75),
