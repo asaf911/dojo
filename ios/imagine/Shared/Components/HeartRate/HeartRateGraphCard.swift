@@ -85,7 +85,7 @@ struct HeartRateGraphCard: View {
                     samples: samples,
                     startBPM: startBPM,
                     endBPM: endBPM,
-                    trailingAxisLabel: usesMinPresentation ? "MIN" : "END"
+                    showMinimumMarker: usesMinPresentation
                 )
             } else {
                 // Fallback for insufficient data

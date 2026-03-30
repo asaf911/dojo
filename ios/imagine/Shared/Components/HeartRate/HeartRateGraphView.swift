@@ -11,8 +11,10 @@ struct HeartRateGraphView: View {
     let samples: [HeartRateSamplePoint]
     let startBPM: Double
     let endBPM: Double
-    /// Right x-axis label: `"END"` (legacy) or `"MIN"` when surfacing session minimum.
-    var trailingAxisLabel: String = "END"
+    /// When true, draws a small dot at the lowest BPM point on the raw samples (MIN path only).
+    var showMinimumMarker: Bool = false
+
+    private let minimumMarkerDiameter: CGFloat = 5
     
     // Layout
     private let graphHeight: CGFloat = 140
@@ -103,6 +105,15 @@ struct HeartRateGraphView: View {
         
         return result
     }
+
+    /// Sample at the lowest BPM (earliest `minuteOffset` if tied).
+    private var minimumSampleForMarker: HeartRateSamplePoint? {
+        guard showMinimumMarker, samples.count >= 2 else { return nil }
+        return samples.min { lhs, rhs in
+            if lhs.bpm != rhs.bpm { return lhs.bpm < rhs.bpm }
+            return lhs.minuteOffset < rhs.minuteOffset
+        }
+    }
     
     // Colors - vertical gradient: hrHigh (high BPM) at top, purple (low BPM) at bottom
     // Moderately distinct transition in the middle
@@ -141,12 +152,23 @@ struct HeartRateGraphView: View {
                             linePath(in: CGSize(width: width, height: height))
                                 .stroke(lineGradient, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                         }
+
+                        if let minSample = minimumSampleForMarker {
+                            let pt = pointPosition(
+                                for: minSample,
+                                in: CGSize(width: width, height: height)
+                            )
+                            Circle()
+                                .fill(Color.dojoTurquoise)
+                                .frame(width: minimumMarkerDiameter, height: minimumMarkerDiameter)
+                                .position(x: pt.x, y: pt.y)
+                        }
                     }
                 }
                 .frame(height: graphHeight)
             }
             
-            // X-axis labels
+            // X-axis: session timeline (not HR metric names; MIN vs END is only in the card header).
             HStack {
                 Spacer().frame(width: yAxisLabelWidth + 4)
                 
@@ -163,7 +185,7 @@ struct HeartRateGraphView: View {
                     
                     Spacer()
                     
-                    Text(trailingAxisLabel)
+                    Text("END")
                         .font(Font.custom("Nunito", size: 10).weight(.semibold))
                         .foregroundColor(labelColor)
                 }
@@ -340,7 +362,7 @@ struct HeartRateGraphView_Previews: PreviewProvider {
             samples: sampleData,
             startBPM: 88,
             endBPM: 71,
-            trailingAxisLabel: "MIN"
+            showMinimumMarker: true
         )
         .padding()
         .background(Color(red: 0.08, green: 0.08, blue: 0.12))
