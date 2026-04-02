@@ -112,6 +112,10 @@ final class DevModeSkipService: ObservableObject {
         
         // Routine count
         setRoutineCount(snapshot.routineCount)
+
+        // Timely recommendation override for dev testing.
+        // Timely destinations force the time slot; all other destinations clear it.
+        applyTimelySlotOverride(for: destination)
         
         // Set hurdle override so determineCurrentPhase() routes to the correct track.
         // Each skip destination declares its expected hurdle via JourneyStateSnapshot.hurdleOverride.
@@ -234,6 +238,20 @@ final class DevModeSkipService: ObservableObject {
     
     private func setRoutineCount(_ count: Int) {
         SharedUserStorage.save(value: count, forKey: .completedRoutineSessionsCount)
+    }
+
+    private func applyTimelySlotOverride(for destination: JourneySkipDestination) {
+        if let slotOverride = destination.timelySlotOverride {
+            SharedUserStorage.save(value: slotOverride, forKey: .devTimelySlotOverride)
+            #if DEBUG
+            print("📊 DEV_SKIP: [TIMELY_OVERRIDE] Set slot override=\(slotOverride)")
+            #endif
+        } else {
+            SharedUserStorage.delete(forKey: .devTimelySlotOverride)
+            #if DEBUG
+            print("📊 DEV_SKIP: [TIMELY_OVERRIDE] Cleared slot override")
+            #endif
+        }
     }
     
     // MARK: - Verification

@@ -328,9 +328,13 @@ struct AIChatContainerView: View {
         // Mark slot immediately (synchronously) to prevent duplicate recommendations
         // from concurrent calls (e.g. handleOnAppear + handlePathStepsLoaded racing).
         ExploreRecommendationManager.shared.markCurrentSlotAsSuggested()
-        
-        // Show thinking animation immediately — the orchestrator may call AI generation,
-        // so we display the same SenseiThinkingAnimationView used for user-initiated requests.
+
+        // For returning users, show a brief timely greeting before thinking appears.
+        addTimelyGreetingIfNeeded()
+
+        // Show thinking animation immediately after the greeting — the orchestrator
+        // may call AI generation, so we display the same SenseiThinkingAnimationView
+        // used for user-initiated requests.
         handleLoadingChange(true)
         
         // Use the new dual recommendation orchestrator
@@ -339,7 +343,9 @@ struct AIChatContainerView: View {
             print("📊 JOURNEY: [DEV_SKIP] Calling DualRecommendationOrchestrator.getDualRecommendation()...")
             #endif
             
-            guard let dualRec = await DualRecommendationOrchestrator.shared.getDualRecommendation(includeGreeting: true) else {
+            // Greeting is shown as a dedicated chat message above thinking.
+            // Disable orchestrator greeting here to avoid duplicated greeting copy.
+            guard let dualRec = await DualRecommendationOrchestrator.shared.getDualRecommendation(includeGreeting: false) else {
                 #if DEBUG
                 print("📊 JOURNEY: [DEV_SKIP] ❌ getDualRecommendation() returned nil!")
                 print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
@@ -364,6 +370,80 @@ struct AIChatContainerView: View {
                 self.lastRecommendationTrigger = .timely
                 displayDualRecommendation(dualRec)
             }
+        }
+    }
+
+    private func addTimelyGreetingIfNeeded() {
+        guard shouldShowTimelyPreThinkingGreeting() else {
+            return
+        }
+
+        let greeting = buildTimelyGreetingMessage()
+        conversationState.addAIMessage(text: greeting)
+    }
+
+    private func shouldShowTimelyPreThinkingGreeting() -> Bool {
+        SharedUserStorage.retrieve(forKey: .hasShownFirstWelcome, as: Bool.self) ?? false
+    }
+
+    private func buildTimelyGreetingMessage() -> String {
+        let firstName = MessageContext.fromUserStorage().firstName?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let slot = ExploreRecommendationManager.TimeOfDay.current()
+        let options = timelyGreetingOptions(for: slot, firstName: firstName)
+        return options.randomElement() ?? "Hi."
+    }
+
+    private func timelyGreetingOptions(
+        for slot: ExploreRecommendationManager.TimeOfDay,
+        firstName: String?
+    ) -> [String] {
+        if let firstName, !firstName.isEmpty {
+            switch slot {
+            case .morning:
+                return [
+                    "Good morning, \(firstName).",
+                    "Morning, \(firstName). Ready to begin your day?"
+                ]
+            case .noon:
+                return [
+                    "Good afternoon, \(firstName).",
+                    "Hi \(firstName), how is your day?"
+                ]
+            case .evening:
+                return [
+                    "Good evening, \(firstName).",
+                    "Hey \(firstName), hope you had a good day."
+                ]
+            case .night:
+                return [
+                    "Good evening, \(firstName).",
+                    "Hey \(firstName), ready to close the day?"
+                ]
+            }
+        }
+
+        switch slot {
+        case .morning:
+            return [
+                "Good morning.",
+                "Morning. Ready to begin your day?"
+            ]
+        case .noon:
+            return [
+                "Good afternoon.",
+                "Hi, how is your day?"
+            ]
+        case .evening:
+            return [
+                "Good evening.",
+                "Hey, hope you had a good day."
+            ]
+        case .night:
+            return [
+                "Good evening.",
+                "Hey, ready to close the day?"
+            ]
         }
     }
     

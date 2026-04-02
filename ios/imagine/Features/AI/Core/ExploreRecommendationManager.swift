@@ -52,6 +52,14 @@ class ExploreRecommendationManager: ObservableObject {
         case night      // 21:00 - 4:59
         
         static func current() -> TimeOfDay {
+            let devModeEnabled = SharedUserStorage.retrieve(forKey: .devModeEnabled, as: Bool.self) ?? false
+            if devModeEnabled,
+               let overrideRawValue = SharedUserStorage.retrieve(forKey: .devTimelySlotOverride, as: String.self),
+               let override = TimeOfDay(rawValue: overrideRawValue) {
+                logger.aiChat("🧠 AI_DEBUG [JOURNEY] TimeOfDay override active: \(override.slotName)")
+                return override
+            }
+
             let hour = Calendar.current.component(.hour, from: Date())
             switch hour {
             case 5..<12: return .morning

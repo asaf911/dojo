@@ -224,6 +224,11 @@ enum JourneySkipDestination: String, CaseIterable {
     case personalizedPhaseStart      = "personalized_phase_start"
     case personalizedPhaseNearUnlock = "personalized_phase_near_unlock"
     case customPractices             = "custom_practices"
+    // Timely recommendation test destinations (dev mode)
+    case timelyMorning               = "timely_morning"
+    case timelyNoon                  = "timely_noon"
+    case timelyEvening               = "timely_evening"
+    case timelyNight                 = "timely_night"
     
     /// Display name for UI picker
     var displayName: String {
@@ -235,6 +240,10 @@ enum JourneySkipDestination: String, CaseIterable {
         case .personalizedPhaseStart:      return "Personalized Phase: Start"
         case .personalizedPhaseNearUnlock: return "Personalized Phase: Near Unlock"
         case .customPractices:             return "Custom Practices"
+        case .timelyMorning:               return "Timely Recommendation: Morning"
+        case .timelyNoon:                  return "Timely Recommendation: Noon"
+        case .timelyEvening:               return "Timely Recommendation: Evening"
+        case .timelyNight:                 return "Timely Recommendation: Night"
         }
     }
     
@@ -255,6 +264,14 @@ enum JourneySkipDestination: String, CaseIterable {
             return "Track B (mind_wont_slow_down) — 2/3 sessions, Custom tease active"
         case .customPractices:
             return "Track B (mind_wont_slow_down) — 3/3 sessions, full AI customization"
+        case .timelyMorning:
+            return "Force morning timely recommendation in AI chat (slot override)"
+        case .timelyNoon:
+            return "Force noon timely recommendation in AI chat (slot override)"
+        case .timelyEvening:
+            return "Force evening timely recommendation in AI chat (slot override)"
+        case .timelyNight:
+            return "Force night timely recommendation in AI chat (slot override)"
         }
     }
     
@@ -267,10 +284,28 @@ enum JourneySkipDestination: String, CaseIterable {
             return .subscription
         case .learningPhaseStart, .learningPhaseLastStep:
             return .path
-        case .personalizedPhaseStart, .personalizedPhaseNearUnlock:
+        case .personalizedPhaseStart, .personalizedPhaseNearUnlock,
+             .timelyMorning, .timelyNoon, .timelyEvening, .timelyNight:
             return .dailyRoutines
         case .customPractices:
             return .customization
+        }
+    }
+
+    /// Optional dev-mode override for timely recommendation slot selection.
+    /// Value matches ExploreRecommendationManager.TimeOfDay raw values.
+    var timelySlotOverride: String? {
+        switch self {
+        case .timelyMorning:
+            return "morning"
+        case .timelyNoon:
+            return "noon"
+        case .timelyEvening:
+            return "evening"
+        case .timelyNight:
+            return "night"
+        default:
+            return nil
         }
     }
 }
@@ -420,6 +455,18 @@ extension JourneySkipDestination {
                 pathProgress: .complete,
                 routineCount: 3,
                 targetPhase: .customization,
+                hurdleOverride: "mind_wont_slow_down"
+            )
+
+        case .timelyMorning, .timelyNoon, .timelyEvening, .timelyNight:
+            // Timely recommendation testing should always land in Personalized Phase.
+            // Uses Track B defaults to avoid Path-mode dependencies and force a timely dual recommendation.
+            return JourneyStateSnapshot(
+                onboardingComplete: true,
+                subscriptionComplete: true,
+                pathProgress: .complete,
+                routineCount: 0,
+                targetPhase: .dailyRoutines,
                 hurdleOverride: "mind_wont_slow_down"
             )
         }
