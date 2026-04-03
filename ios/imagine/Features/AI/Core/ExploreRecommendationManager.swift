@@ -337,22 +337,58 @@ class ExploreRecommendationManager: ObservableObject {
         return "\(dateString)_\(slotName)"
     }
     
-    /// Check if we've already auto-suggested for the current time slot today
-    func hasAutoSuggestedForCurrentSlot() -> Bool {
-        let currentSlotKey = getCurrentSlotKey()
-        let lastSlot = SharedUserStorage.retrieve(forKey: .lastAutoSuggestedSlot, as: String.self)
-        let hasAlreadySuggested = lastSlot == currentSlotKey
-        
-        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot check: current=\(currentSlotKey) last=\(lastSlot ?? "none") alreadySuggested=\(hasAlreadySuggested)")
-        
-        return hasAlreadySuggested
+    /// Check if the current slot was already used for a timely launch suggestion.
+    /// Falls back to the legacy key for one release window.
+    func hasTimelySlotSuggestedForCurrentSlot() -> Bool {
+        hasSuggestedForCurrentSlot(
+            key: .lastTimelyLaunchSuggestedSlot,
+            fallbackToLegacyKey: true
+        )
     }
-    
-    /// Mark the current time slot as having received an auto-suggestion
-    func markCurrentSlotAsSuggested() {
+
+    /// Check if the current slot was already used for non-timely auto suggestions.
+    /// Falls back to the legacy key for one release window.
+    func hasNonTimelySlotSuggestedForCurrentSlot() -> Bool {
+        hasSuggestedForCurrentSlot(
+            key: .lastNonTimelyAutoSuggestedSlot,
+            fallbackToLegacyKey: true
+        )
+    }
+
+    /// Check if the current slot has already received a timely launch suggestion.
+    func shouldAutoSuggestTimelyNow() -> Bool {
+        if hasTimelySlotSuggestedForCurrentSlot() {
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Timely auto-suggest: NO (already suggested for \(TimeOfDay.current().slotName) today)")
+            return false
+        }
+
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Timely auto-suggest: YES (first \(TimeOfDay.current().slotName) timely suggestion today)")
+        return true
+    }
+
+    /// Check if the current slot has already received a non-timely auto suggestion.
+    func shouldAutoSuggestNonTimelyNow() -> Bool {
+        if hasNonTimelySlotSuggestedForCurrentSlot() {
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Non-timely auto-suggest: NO (already suggested for \(TimeOfDay.current().slotName) today)")
+            return false
+        }
+
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Non-timely auto-suggest: YES (first \(TimeOfDay.current().slotName) non-timely suggestion today)")
+        return true
+    }
+
+    /// Mark the current slot as consumed by a timely launch suggestion.
+    func markTimelySlotAsSuggested() {
         let slotKey = getCurrentSlotKey()
-        SharedUserStorage.save(value: slotKey, forKey: .lastAutoSuggestedSlot)
-        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot marked as suggested: \(slotKey)")
+        SharedUserStorage.save(value: slotKey, forKey: .lastTimelyLaunchSuggestedSlot)
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Timely slot marked as suggested: \(slotKey)")
+    }
+
+    /// Mark the current slot as consumed by a non-timely auto suggestion.
+    func markNonTimelySlotAsSuggested() {
+        let slotKey = getCurrentSlotKey()
+        SharedUserStorage.save(value: slotKey, forKey: .lastNonTimelyAutoSuggestedSlot)
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Non-timely slot marked as suggested: \(slotKey)")
     }
     
     /// Main check: Should we auto-suggest a routine right now?
@@ -368,9 +404,9 @@ class ExploreRecommendationManager: ObservableObject {
             return false
         }
         
-        // Check if already suggested for this time slot
-        if hasAutoSuggestedForCurrentSlot() {
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Auto-suggest: NO (already suggested for \(TimeOfDay.current().slotName) today)")
+        // Check if already suggested for this time slot by a non-timely flow.
+        if hasNonTimelySlotSuggestedForCurrentSlot() {
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Auto-suggest: NO (non-timely slot already suggested for \(TimeOfDay.current().slotName) today)")
             return false
         }
         
@@ -380,27 +416,24 @@ class ExploreRecommendationManager: ObservableObject {
     
     /// Reset slot suggestion state (for dev mode testing)
     func resetSlotSuggestion() {
+        SharedUserStorage.delete(forKey: .lastTimelyLaunchSuggestedSlot)
+        SharedUserStorage.delete(forKey: .lastNonTimelyAutoSuggestedSlot)
         SharedUserStorage.delete(forKey: .lastAutoSuggestedSlot)
-        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot suggestion state reset")
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot suggestion state reset (timely + non-timely + legacy)")
     }
     
-    /// Get the last suggested slot key (for debugging/dev mode)
+    /// Get the last non-timely suggested slot key (for debugging/dev mode)
     func getLastSuggestedSlot() -> String? {
-        return SharedUserStorage.retrieve(forKey: .lastAutoSuggestedSlot, as: String.self)
+        return SharedUserStorage.retrieve(forKey: .lastNonTimelyAutoSuggestedSlot, as: String.self)
     }
     
     // MARK: - Customization Phase (Auto-Generated Meditations)
     
     /// Check if we should auto-generate a custom meditation for this slot
-    /// Simpler check than shouldAutoSuggestNow() - only checks slot, not explore conditions
+    /// Simpler check than shouldAutoSuggestNow() - only checks slot, not explore conditions.
+    /// This is a legacy non-timely path and intentionally uses the non-timely slot key.
     func shouldAutoSuggestCustomNow() -> Bool {
-        if hasAutoSuggestedForCurrentSlot() {
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Custom auto-suggest: NO (already suggested for \(TimeOfDay.current().slotName) today)")
-            return false
-        }
-        
-        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Custom auto-suggest: YES (first \(TimeOfDay.current().slotName) suggestion today)")
-        return true
+        shouldAutoSuggestNonTimelyNow()
     }
     
     /// Get the auto-prompt for custom meditation based on time of day
@@ -449,5 +482,44 @@ class ExploreRecommendationManager: ObservableObject {
             let tags = session.tags.joined(separator: ", ")
             logger.aiChat("🧠 AI_DEBUG [EXPLORE_FILTER] session=\(session.id) title=\(session.title) tags=[\(tags)] premium=\(session.premium)")
         }
+    }
+
+    // MARK: - Legacy Compatibility Wrappers
+
+    /// Legacy wrapper retained for call-site compatibility.
+    /// Uses non-timely slot tracking.
+    func hasAutoSuggestedForCurrentSlot() -> Bool {
+        hasNonTimelySlotSuggestedForCurrentSlot()
+    }
+
+    /// Legacy wrapper retained for call-site compatibility.
+    /// Uses non-timely slot tracking.
+    func markCurrentSlotAsSuggested() {
+        markNonTimelySlotAsSuggested()
+    }
+
+    // MARK: - Private Helpers
+
+    private func hasSuggestedForCurrentSlot(
+        key: UserStorageKey,
+        fallbackToLegacyKey: Bool
+    ) -> Bool {
+        let currentSlotKey = getCurrentSlotKey()
+
+        if let lastSlot = SharedUserStorage.retrieve(forKey: key, as: String.self) {
+            let hasAlreadySuggested = lastSlot == currentSlotKey
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot check key=\(key.rawValue) current=\(currentSlotKey) last=\(lastSlot) alreadySuggested=\(hasAlreadySuggested)")
+            return hasAlreadySuggested
+        }
+
+        guard fallbackToLegacyKey,
+              let legacySlot = SharedUserStorage.retrieve(forKey: .lastAutoSuggestedSlot, as: String.self) else {
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot check key=\(key.rawValue) current=\(currentSlotKey) last=none alreadySuggested=false")
+            return false
+        }
+
+        let hasAlreadySuggested = legacySlot == currentSlotKey
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Slot check legacy fallback key=\(key.rawValue) current=\(currentSlotKey) legacy=\(legacySlot) alreadySuggested=\(hasAlreadySuggested)")
+        return hasAlreadySuggested
     }
 }

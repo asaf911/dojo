@@ -17,6 +17,7 @@ enum ClearCacheCategory: CaseIterable {
     case onboarding   // App onboarding only
     case pathProgress // Path step completion progress
     case aiChatHistory // AI chat conversation history
+    case dailyRecommendationSlot // Daily timely-slot tracking keys
     case clearUIDAndSignOut  // New case for complete reset with sign out
 
     var displayName: String {
@@ -39,6 +40,8 @@ enum ClearCacheCategory: CaseIterable {
             return "Path Progress"
         case .aiChatHistory:
             return "AI Chat History"
+        case .dailyRecommendationSlot:
+            return "Daily Recommendation Slot"
         case .clearUIDAndSignOut:
             return "Clear UID and Sign Out"
         }
@@ -64,6 +67,8 @@ enum ClearCacheCategory: CaseIterable {
             return "Reset Path step completion progress. Clears which steps you've completed."
         case .aiChatHistory:
             return "Clear AI chat conversation history. Start fresh with Sensei."
+        case .dailyRecommendationSlot:
+            return "Clear daily slot state so timely recommendations can appear again on next launch."
         case .clearUIDAndSignOut:
             return "Completely reset user identity, forget Firebase UID, and sign out. This creates a fresh user session for testing."
         }
@@ -145,6 +150,13 @@ enum ClearCacheCategory: CaseIterable {
             SharedUserStorage.delete(forKey: .aiChatHistory)
             logger.eventMessage("AI chat history cleared.")
             print("🧹 AI_CHAT_CLEAR: AI chat history removed from storage")
+        case .dailyRecommendationSlot:
+            // Clear all slot tracking keys (new split keys + legacy fallback).
+            SharedUserStorage.delete(forKey: .lastTimelyLaunchSuggestedSlot)
+            SharedUserStorage.delete(forKey: .lastNonTimelyAutoSuggestedSlot)
+            SharedUserStorage.delete(forKey: .lastAutoSuggestedSlot)
+            logger.eventMessage("Daily recommendation slot state cleared (timely + non-timely + legacy).")
+            print("🧹 SLOT_CLEAR: Cleared daily recommendation slot keys")
         case .clearUIDAndSignOut:
             // This is a special case that needs to be handled differently
             // It will be handled in the ClearCacheView completion handler

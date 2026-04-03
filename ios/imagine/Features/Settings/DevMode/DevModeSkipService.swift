@@ -128,7 +128,8 @@ final class DevModeSkipService: ObservableObject {
             #endif
         }
         
-        // Always reset slot for fresh recommendation
+        // Always reset all slot keys for fresh recommendation
+        // (timely + non-timely + legacy fallback key).
         ExploreRecommendationManager.shared.resetSlotSuggestion()
         
         // Reset entry tracking so dev mode doesn't pollute real user analytics

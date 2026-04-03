@@ -306,6 +306,12 @@ class AppFunctions {
             print("🧹 AI_CHAT_CLEAR [AppFunctions]: Clearing AI chat history...")
             SharedUserStorage.delete(forKey: .aiChatHistory)
         }
+        if categories.contains(.dailyRecommendationSlot) {
+            print("🧹 SLOT_CLEAR [AppFunctions]: Clearing daily recommendation slot keys...")
+            SharedUserStorage.delete(forKey: .lastTimelyLaunchSuggestedSlot)
+            SharedUserStorage.delete(forKey: .lastNonTimelyAutoSuggestedSlot)
+            SharedUserStorage.delete(forKey: .lastAutoSuggestedSlot)
+        }
         logger.eventMessage("Clear cache operation completed for categories: \(categories.map { $0.displayName }.joined(separator: ", "))")
     }
     

@@ -297,15 +297,31 @@ struct AIChatContainerView: View {
             print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
             #endif
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - onboarding not complete")
+            logTimelySkip(reason: "onboarding_incomplete")
             return
         }
-        
-        // Check slot-based rules - one suggestion per time slot per day
+
+        if isTimelyRecommendationInFlight {
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - timely fetch already in flight")
+            logTimelySkip(reason: "timely_fetch_in_flight")
+            return
+        }
+
+        // If post-session flow is still active, defer timely suggestion.
+        // We'll retry after prompt resolution.
+        if isPostSessionFlowActive() {
+            hasDeferredTimelyRecommendationCheck = true
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - post-session prompt flow active, deferring timely suggestion")
+            logTimelySkip(reason: "prompt_active")
+            return
+        }
+
+        // Check slot-based rules - one timely launch suggestion per time slot per day.
         // (Recommendations are appended to the existing conversation thread,
         // so conversation emptiness is intentionally not checked here.)
-        let shouldAutoSuggest = ExploreRecommendationManager.shared.shouldAutoSuggestCustomNow()
+        let shouldAutoSuggest = ExploreRecommendationManager.shared.shouldAutoSuggestTimelyNow()
         #if DEBUG
-        print("📊 JOURNEY: [DEV_SKIP]   3. shouldAutoSuggestCustomNow: \(shouldAutoSuggest)")
+        print("📊 JOURNEY: [DEV_SKIP]   3. shouldAutoSuggestTimelyNow: \(shouldAutoSuggest)")
         print("📊 JOURNEY: [DEV_SKIP]      lastSuggestedSlot: \(ExploreRecommendationManager.shared.getLastSuggestedSlot() ?? "nil")")
         print("📊 JOURNEY: [DEV_SKIP]      currentSlot: \(ExploreRecommendationManager.shared.getCurrentSlotKey())")
         #endif
@@ -315,6 +331,7 @@ struct AIChatContainerView: View {
             print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
             #endif
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - slot already suggested")
+            logTimelySkip(reason: "slot_used")
             return
         }
         
@@ -324,10 +341,6 @@ struct AIChatContainerView: View {
         print("📊 JOURNEY: [DEV_SKIP] ✅ ALL CONDITIONS PASSED - fetching recommendation...")
         #endif
         logger.aiChat("🧠 AI_DEBUG [JOURNEY] current phase: \(currentPhase.displayName) - using dual recommendation orchestrator")
-        
-        // Mark slot immediately (synchronously) to prevent duplicate recommendations
-        // from concurrent calls (e.g. handleOnAppear + handlePathStepsLoaded racing).
-        ExploreRecommendationManager.shared.markCurrentSlotAsSuggested()
 
         // For returning users, show a brief timely greeting before thinking appears.
         addTimelyGreetingIfNeeded()
@@ -336,9 +349,12 @@ struct AIChatContainerView: View {
         // may call AI generation, so we display the same SenseiThinkingAnimationView
         // used for user-initiated requests.
         handleLoadingChange(true)
-        
+
+        isTimelyRecommendationInFlight = true
+
         // Use the new dual recommendation orchestrator
-        Task {
+        timelyRecommendationTask?.cancel()
+        timelyRecommendationTask = Task {
             #if DEBUG
             print("📊 JOURNEY: [DEV_SKIP] Calling DualRecommendationOrchestrator.getDualRecommendation()...")
             #endif
@@ -352,6 +368,11 @@ struct AIChatContainerView: View {
                 #endif
                 logger.aiChat("🧠 AI_DEBUG [JOURNEY] no dual recommendation available")
                 await MainActor.run { removeThinkingMessageIfNeeded() }
+                await MainActor.run {
+                    logTimelySkip(reason: "generation_failed")
+                    isTimelyRecommendationInFlight = false
+                    timelyRecommendationTask = nil
+                }
                 return
             }
             
@@ -367,10 +388,35 @@ struct AIChatContainerView: View {
                 print("📊 JOURNEY: [DEV_SKIP] Displaying recommendation...")
                 print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
                 #endif
+                ExploreRecommendationManager.shared.markTimelySlotAsSuggested()
+                AnalyticsManager.shared.logEvent("timely_suggest_slot_marked_after_success", parameters: [
+                    "slot": ExploreRecommendationManager.shared.getCurrentSlotKey(),
+                    "phase": ProductJourneyManager.shared.currentPhase.analyticsName
+                ])
                 self.lastRecommendationTrigger = .timely
                 displayDualRecommendation(dualRec)
+                isTimelyRecommendationInFlight = false
+                timelyRecommendationTask = nil
             }
         }
+    }
+
+    private func isPostSessionFlowActive() -> Bool {
+        if pendingPostSessionPrompt || pendingPostSessionPromptIsPathComplete {
+            return true
+        }
+        // Only block timely while prompt scheduling is actively in flight.
+        // An already-rendered unresolved prompt should not block timely recommendations.
+        return postSessionPromptTask != nil
+    }
+
+    private func logTimelySkip(reason: String) {
+        logger.aiChat("🧠 AI_DEBUG [TIMELY] skipped reason=\(reason)")
+        AnalyticsManager.shared.logEvent("timely_suggest_skipped_reason", parameters: [
+            "reason": reason,
+            "slot": ExploreRecommendationManager.shared.getCurrentSlotKey(),
+            "phase": ProductJourneyManager.shared.currentPhase.analyticsName
+        ])
     }
 
     private func addTimelyGreetingIfNeeded() {
@@ -590,6 +636,7 @@ struct AIChatContainerView: View {
         
         logger.aiChat("🧠 AI_DEBUG onboarding_notice received=aiOnboardingCleared")
         SenseiOnboardingState.shared.resetForCurrentUser()
+        resetDeferredRecommendationState()
         onboardingSteps = SenseiOnboardingScript.steps(firstName: SenseiOnboardingScript.currentFirstName())
         hasQueuedOnboarding = false
         activeActionMessageId = nil
@@ -1897,7 +1944,10 @@ struct AIChatContainerView: View {
         #if DEBUG
         print("[PostSessionPrompt] Scheduling prompt in \(delay)s")
         #endif
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        postSessionPromptTask?.cancel()
+        postSessionPromptTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
             let prompt = PostSessionPrompt.standard(isPathComplete: isPathComplete)
             let question = "Would you like to keep meditating?"
             self.conversationState.addPostSessionPrompt(question: question, prompt: prompt)
@@ -1905,6 +1955,7 @@ struct AIChatContainerView: View {
             print("[PostSessionPrompt] ✅ Prompt displayed")
             #endif
             logger.aiChat("🤔 [POST_SESSION_PROMPT] ✅ Prompt shown isPathComplete=\(isPathComplete)")
+            self.postSessionPromptTask = nil
         }
     }
     
@@ -1923,6 +1974,10 @@ struct AIChatContainerView: View {
         
         // Persist the response in the message so buttons stay in final state across re-renders
         conversationState.markPostSessionPromptResponded(respondedYes: wantsMore)
+        postSessionPromptTask?.cancel()
+        postSessionPromptTask = nil
+        let shouldRetryDeferredTimely = hasDeferredTimelyRecommendationCheck
+        hasDeferredTimelyRecommendationCheck = false
         
         if wantsMore {
             // User wants more — fetch and show dual recommendation
@@ -1964,6 +2019,9 @@ struct AIChatContainerView: View {
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.conversationState.addAIMessage(text: "I'll be here whenever you're ready.")
+                if shouldRetryDeferredTimely {
+                    self.checkAndShowRecommendation()
+                }
             }
         }
     }
@@ -2020,6 +2078,12 @@ struct AIChatContainerView: View {
     // MARK: - Post-session prompt state
     @State private var pendingPostSessionPrompt: Bool = false
     @State private var pendingPostSessionPromptIsPathComplete: Bool = false
+    @State private var postSessionPromptTask: Task<Void, Never>? = nil
+    @State private var hasDeferredTimelyRecommendationCheck: Bool = false
+    
+    // MARK: - Timely recommendation state
+    @State private var isTimelyRecommendationInFlight: Bool = false
+    @State private var timelyRecommendationTask: Task<Void, Never>? = nil
     
     // MARK: - Recommendation trigger tracking (for analytics)
     /// Tracks what triggered the most recent recommendation so play actions can report it.
@@ -2058,6 +2122,7 @@ struct AIChatContainerView: View {
         // Clear temporary UI states
         removeThinkingMessageIfNeeded()
         manager.clearResult()
+        resetDeferredRecommendationState()
         // Clear conversation and persist
         conversationState.clearConversation()
         hasQueuedOnboarding = false
@@ -2084,5 +2149,16 @@ struct AIChatContainerView: View {
         // If no onboarding, leave keyboard state unchanged
         
         logger.aiChat("🧠 AI_DEBUG clear_chat completed")
+    }
+
+    private func resetDeferredRecommendationState() {
+        postSessionPromptTask?.cancel()
+        postSessionPromptTask = nil
+        timelyRecommendationTask?.cancel()
+        timelyRecommendationTask = nil
+        pendingPostSessionPrompt = false
+        pendingPostSessionPromptIsPathComplete = false
+        hasDeferredTimelyRecommendationCheck = false
+        isTimelyRecommendationInFlight = false
     }
 }

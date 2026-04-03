@@ -148,7 +148,9 @@ enum UserStorageKey: String, CaseIterable {
     // Migration flags
     case keychainMigrated
     // Journey phase tracking (Daily Routines)
-    case lastAutoSuggestedSlot          // String like "2026-01-14_morning"
+    case lastAutoSuggestedSlot          // Legacy slot key (deprecated; kept for migration fallback)
+    case lastTimelyLaunchSuggestedSlot  // String like "2026-01-14_morning" for launch/foreground timely suggestions
+    case lastNonTimelyAutoSuggestedSlot // String like "2026-01-14_morning" for non-timely auto suggestions (legacy/transition/customization)
     case completedRoutineSessionsCount  // Int counter for customization unlock
     case hasShownFirstWelcome           // Bool - true after the first-ever recommendation welcome is shown
     case hasReceivedFirstCustomMeditation  // Bool - true after first Custom from dual recommendation
