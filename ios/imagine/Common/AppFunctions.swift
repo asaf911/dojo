@@ -311,6 +311,8 @@ class AppFunctions {
             SharedUserStorage.delete(forKey: .lastTimelyLaunchSuggestedSlot)
             SharedUserStorage.delete(forKey: .lastNonTimelyAutoSuggestedSlot)
             SharedUserStorage.delete(forKey: .lastAutoSuggestedSlot)
+            SharedUserStorage.delete(forKey: .devTimelySlotOverride)
+            SharedUserStorage.delete(forKey: .devUseTimelySlotOverride)
         }
         logger.eventMessage("Clear cache operation completed for categories: \(categories.map { $0.displayName }.joined(separator: ", "))")
     }

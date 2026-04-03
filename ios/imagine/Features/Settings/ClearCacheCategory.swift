@@ -155,6 +155,8 @@ enum ClearCacheCategory: CaseIterable {
             SharedUserStorage.delete(forKey: .lastTimelyLaunchSuggestedSlot)
             SharedUserStorage.delete(forKey: .lastNonTimelyAutoSuggestedSlot)
             SharedUserStorage.delete(forKey: .lastAutoSuggestedSlot)
+            SharedUserStorage.delete(forKey: .devTimelySlotOverride)
+            SharedUserStorage.delete(forKey: .devUseTimelySlotOverride)
             logger.eventMessage("Daily recommendation slot state cleared (timely + non-timely + legacy).")
             print("🧹 SLOT_CLEAR: Cleared daily recommendation slot keys")
         case .clearUIDAndSignOut:

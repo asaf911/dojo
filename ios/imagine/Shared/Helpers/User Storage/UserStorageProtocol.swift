@@ -157,6 +157,7 @@ enum UserStorageKey: String, CaseIterable {
     case contextStateSnapshot           // ContextStateSnapshot - Adaptive Context Evolution Layer state
     case cachedJourneyPhase             // Persisted phase to survive app restart race condition
     case devTimelySlotOverride          // String "morning|noon|evening|night" for dev-mode timely recommendation testing
+    case devUseTimelySlotOverride       // Bool gate to explicitly enable one-shot dev time override usage
     case loggedPhaseEntries             // [String] array of phase rawValues that have had entry logged
     case loggedSessionMilestones        // [Int] array of session numbers (1, 2, 3) that have had milestone logged
     case loggedFirstSessionStarted      // Bool - true after journey_first_session_started event fired once

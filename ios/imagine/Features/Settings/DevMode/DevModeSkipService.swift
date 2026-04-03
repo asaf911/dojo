@@ -244,11 +244,13 @@ final class DevModeSkipService: ObservableObject {
     private func applyTimelySlotOverride(for destination: JourneySkipDestination) {
         if let slotOverride = destination.timelySlotOverride {
             SharedUserStorage.save(value: slotOverride, forKey: .devTimelySlotOverride)
+            SharedUserStorage.save(value: true, forKey: .devUseTimelySlotOverride)
             #if DEBUG
             print("📊 DEV_SKIP: [TIMELY_OVERRIDE] Set slot override=\(slotOverride)")
             #endif
         } else {
             SharedUserStorage.delete(forKey: .devTimelySlotOverride)
+            SharedUserStorage.delete(forKey: .devUseTimelySlotOverride)
             #if DEBUG
             print("📊 DEV_SKIP: [TIMELY_OVERRIDE] Cleared slot override")
             #endif

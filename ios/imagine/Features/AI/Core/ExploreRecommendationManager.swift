@@ -53,7 +53,8 @@ class ExploreRecommendationManager: ObservableObject {
         
         static func current() -> TimeOfDay {
             let devModeEnabled = SharedUserStorage.retrieve(forKey: .devModeEnabled, as: Bool.self) ?? false
-            if devModeEnabled,
+            let useOverride = SharedUserStorage.retrieve(forKey: .devUseTimelySlotOverride, as: Bool.self) ?? false
+            if devModeEnabled && useOverride,
                let overrideRawValue = SharedUserStorage.retrieve(forKey: .devTimelySlotOverride, as: String.self),
                let override = TimeOfDay(rawValue: overrideRawValue) {
                 logger.aiChat("🧠 AI_DEBUG [JOURNEY] TimeOfDay override active: \(override.slotName)")
@@ -425,6 +426,22 @@ class ExploreRecommendationManager: ObservableObject {
     /// Get the last non-timely suggested slot key (for debugging/dev mode)
     func getLastSuggestedSlot() -> String? {
         return SharedUserStorage.retrieve(forKey: .lastNonTimelyAutoSuggestedSlot, as: String.self)
+    }
+
+    /// Returns true when a dev time override is currently active.
+    /// Used by timely flow to treat overrides as one-shot test inputs.
+    func isDevTimeOverrideActive() -> Bool {
+        let devModeEnabled = SharedUserStorage.retrieve(forKey: .devModeEnabled, as: Bool.self) ?? false
+        let useOverride = SharedUserStorage.retrieve(forKey: .devUseTimelySlotOverride, as: Bool.self) ?? false
+        guard devModeEnabled && useOverride else { return false }
+        return SharedUserStorage.retrieve(forKey: .devTimelySlotOverride, as: String.self) != nil
+    }
+
+    /// Clears the dev time override so subsequent checks use real clock time.
+    func clearDevTimeOverride() {
+        SharedUserStorage.delete(forKey: .devTimelySlotOverride)
+        SharedUserStorage.delete(forKey: .devUseTimelySlotOverride)
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] Cleared dev time-of-day override")
     }
     
     // MARK: - Customization Phase (Auto-Generated Meditations)

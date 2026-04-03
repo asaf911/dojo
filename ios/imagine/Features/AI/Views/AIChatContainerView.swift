@@ -3,6 +3,13 @@ import Combine
 
 // MARK: - Chat Container View
 
+@MainActor
+final class TimelyRecommendationGate {
+    static let shared = TimelyRecommendationGate()
+    var isInFlight: Bool = false
+    private init() {}
+}
+
 struct AIChatContainerView: View {
     @StateObject private var manager = AIRequestManager()
     @StateObject private var keyboardObserver = KeyboardObserver()
@@ -301,7 +308,7 @@ struct AIChatContainerView: View {
             return
         }
 
-        if isTimelyRecommendationInFlight {
+        if TimelyRecommendationGate.shared.isInFlight {
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - timely fetch already in flight")
             logTimelySkip(reason: "timely_fetch_in_flight")
             return
@@ -320,6 +327,7 @@ struct AIChatContainerView: View {
         // (Recommendations are appended to the existing conversation thread,
         // so conversation emptiness is intentionally not checked here.)
         let shouldAutoSuggest = ExploreRecommendationManager.shared.shouldAutoSuggestTimelyNow()
+        let usedDevTimeOverride = ExploreRecommendationManager.shared.isDevTimeOverrideActive()
         #if DEBUG
         print("📊 JOURNEY: [DEV_SKIP]   3. shouldAutoSuggestTimelyNow: \(shouldAutoSuggest)")
         print("📊 JOURNEY: [DEV_SKIP]      lastSuggestedSlot: \(ExploreRecommendationManager.shared.getLastSuggestedSlot() ?? "nil")")
@@ -332,6 +340,9 @@ struct AIChatContainerView: View {
             #endif
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - slot already suggested")
             logTimelySkip(reason: "slot_used")
+            if usedDevTimeOverride {
+                ExploreRecommendationManager.shared.clearDevTimeOverride()
+            }
             return
         }
         
@@ -350,6 +361,7 @@ struct AIChatContainerView: View {
         // used for user-initiated requests.
         handleLoadingChange(true)
 
+        TimelyRecommendationGate.shared.isInFlight = true
         isTimelyRecommendationInFlight = true
 
         // Use the new dual recommendation orchestrator
@@ -370,6 +382,10 @@ struct AIChatContainerView: View {
                 await MainActor.run { removeThinkingMessageIfNeeded() }
                 await MainActor.run {
                     logTimelySkip(reason: "generation_failed")
+                    if usedDevTimeOverride {
+                        ExploreRecommendationManager.shared.clearDevTimeOverride()
+                    }
+                    TimelyRecommendationGate.shared.isInFlight = false
                     isTimelyRecommendationInFlight = false
                     timelyRecommendationTask = nil
                 }
@@ -395,6 +411,10 @@ struct AIChatContainerView: View {
                 ])
                 self.lastRecommendationTrigger = .timely
                 displayDualRecommendation(dualRec)
+                if usedDevTimeOverride {
+                    ExploreRecommendationManager.shared.clearDevTimeOverride()
+                }
+                TimelyRecommendationGate.shared.isInFlight = false
                 isTimelyRecommendationInFlight = false
                 timelyRecommendationTask = nil
             }
@@ -2159,6 +2179,7 @@ struct AIChatContainerView: View {
         pendingPostSessionPrompt = false
         pendingPostSessionPromptIsPathComplete = false
         hasDeferredTimelyRecommendationCheck = false
+        TimelyRecommendationGate.shared.isInFlight = false
         isTimelyRecommendationInFlight = false
     }
 }
