@@ -44,12 +44,15 @@
 		3F01D9D104950AA3767D1859 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64A5BD069478A86C6E10B88 /* AuthService.swift */; };
 		4117442ACEF57187212762B0 /* ExploreRecommendationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */; };
 		43FA8C9330363FC8C2BE7EB8 /* PreviewMeditationContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F93969AB422354CC4EF62BD /* PreviewMeditationContent.swift */; };
+		454D50864E50C0B4B5B66C92 /* FractionalModules+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EAF3304F3CEDB992799F57C /* FractionalModules+Mapping.swift */; };
 		47280EC18D2C7C4C710056AE /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA90476AFE4FB30399A33A2 /* UserProfile.swift */; };
 		4927035E9F89110825C9A04E /* OfflineAssetChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 008D1ACA50D4B2E84FE4101D /* OfflineAssetChecker.swift */; };
 		4A5C95425800B5EEAD891C3D /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B230EF72FC7FD878943C76 /* OnboardingViewModel.swift */; };
+		4E13397CBFB4B48877B17B33 /* FractionalModules+ViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE14250F5C4F64494750664D /* FractionalModules+ViewModel.swift */; };
 		4F5592A652181FEFA99D38CB /* OnboardingResponses.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB71ED255650E85F9E83427 /* OnboardingResponses.swift */; };
 		519BC96126A2C6FFF907F42B /* StatCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56B06F7D98D5AD7B1F0875A /* StatCardView.swift */; };
 		524B18673F820A4C20733CA9 /* UnifiedPostSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B806BBAE3BDBBA7A7E5A025 /* UnifiedPostSessionManager.swift */; };
+		5392A569AE5FFE1AB1D68311 /* FractionalModules+Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8FF34BDF8DF4BD382D84297 /* FractionalModules+Service.swift */; };
 		53A6D0722CD5440EBFA288BD /* AIChatContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A6D0722CD5440EBFA288BE /* AIChatContainerView.swift */; };
 		54E9A1995F855B09EFBF22D4 /* ServiceEnvironmentKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C3E796C6A53AC31C33F276C /* ServiceEnvironmentKeys.swift */; };
 		591C51C62F5BA25AFED1F453 /* MockHealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2436A79E3CE235D15DBACEB8 /* MockHealthService.swift */; };
@@ -78,6 +81,7 @@
 		7BA43D749C3C6BDEF78C7FDC /* FreeTrialScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797E4BBB70CAF9FDF8E2D06E /* FreeTrialScreen.swift */; };
 		7D25FAAD46F224229315768B /* HeartRateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71E278735EFDCA29D9BD38D7 /* HeartRateScreen.swift */; };
 		7DC22F54B80DE20FA3490B25 /* HurdleScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC4A69E1223947F7ACF109 /* HurdleScreen.swift */; };
+		82745E84BE9880433D62BA42 /* FractionalModules+Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7410BCEE2A4BAD91F7CD46AD /* FractionalModules+Models.swift */; };
 		839DD890D05C53E0C333B356 /* DualRecommendationMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745A88BDE09BF81429EBFC3F /* DualRecommendationMessageView.swift */; };
 		83C4BE9FF8359B865A401C09 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538960E9C48B0ECEF0992971 /* HistoryView.swift */; };
 		8A9BD78DDC479A25406EDCF9 /* Last7DaysChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6403F55772AE3E2AA8F914AB /* Last7DaysChartView.swift */; };
@@ -273,6 +277,7 @@
 		DB2176BFB74E4C3379DAC86B /* WatchAnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D500A878EDC2D150B003D811 /* WatchAnalyticsManager.swift */; };
 		DB547B7F9951FB08451AC82D /* LockScreenMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0661701A410992037961797F /* LockScreenMediaService.swift */; };
 		DBA1FCE597C255E55E97417E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3B1D2B7FDC04273A476AECD /* SettingsView.swift */; };
+		E004191EC5AF30642F952534 /* FractionalModules+Screen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F351BA67A07580DCF1DA8072 /* FractionalModules+Screen.swift */; };
 		E0537FE79B1ADDF4D07A5253 /* DevModeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF644B583E29434067EB896A /* DevModeSettingsView.swift */; };
 		E07D7F482E025E876B7AAE4A /* CodeInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53E6F67B3314961B73B1C32 /* CodeInputView.swift */; };
 		E0C819541A61A5F43A3B60CA /* ReadyScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1503FD8BE39D8C183510FE0 /* ReadyScreen.swift */; };
@@ -470,6 +475,7 @@
 		71E278735EFDCA29D9BD38D7 /* HeartRateScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HeartRateScreen.swift; path = imagine/Features/Onboarding/Views/Screens/HeartRateScreen.swift; sourceTree = SOURCE_ROOT; };
 		720283EBC9C24C6AB256959B /* WatchHRProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchHRProvider.swift; path = imagine/Features/Insights/Providers/WatchHRProvider.swift; sourceTree = SOURCE_ROOT; };
 		73152AD6C4EB5F333E3234A8 /* MindfulMinutesScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MindfulMinutesScreen.swift; path = imagine/Features/Onboarding/Views/Screens/MindfulMinutesScreen.swift; sourceTree = SOURCE_ROOT; };
+		7410BCEE2A4BAD91F7CD46AD /* FractionalModules+Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Models.swift"; sourceTree = "<group>"; };
 		745A88BDE09BF81429EBFC3F /* DualRecommendationMessageView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DualRecommendationMessageView.swift; sourceTree = "<group>"; };
 		76149144E208AE021DCEC2FD /* ClearCacheCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ClearCacheCategory.swift; path = imagine/Features/Settings/ClearCacheCategory.swift; sourceTree = SOURCE_ROOT; };
 		78CE4079683C6ADB491BDBA0 /* MockDataService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDataService.swift; sourceTree = "<group>"; };
@@ -498,6 +504,7 @@
 		95C3F2DB27DD43BD88A222E9 /* HRDebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HRDebugLogger.swift; path = imagine/Features/Insights/HRDebugLogger.swift; sourceTree = SOURCE_ROOT; };
 		98F4945B67D71DE1AFC758E3 /* ContextStateSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContextStateSnapshot.swift; sourceTree = "<group>"; };
 		9BB917C959AA4AE5AA61EDF2 /* GuidedMeditationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedMeditationSession.swift; sourceTree = "<group>"; };
+		9EAF3304F3CEDB992799F57C /* FractionalModules+Mapping.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Mapping.swift"; sourceTree = "<group>"; };
 		A0C75E8756BD930FB27C41D0 /* NetworkMonitor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		A419E6CAE1A64B6C97672F9E /* AIChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatMessage.swift; sourceTree = "<group>"; };
 		A514337B2D5462B500105271 /* MeditationAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationAudioManager.swift; sourceTree = "<group>"; };
@@ -676,7 +683,9 @@
 		ECEC4CFD44B00C933E1F1BD6 /* MeditationContentProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MeditationContentProtocol.swift; sourceTree = "<group>"; };
 		F0A942D36C80124329C61829 /* OnboardingFlowContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowContainer.swift; sourceTree = "<group>"; };
 		F0B1C2D32F70000100123456 /* BinauralBeatSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatSelector.swift; sourceTree = "<group>"; };
+		F351BA67A07580DCF1DA8072 /* FractionalModules+Screen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Screen.swift"; sourceTree = "<group>"; };
 		F8899A05558BF7661F607AFC /* OnboardingSelectableCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSelectableCard.swift; sourceTree = "<group>"; };
+		F8FF34BDF8DF4BD382D84297 /* FractionalModules+Service.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Service.swift"; sourceTree = "<group>"; };
 		F935BB35868118A707C8596C /* RecommendationContextEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecommendationContextEngine.swift; sourceTree = "<group>"; };
 		FA1000113A00000100000001 /* HRSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRSample.swift; sourceTree = "<group>"; };
 		FA1000123A00000100000001 /* MeditationSensorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationSensorSession.swift; sourceTree = "<group>"; };
@@ -691,6 +700,7 @@
 		FA2CC0798B33CE9204EBD1C1 /* JourneyAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JourneyAnalytics.swift; sourceTree = "<group>"; };
 		FB2C94A1DE58461D07BA8031 /* StarRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarRatingBadge.swift; sourceTree = "<group>"; };
 		FDDE1D3EF75640DB0FFC679E /* SessionContextManager.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; includeInIndex = 1; path = SessionContextManager.swift; sourceTree = "<group>"; };
+		FE14250F5C4F64494750664D /* FractionalModules+ViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+ViewModel.swift"; sourceTree = "<group>"; };
 		GOALACK0CONTENT0SWIFT01 /* GoalsAcknowledgmentContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoalsAcknowledgmentContent.swift; sourceTree = "<group>"; };
 		GOALACK0SCREEN0SWIFT001 /* GoalsAcknowledgmentScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoalsAcknowledgmentScreen.swift; sourceTree = "<group>"; };
 		HURDACK0CONTENT0SWIFT01 /* HurdleAcknowledgmentContent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HurdleAcknowledgmentContent.swift; sourceTree = "<group>"; };
@@ -729,16 +739,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A56B89662D41B7EE002BEAD2 /* ImagineWatch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "ImagineWatch Watch App";
 			sourceTree = "<group>";
 		};
 		A56B89772D41B7EF002BEAD2 /* ImagineWatch Watch AppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "ImagineWatch Watch AppTests";
 			sourceTree = "<group>";
 		};
 		A56B89812D41B7EF002BEAD2 /* ImagineWatch Watch AppUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "ImagineWatch Watch AppUITests";
 			sourceTree = "<group>";
 		};
@@ -752,11 +768,15 @@
 		};
 		CD40ABE22CBF453F00FA5F44 /* Constants */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Constants;
 			sourceTree = "<group>";
 		};
 		CD943B682CC6E4B80004D67C /* User Storage */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "User Storage";
 			sourceTree = "<group>";
 		};
@@ -1162,6 +1182,7 @@
 				E60CA647A43688170DE007AF /* Journey */,
 				FCBDA1EFCC81DA5767CE8417 /* Onboarding */,
 				2B5BA090AC55185E6E3C7ED1 /* Subscription */,
+				A536C4EC27FDA570DE730315 /* FractionalModules */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -1264,6 +1285,19 @@
 				5B6DD32FB36DFDA5BBBB03BD /* GlassEffectModifier.swift */,
 			);
 			path = UIElements;
+			sourceTree = "<group>";
+		};
+		A536C4EC27FDA570DE730315 /* FractionalModules */ = {
+			isa = PBXGroup;
+			children = (
+				7410BCEE2A4BAD91F7CD46AD /* FractionalModules+Models.swift */,
+				F8FF34BDF8DF4BD382D84297 /* FractionalModules+Service.swift */,
+				9EAF3304F3CEDB992799F57C /* FractionalModules+Mapping.swift */,
+				F351BA67A07580DCF1DA8072 /* FractionalModules+Screen.swift */,
+				FE14250F5C4F64494750664D /* FractionalModules+ViewModel.swift */,
+			);
+		name = FractionalModules;
+		path = FractionalModules;
 			sourceTree = "<group>";
 		};
 		A551D1E22B219C5A00A50EBA /* Frameworks */ = {
@@ -2470,6 +2504,11 @@
 				D650639CB6BE2C05BA67321E /* GoalContext.swift in Sources */,
 				CAFF81DC49C4878AEF6D135A /* ContextStateSnapshot.swift in Sources */,
 				3AFFFE2D2D882D6A00CFB68A /* ContextStateManager.swift in Sources */,
+				82745E84BE9880433D62BA42 /* FractionalModules+Models.swift in Sources */,
+				5392A569AE5FFE1AB1D68311 /* FractionalModules+Service.swift in Sources */,
+				454D50864E50C0B4B5B66C92 /* FractionalModules+Mapping.swift in Sources */,
+				E004191EC5AF30642F952534 /* FractionalModules+Screen.swift in Sources */,
+				4E13397CBFB4B48877B17B33 /* FractionalModules+ViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

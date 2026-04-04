@@ -11,6 +11,7 @@ enum CueTriggerType: String, Codable, CaseIterable {
     case start
     case minute
     case end
+    case second
 }
 
 /// Represents a cue (sound) paired with when it should play.

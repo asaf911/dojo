@@ -212,6 +212,7 @@ extension MeditationsService {
             case .start: trigger = .start
             case .end: trigger = .end
             case .minute: trigger = .minute(cs.minute ?? 1)
+            case .second: trigger = .start
             }
             return (cs.cue.id, trigger)
         }

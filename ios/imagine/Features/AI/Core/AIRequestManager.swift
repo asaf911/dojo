@@ -393,6 +393,7 @@ class AIRequestManager: ObservableObject {
                             case .minute: trig = String(setting.minute ?? 0)
                             case .start: trig = "start"
                             case .end: trig = "end"
+                            case .second: trig = "s\(setting.minute ?? 0)"
                             }
                             return "\(setting.cue.id)@\(trig)"
                         }.joined(separator: ",")

@@ -527,6 +527,16 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 }
             }
         }
+
+        // Mark second-based cues in the skipped window as played (fractional modules)
+        for setting in config.cueSettings where setting.triggerType == .second {
+            if let sec = setting.minute {
+                if sec > oldElapsed && sec <= newElapsed {
+                    playedCues.insert(setting.id)
+                    print("🧠 AI_DEBUG [Fractional][Player] ⏭️ skipForward: marked \(setting.cue.id) as played (trigger=\(sec)s, window=\(oldElapsed)-\(newElapsed))")
+                }
+            }
+        }
         
         // Handle start cues: mark as played if skipped past their window
         for setting in config.cueSettings where setting.triggerType == .start {
@@ -590,6 +600,20 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         }
         if !removedFromPlayed.isEmpty {
             print("🧠 AI_DEBUG [SKIP] Reset minute cues for replay: \(removedFromPlayed.joined(separator: ", "))")
+        }
+
+        // Allow second-based cues that are now "in the future" to fire again (fractional modules)
+        var removedSecondCues: [String] = []
+        for setting in config.cueSettings where setting.triggerType == .second {
+            if let sec = setting.minute {
+                if sec > newElapsed && playedCues.contains(setting.id) {
+                    playedCues.remove(setting.id)
+                    removedSecondCues.append("\(setting.cue.id)@\(sec)s")
+                }
+            }
+        }
+        if !removedSecondCues.isEmpty {
+            print("🧠 AI_DEBUG [Fractional][Player] ⏮️ skipBackward: reset cues for replay: \(removedSecondCues.joined(separator: ", "))")
         }
         
         // For start cues: reset if we skipped back into or before their window
@@ -693,6 +717,36 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 // Mark as played so it doesn't trigger again from handleTimeUpdate
                 playedCues.insert(setting.id)
                 return // Only play one cue at a time
+            }
+        }
+
+        // Check each second-based cue to see if we're inside its time window (fractional modules)
+        for setting in config.cueSettings where setting.triggerType == .second {
+            guard let sec = setting.minute else { continue }
+
+            let triggerTime = TimeInterval(sec)
+
+            guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
+                print("🧠 AI_DEBUG [Fractional][Player] seek: no preloaded duration for \(setting.cue.id)")
+                continue
+            }
+
+            let cueEndTime = triggerTime + cueDuration
+
+            if newElapsed >= triggerTime && newElapsed < cueEndTime {
+                let positionInCue = newElapsed - triggerTime
+                print("🧠 AI_DEBUG [Fractional][Player] 🎯 seek: landed inside \(setting.cue.id) window (\(String(format: "%.1f", triggerTime))s-\(String(format: "%.1f", cueEndTime))s), \(startPaused ? "paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
+
+                cueManager.play(cue: setting.cue, sessionElapsedTime: triggerTime, startPaused: startPaused)
+
+                if positionInCue > 0.5 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        cueManager.seek(to: positionInCue)
+                    }
+                }
+
+                playedCues.insert(setting.id)
+                return
             }
         }
         
@@ -833,6 +887,15 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         for setting in config.cueSettings where setting.triggerType == .minute {
             if let min = setting.minute, elapsed >= min * 60, !playedCues.contains(setting.id) {
                 playedCues.insert(setting.id)
+                playCue(setting.cue)
+            }
+        }
+
+        // Check second-based cues (fractional modules)
+        for setting in config.cueSettings where setting.triggerType == .second {
+            if let sec = setting.minute, elapsed >= sec, !playedCues.contains(setting.id) {
+                playedCues.insert(setting.id)
+                print("🧠 AI_DEBUG [Fractional][Player] ▶️ cue FIRED: \(setting.cue.id) at elapsed=\(elapsed)s (trigger=\(sec)s) text=\"\(String(setting.cue.name.prefix(50)))\"")
                 playCue(setting.cue)
             }
         }

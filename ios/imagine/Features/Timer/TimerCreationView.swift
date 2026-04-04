@@ -264,6 +264,12 @@ struct TimerView: View {
                 } else {
                     trigger = ""
                 }
+            case .second:
+                if let sec = cueSetting.minute {
+                    trigger = "s\(sec)"
+                } else {
+                    trigger = ""
+                }
             }
             return "\(id):\(trigger)"
         }.joined(separator: ",")

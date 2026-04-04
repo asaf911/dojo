@@ -1,0 +1,124 @@
+{
+  "version": "1.0",
+  "moduleId": "NF_FRAC",
+  "title": "Nostril Focus",
+  "clips": [
+    {
+      "clipId": "NF_C001",
+      "role": "intro",
+      "order": 1,
+      "text": "We will now begin a focus exercise.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C001_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C002",
+      "role": "instruction",
+      "order": 2,
+      "text": "Breathe normally through your nose and stay relaxed.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C002_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C003",
+      "role": "instruction",
+      "order": 3,
+      "text": "Direct your attention to the sensation of the breath in your nose.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C003_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C004",
+      "role": "instruction",
+      "order": 4,
+      "text": "Feel the breath flowing in and out.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C004_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C005",
+      "role": "instruction",
+      "order": 5,
+      "text": "Notice the cool air as you breathe in. Notice the warmer air as you breathe out.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C005_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C006",
+      "role": "instruction",
+      "order": 6,
+      "text": "No rhythm is too fast or too slow. Let the breath be the way it is.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C006_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C007",
+      "role": "reminder",
+      "order": 7,
+      "text": "Keep your attention on the breath in your nose.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C007_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C008",
+      "role": "reminder",
+      "order": 8,
+      "text": "Feel the sensation at the entrance of the nostrils.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C008_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C009",
+      "role": "reminder",
+      "order": 9,
+      "text": "If you are lost in thought, bring your attention back to the breath in your nose.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C009_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C010",
+      "role": "reminder",
+      "order": 10,
+      "text": "...each time you return to the breath, you train your focus.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C010_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C011",
+      "role": "reminder",
+      "order": 11,
+      "text": "Stay with the sensation of the breath.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C011_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C012",
+      "role": "reminder",
+      "order": 12,
+      "text": "Keep focusing on the breath in your nose.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C012_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "NF_C013",
+      "role": "reminder",
+      "order": 13,
+      "text": "Let your attention remain steady on the breath.",
+      "voices": {
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C013_ASAF.mp3"
+      }
+    }
+  ]
+}

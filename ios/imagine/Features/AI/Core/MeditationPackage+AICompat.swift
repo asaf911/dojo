@@ -67,6 +67,7 @@ extension MeditationPackage {
             case .start: trigger = "S"
             case .end: trigger = "E"
             case .minute: trigger = "\(cueSetting.minute ?? 0)"
+            case .second: trigger = "s\(cueSetting.minute ?? 0)"
             }
             return "\(id):\(trigger)"
         }.joined(separator: ",")

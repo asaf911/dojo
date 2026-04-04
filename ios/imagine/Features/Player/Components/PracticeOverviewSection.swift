@@ -142,6 +142,11 @@ struct PracticeOverviewSection: View {
                 return "at \(minute) min"
             }
             return ""
+        case .second:
+            if let sec = setting.minute {
+                return "at \(sec)s"
+            }
+            return ""
         }
     }
 }

@@ -112,4 +112,9 @@ struct Config {
     static var aiRequestURL: URL {
         URL(string: cloudFunctionsBase + "/postAIRequest")!
     }
+
+    // MARK: - Fractional Plan API (POST /postFractionalPlan)
+    static var fractionalPlanURL: URL {
+        URL(string: cloudFunctionsBase + "/postFractionalPlan")!
+    }
 }

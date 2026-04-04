@@ -28,6 +28,12 @@ struct CueConfigurationView: View {
             } else {
                 return "Select minute"
             }
+        case .second:
+            if let sec = setting.minute {
+                return "\(sec)s"
+            } else {
+                return "Select second"
+            }
         }
     }
     

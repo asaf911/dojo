@@ -128,6 +128,12 @@ struct UnifiedTypingView: View {
             }
         case .end:
             return "at end"
+        case .second:
+            if let sec = cueSetting.minute {
+                return "at \(sec)s"
+            } else {
+                return "at start"
+            }
         }
     }
 }

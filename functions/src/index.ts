@@ -4,6 +4,7 @@ import {createHash} from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
+import { composeFractionalPlan, type FractionalClip } from "./fractionalComposer";
 
 admin.initializeApp();
 
@@ -1114,6 +1115,137 @@ export const postAIRequest = functions.runWith({
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       functions.logger.error(`${TAG_AI_REQUEST} error trigger=${trigger} - ${errMsg}`);
+      res.status(500).send(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 8. postFractionalPlan — Fractional module composition (second-precision timeline)
+// ---------------------------------------------------------------------------
+
+interface FractionalCatalogFile {
+  version: string;
+  moduleId: string;
+  title: string;
+  clips: FractionalClip[];
+}
+
+interface PostFractionalPlanRequest {
+  moduleId: string;
+  durationSec: number;
+  voiceId?: string;
+}
+
+const TAG_FRACTIONAL = "[Server][Fractional]";
+
+function loadFractionalCatalog(moduleSlug: string): FractionalCatalogFile | null {
+  const catalogsDir = path.join(__dirname, "../catalogs");
+  try {
+    const data = fs.readFileSync(
+      path.join(catalogsDir, `${moduleSlug}.json`),
+      "utf8"
+    );
+    return JSON.parse(data) as FractionalCatalogFile;
+  } catch (e) {
+    functions.logger.warn(`${TAG_FRACTIONAL} Failed to load catalog: ${moduleSlug}`, e);
+    return null;
+  }
+}
+
+export const postFractionalPlan = functions.https.onRequest(
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type, X-Trigger");
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const trigger = (req.headers["x-trigger"] as string) ?? "unknown";
+
+    try {
+      const body = req.body as PostFractionalPlanRequest;
+      const moduleId = body?.moduleId;
+      const durationSec = body?.durationSec;
+      const voiceId = body?.voiceId ?? "Asaf";
+
+      if (!moduleId || typeof moduleId !== "string") {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=missing_moduleId trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: "moduleId is required" })
+        );
+        return;
+      }
+
+      if (typeof durationSec !== "number" || durationSec < 60 || durationSec > 1200) {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec value=${durationSec} trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: "durationSec must be 60-1200" })
+        );
+        return;
+      }
+
+      // Map moduleId to catalog filename
+      const moduleSlugMap: Record<string, string> = {
+        NF_FRAC: "nostril_focus_fractional",
+      };
+      const catalogSlug = moduleSlugMap[moduleId];
+      if (!catalogSlug) {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=unknown_moduleId moduleId=${moduleId} trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: `Unknown moduleId: ${moduleId}` })
+        );
+        return;
+      }
+
+      functions.logger.info(
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} trigger=${trigger}`
+      );
+
+      const catalog = loadFractionalCatalog(catalogSlug);
+      if (!catalog || !catalog.clips || catalog.clips.length === 0) {
+        functions.logger.error(
+          `${TAG_FRACTIONAL} catalog empty or missing for ${catalogSlug}`
+        );
+        res.status(500).send(
+          JSON.stringify({ error: "Fractional catalog not available" })
+        );
+        return;
+      }
+
+      // Resolve relative voice paths to full gs:// URLs
+      const resolvedClips: FractionalClip[] = catalog.clips.map((clip) => ({
+        ...clip,
+        voices: Object.fromEntries(
+          Object.entries(clip.voices).map(([v, p]) => [v, resolveStorageUrl(p)])
+        ),
+      }));
+
+      const plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+
+      functions.logger.info(
+        `${TAG_FRACTIONAL} success planId=${plan.planId} items=${plan.items.length} trigger=${trigger}`
+      );
+
+      res.set("Content-Type", "application/json");
+      res.status(200).send(JSON.stringify(plan));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error(
+        `${TAG_FRACTIONAL} error trigger=${trigger} - ${errMsg}`
+      );
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }
