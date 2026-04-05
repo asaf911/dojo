@@ -11,7 +11,9 @@ extension FractionalModules {
 
     struct Screen: View {
         @State private var viewModel: ViewModel
+        @State private var pendingConfig: TimerSessionConfig?
         @EnvironmentObject var navigationCoordinator: NavigationCoordinator
+        @Environment(\.dismiss) private var dismiss
 
         init(viewModel: ViewModel = ViewModel()) {
             _viewModel = State(initialValue: viewModel)
@@ -71,13 +73,19 @@ extension FractionalModules {
             .padding(.top, 32)
             .background(Color.backgroundDarkPurple.ignoresSafeArea())
             .onAppear {
-                viewModel.onAction = { [weak navigationCoordinator] action in
+                viewModel.onAction = { action in
                     switch action {
                     case .playSession(let config):
-                        GeneralBackgroundMusicController.shared.fadeOutForPractice()
-                        navigationCoordinator?.showTimerPlayerSheet(timerConfig: config)
+                        pendingConfig = config
+                        dismiss()
                     }
                 }
+            }
+            .onDisappear {
+                guard let config = pendingConfig else { return }
+                pendingConfig = nil
+                GeneralBackgroundMusicController.shared.fadeOutForPractice()
+                navigationCoordinator.showTimerPlayerSheet(timerConfig: config)
             }
         }
     }
