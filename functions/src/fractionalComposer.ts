@@ -87,33 +87,45 @@ function pickRandom<T>(pool: T[], count: number): T[] {
   return shuffle(pool).slice(0, count);
 }
 
-function computeGrowthFactor(initial: number, target: number, steps: number): number {
-  if (steps <= 1) return 1;
-  return Math.pow(target / initial, 1 / (steps - 1));
+/**
+ * Compute the gap for a given step using linear interpolation.
+ * Step 0 returns initialGap, last step returns targetGap, capped at capGap.
+ */
+function linearGap(
+  initialGap: number,
+  targetGap: number,
+  step: number,
+  totalGaps: number,
+  capGap: number
+): number {
+  if (totalGaps <= 1) return Math.min(initialGap, capGap);
+  const raw = initialGap + (targetGap - initialGap) * step / (totalGaps - 1);
+  return Math.min(raw, capGap);
 }
 
 /**
  * Estimate total seconds consumed by `clipCount` clips placed with
- * progressive gaps starting at `initialGap` with the given growth factor.
+ * linearly interpolated gaps from `initialGap` to `targetGap`.
  * Includes a trailing buffer after the last clip.
  */
 function estimateTimeline(
   clipCount: number,
   initialGap: number,
-  growthFactor: number,
+  targetGap: number,
   capGap: number
 ): number {
   let total = 0;
-  let gap = initialGap;
+  const totalGaps = clipCount - 1;
   for (let i = 0; i < clipCount; i++) {
     if (i > 0) {
-      total += Math.min(gap, capGap);
-      gap *= growthFactor;
+      total += linearGap(initialGap, targetGap, i - 1, totalGaps, capGap);
     }
     total += ESTIMATED_CLIP_SEC;
   }
-  const lastGap = Math.min(gap / growthFactor, capGap);
-  total += lastGap * TRAILING_BUFFER_FACTOR;
+  if (totalGaps > 0) {
+    const lastGap = linearGap(initialGap, targetGap, totalGaps - 1, totalGaps, capGap);
+    total += lastGap * TRAILING_BUFFER_FACTOR;
+  }
   return total;
 }
 
@@ -150,8 +162,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Trim instructions that don't fit (never remove P0 or intro)
-  let gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
-  let timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+  let timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
 
   while (timeline > durationSec && selected.length > 1) {
     let removeIdx = -1;
@@ -165,8 +176,7 @@ function selectClips(
     }
     if (removeIdx === -1) break;
     selected.splice(removeIdx, 1);
-    gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
-    timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+    timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
   }
 
   // Determine how many reminders fit alongside the selected instructions
@@ -175,8 +185,7 @@ function selectClips(
     const instrCount = selected.length;
     for (let r = 1; r <= reminders.length; r++) {
       const total = instrCount + r;
-      const gfCandidate = computeGrowthFactor(tier.initialGap, tier.targetGap, total);
-      const est = estimateTimeline(total, tier.initialGap, gfCandidate, tier.capGap);
+      const est = estimateTimeline(total, tier.initialGap, tier.targetGap, tier.capGap);
       if (est > durationSec) break;
       reminderCount = r;
     }
@@ -187,8 +196,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Safety-net trim in case the combined list still exceeds the budget
-  gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
-  timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+  timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
 
   while (timeline > durationSec && selected.length > 1) {
     let removeIdx = -1;
@@ -207,8 +215,7 @@ function selectClips(
     }
     if (removeIdx === -1) break;
     selected.splice(removeIdx, 1);
-    gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
-    timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+    timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
   }
 
   return selected;
@@ -225,48 +232,65 @@ function placeOnTimeline(
 ): FractionalPlanItem[] {
   if (selected.length === 0) return [];
 
-  const tier = gapTierForDuration(durationSec);
-  const growthFactor = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+  const instrClips = selected.filter(c => c.role === "intro" || c.role === "instruction");
+  const reminderClips = selected.filter(c => c.role === "reminder");
+
+  // --- Instruction gaps: tight, with doubling increments ---
+  // gap[step] = base + 2^step - 1, capped at 30s
+  // base scales modestly from 6s (≤10 min) to 8s (≥20 min)
+  const dFactor = Math.min(1, Math.max(0, (durationSec - 600) / 600));
+  const instrBase = 6 + 2 * dFactor;
+  const INSTR_CAP = 30;
+
+  function instrGapAt(step: number): number {
+    return Math.min(instrBase + Math.pow(2, step) - 1, INSTR_CAP);
+  }
 
   const items: FractionalPlanItem[] = [];
   let cursor = 0;
-  let currentGap = tier.initialGap;
-  let lastGapUsed = tier.initialGap;
 
-  for (let i = 0; i < selected.length; i++) {
-    const clip = selected[i];
-
+  for (let i = 0; i < instrClips.length; i++) {
+    const clip = instrClips[i];
+    const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
     if (i === 0) {
-      items.push({
-        atSec: 0,
-        clipId: clip.clipId,
-        role: clip.role,
-        text: clip.text,
-        url: clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "",
-      });
+      items.push({ atSec: 0, clipId: clip.clipId, role: clip.role, text: clip.text, url });
       cursor = ESTIMATED_CLIP_SEC;
     } else {
-      const gap = Math.min(currentGap, tier.capGap);
+      const gap = instrGapAt(i - 1);
       const atSec = cursor + gap;
-      items.push({
-        atSec: Math.round(atSec),
-        clipId: clip.clipId,
-        role: clip.role,
-        text: clip.text,
-        url: clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "",
-      });
-      lastGapUsed = gap;
+      items.push({ atSec: Math.round(atSec), clipId: clip.clipId, role: clip.role, text: clip.text, url });
       cursor = atSec + ESTIMATED_CLIP_SEC;
-      currentGap *= growthFactor;
     }
   }
 
-  // Trailing buffer: the plan's last clip should have room to breathe.
-  // We don't push a clip here — we just ensure the total timeline
-  // (last clip + clip duration + trailing silence) fits in durationSec.
-  // The caller (expandFractionalCues) already stops at the window boundary.
-  const _trailingEnd = cursor + lastGapUsed * TRAILING_BUFFER_FACTOR;
-  void _trailingEnd;
+  // --- Reminder gaps: stretch to fill the remaining window ---
+  if (reminderClips.length > 0) {
+    const n = reminderClips.length;
+    const remainingTime = durationSec - cursor;
+    const availForGaps = remainingTime - n * ESTIMATED_CLIP_SEC;
+
+    const lastInstrStep = Math.max(0, instrClips.length - 2);
+    const remInitial = Math.max(instrGapAt(lastInstrStep), 15);
+
+    let remTarget = remInitial;
+    if (n > 1) {
+      const denom = n / 2 + TRAILING_BUFFER_FACTOR;
+      remTarget = (availForGaps - n * remInitial / 2) / denom;
+      remTarget = Math.max(remTarget, remInitial);
+    } else {
+      remTarget = availForGaps / (1 + TRAILING_BUFFER_FACTOR);
+      remTarget = Math.max(remTarget, remInitial);
+    }
+
+    for (let i = 0; i < n; i++) {
+      const clip = reminderClips[i];
+      const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
+      const gap = n <= 1 ? remTarget : remInitial + (remTarget - remInitial) * (i / (n - 1));
+      const atSec = cursor + gap;
+      items.push({ atSec: Math.round(atSec), clipId: clip.clipId, role: clip.role, text: clip.text, url });
+      cursor = atSec + ESTIMATED_CLIP_SEC;
+    }
+  }
 
   return items;
 }

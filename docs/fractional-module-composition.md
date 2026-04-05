@@ -111,21 +111,15 @@ Selected clips are placed in `order` sequence with **growing gaps**.
 
 ### Gap progression
 
-Gaps between clips start small and grow geometrically:
+Gaps between clips grow linearly from `initialGap` to `targetGap`:
 
 ```
-gap[0] = initialGap
-gap[n] = gap[n-1] * growthFactor
+gap[step] = initialGap + (targetGap - initialGap) * step / (totalGaps - 1)
 ```
 
-The growth factor is computed so that the progression naturally reaches
-`targetGap` by the last clip:
-
-```
-growthFactor = (targetGap / initialGap) ^ (1 / (clipCount - 1))
-```
-
-Each gap is capped at `capGap` to prevent absurdly long silences.
+This ensures the absolute increment between consecutive gaps stays constant,
+producing a balanced, predictable progression at any duration. Each gap is
+capped at `capGap` to prevent absurdly long silences.
 
 ### Gap tiers by duration
 
