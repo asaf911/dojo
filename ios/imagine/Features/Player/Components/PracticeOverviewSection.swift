@@ -74,7 +74,7 @@ struct PracticeOverviewSection: View {
                                 .nunitoFont(size: 14, style: .semiBold)
                                 .foregroundColor(.white.opacity(0.7))
                             
-                            ForEach(config.cueSettings, id: \.cue.id) { cueSetting in
+                            ForEach(config.cueSettings, id: \.id) { cueSetting in
                                 HStack {
                                     Text(cueSetting.cue.name)
                                         .nunitoFont(size: 14, style: .regular)
@@ -139,12 +139,13 @@ struct PracticeOverviewSection: View {
             return "at end"
         case .minute:
             if let minute = setting.minute {
-                return "at \(minute) min"
+                let totalSeconds = minute * 60
+                return "at \(totalSeconds / 60):\(String(format: "%02d", totalSeconds % 60))"
             }
             return ""
         case .second:
             if let sec = setting.minute {
-                return "at \(sec)s"
+                return "at \(sec / 60):\(String(format: "%02d", sec % 60))"
             }
             return ""
         }
