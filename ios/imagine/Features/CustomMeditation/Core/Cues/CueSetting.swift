@@ -19,13 +19,18 @@ enum CueTriggerType: String, Codable, CaseIterable {
 struct CueSetting: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var triggerType: CueTriggerType = .minute
-    var minute: Int? = 1  // Used only if triggerType == .minute
+    var minute: Int? = 1
     var cue: Cue
-    
+    /// Explicit duration in minutes for fractional modules (nil = auto-fill gap).
+    var fractionalDuration: Int?
+
+    var isFractional: Bool { cue.id.hasSuffix("_FRAC") }
+
     static func == (lhs: CueSetting, rhs: CueSetting) -> Bool {
         lhs.id == rhs.id &&
         lhs.triggerType == rhs.triggerType &&
         lhs.minute == rhs.minute &&
-        lhs.cue.id == rhs.cue.id
+        lhs.cue.id == rhs.cue.id &&
+        lhs.fractionalDuration == rhs.fractionalDuration
     }
 }

@@ -45,81 +45,16 @@ struct CueConfigurationView: View {
             
             ForEach(cueSettings.indices, id: \.self) { index in
                 HStack(alignment: .center, spacing: 6) {
-                    // Cue sound selection using CueIndicatorView.
-                    Menu {
-                        ForEach(catalogsManager.cues) { cue in
-                            Button(cue.name) {
-                                cueSettings[index].cue = cue
-                            }
-                        }
-                    } label: {
-                        CueIndicatorView(
-                            text: cueSettings[index].cue.name,
-                            isSelected: false,
-                            action: nil,
-                            customFontSize: 16,
-                            source: "Cues-Sound",
-                            isMenuButton: true
-                        )
-                        // Use intrinsic width so the full cue name shows
-                        .fixedSize(horizontal: true, vertical: false)
-                        .layoutPriority(2)
+                    cueNameMenu(index: index)
+
+                    if cueSettings[index].isFractional {
+                        fractionalRow(index: index)
+                    } else {
+                        standardTriggerRow(index: index)
                     }
-                    
-                    Text("will play at")
-                        .nunitoFont(size: 16, style: .medium)
-                        .foregroundColor(.foregroundLightGray)
-                        .layoutPriority(1)
-                    
-                    // Trigger selection menu with disabled options if already taken.
-                    Menu {
-                        let isStartTaken = cueSettings.enumerated().contains { (i, cs) in
-                            i != index && cs.triggerType == .start
-                        }
-                        Button("Start") {
-                            cueSettings[index].triggerType = .start
-                            cueSettings[index].minute = nil
-                        }
-                        .disabled(isStartTaken)
-                        .foregroundColor(isStartTaken ? Color.black : Color.primary)
-                        
-                        ForEach(1..<selectedMinutes, id: \.self) { value in
-                            let isMinuteTaken = cueSettings.enumerated().contains { (i, cs) in
-                                i != index && cs.triggerType == .minute && cs.minute == value
-                            }
-                            Button("\(value) min") {
-                                cueSettings[index].triggerType = .minute
-                                cueSettings[index].minute = value
-                            }
-                            .disabled(isMinuteTaken)
-                            .foregroundColor(isMinuteTaken ? Color.black : Color.primary)
-                        }
-                        
-                        let isEndTaken = cueSettings.enumerated().contains { (i, cs) in
-                            i != index && cs.triggerType == .end
-                        }
-                        Button("End") {
-                            cueSettings[index].triggerType = .end
-                            cueSettings[index].minute = nil
-                        }
-                        .disabled(isEndTaken)
-                        .foregroundColor(isEndTaken ? Color.black : Color.primary)
-                    } label: {
-                        CueIndicatorView(
-                            text: displayText(for: cueSettings[index]),
-                            isSelected: false,
-                            action: nil,
-                            customFontSize: 16,
-                            source: "Cues-Trigger",
-                            isMenuButton: true
-                        )
-                        // Use intrinsic width to prevent wrapping.
-                        .fixedSize(horizontal: true, vertical: false)
-                        .layoutPriority(2)
-                    }
-                    
+
                     Spacer(minLength: 0)
-                    
+
                     Button(action: {
                         removeCue(at: index)
                     }) {
@@ -157,6 +92,110 @@ struct CueConfigurationView: View {
         }
     }
     
+    // MARK: - Row Builders
+
+    @ViewBuilder
+    private func cueNameMenu(index: Int) -> some View {
+        Menu {
+            ForEach(catalogsManager.cues) { cue in
+                Button(cue.name) {
+                    cueSettings[index].cue = cue
+                    if CueSetting(cue: cue).isFractional {
+                        cueSettings[index].fractionalDuration = cueSettings[index].fractionalDuration ?? 3
+                    } else {
+                        cueSettings[index].fractionalDuration = nil
+                    }
+                }
+            }
+        } label: {
+            CueIndicatorView(
+                text: cueSettings[index].cue.name,
+                isSelected: false,
+                action: nil,
+                customFontSize: 16,
+                source: "Cues-Sound",
+                isMenuButton: true
+            )
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
+        }
+    }
+
+    @ViewBuilder
+    private func fractionalRow(index: Int) -> some View {
+        FractionalDurationStepper(
+            duration: Binding(
+                get: { cueSettings[index].fractionalDuration ?? 3 },
+                set: { cueSettings[index].fractionalDuration = $0 }
+            ),
+            range: 1...min(10, max(1, selectedMinutes - 1))
+        )
+
+        Text("at")
+            .nunitoFont(size: 16, style: .medium)
+            .foregroundColor(.foregroundLightGray)
+
+        triggerMenu(index: index)
+    }
+
+    @ViewBuilder
+    private func standardTriggerRow(index: Int) -> some View {
+        Text("will play at")
+            .nunitoFont(size: 16, style: .medium)
+            .foregroundColor(.foregroundLightGray)
+            .layoutPriority(1)
+
+        triggerMenu(index: index)
+    }
+
+    @ViewBuilder
+    private func triggerMenu(index: Int) -> some View {
+        Menu {
+            let isStartTaken = cueSettings.enumerated().contains { (i, cs) in
+                i != index && cs.triggerType == .start
+            }
+            Button("Start") {
+                cueSettings[index].triggerType = .start
+                cueSettings[index].minute = nil
+            }
+            .disabled(isStartTaken)
+            .foregroundColor(isStartTaken ? Color.black : Color.primary)
+
+            ForEach(1..<selectedMinutes, id: \.self) { value in
+                let isMinuteTaken = cueSettings.enumerated().contains { (i, cs) in
+                    i != index && cs.triggerType == .minute && cs.minute == value
+                }
+                Button("\(value) min") {
+                    cueSettings[index].triggerType = .minute
+                    cueSettings[index].minute = value
+                }
+                .disabled(isMinuteTaken)
+                .foregroundColor(isMinuteTaken ? Color.black : Color.primary)
+            }
+
+            let isEndTaken = cueSettings.enumerated().contains { (i, cs) in
+                i != index && cs.triggerType == .end
+            }
+            Button("End") {
+                cueSettings[index].triggerType = .end
+                cueSettings[index].minute = nil
+            }
+            .disabled(isEndTaken)
+            .foregroundColor(isEndTaken ? Color.black : Color.primary)
+        } label: {
+            CueIndicatorView(
+                text: displayText(for: cueSettings[index]),
+                isSelected: false,
+                action: nil,
+                customFontSize: 16,
+                source: "Cues-Trigger",
+                isMenuButton: true
+            )
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
+        }
+    }
+
     // MARK: - Cue Management
     
     private func addCue() {

@@ -740,7 +740,7 @@ interface PostMeditationsRequest {
   duration?: number;
   backgroundSoundId?: string;
   binauralBeatId?: string;
-  cues?: Array<{ id: string; trigger: string | number }>;
+  cues?: Array<{ id: string; trigger: string | number; durationMinutes?: number }>;
   prompt?: string;
   conversationHistory?: Array<{ role: string; content: string }>;
   maxDuration?: number;
@@ -979,6 +979,7 @@ export const postMeditations = functions.runWith({
         name: string;
         url: string;
         trigger: string | number;
+        durationMinutes?: number;
       }> = [];
 
       for (const c of cues) {
@@ -1025,6 +1026,7 @@ export const postMeditations = functions.runWith({
           name: cueAsset.name,
           url: resolveCueUrl(cueAsset, voiceId),
           trigger: cueTrigger,
+          durationMinutes: typeof c.durationMinutes === "number" ? c.durationMinutes : undefined,
         });
       }
 

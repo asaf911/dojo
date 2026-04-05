@@ -201,6 +201,7 @@ export type ResolvedCue = {
   name: string;
   url: string;
   trigger: string | number;
+  durationMinutes?: number | null;
 };
 
 /**
@@ -231,13 +232,17 @@ export function expandFractionalCues(
 
     const startSec = triggerToSeconds(cue.trigger) ?? 0;
 
-    // Calculate window end: next cue's trigger time, or session end minus buffer
-    let endSec = durationSec - END_BUFFER_SEC;
-    for (let j = i + 1; j < cues.length; j++) {
-      const nextSec = triggerToSeconds(cues[j].trigger);
-      if (nextSec !== null && nextSec > startSec) {
-        endSec = nextSec;
-        break;
+    let endSec: number;
+    if (cue.durationMinutes && cue.durationMinutes > 0) {
+      endSec = Math.min(startSec + cue.durationMinutes * 60, durationSec - END_BUFFER_SEC);
+    } else {
+      endSec = durationSec - END_BUFFER_SEC;
+      for (let j = i + 1; j < cues.length; j++) {
+        const nextSec = triggerToSeconds(cues[j].trigger);
+        if (nextSec !== null && nextSec > startSec) {
+          endSec = nextSec;
+          break;
+        }
       }
     }
 

@@ -165,6 +165,7 @@
 		A5A7DF632DB046B000A6469C /* ActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF622DB046B000A6469C /* ActivityViewController.swift */; };
 		A5A7DF652DB1771E00A6469C /* GreetingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF642DB1771800A6469C /* GreetingManager.swift */; };
 		A5A7DF672DB1A48100A6469C /* CueIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */; };
+		F1D2A00100000001FRAC0001 /* FractionalDurationStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */; };
 		A5AFDDF52CBEEDF1002DD33B /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A5AFDDF42CBEEDF1002DD33B /* FirebaseCrashlytics */; };
 		A5B0059C2C1CB18800945750 /* GoogleAppMeasurement in Frameworks */ = {isa = PBXBuildFile; productRef = A5B0059B2C1CB18800945750 /* GoogleAppMeasurement */; };
 		A5B0059E2C1CC64500945750 /* AnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B0059D2C1CC64500945750 /* AnalyticsManager.swift */; };
@@ -569,6 +570,7 @@
 		A5A7DF622DB046B000A6469C /* ActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewController.swift; sourceTree = "<group>"; };
 		A5A7DF642DB1771800A6469C /* GreetingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GreetingManager.swift; sourceTree = "<group>"; };
 		A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueIndicatorView.swift; sourceTree = "<group>"; };
+		F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDurationStepper.swift; sourceTree = "<group>"; };
 		A5AEC8552D763FAA006419F9 /* OnboardingContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingContainerView.swift; sourceTree = "<group>"; };
 		A5AEC85F2EAF1234006419F9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A5B0059D2C1CC64500945750 /* AnalyticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsManager.swift; sourceTree = "<group>"; };
@@ -1491,6 +1493,7 @@
 			children = (
 				A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */,
 				A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */,
+				F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */,
 			);
 			path = Cues;
 			sourceTree = "<group>";
@@ -2295,6 +2298,7 @@
 				A58C21882B196127000EC608 /* AudioPlayerManager.swift in Sources */,
 				A5F1A0052E7D000500A50005 /* Authentication+Screen.swift in Sources */,
 				A5A7DF672DB1A48100A6469C /* CueIndicatorView.swift in Sources */,
+				F1D2A00100000001FRAC0001 /* FractionalDurationStepper.swift in Sources */,
 				A5EA2C342DAA4B77009505D4 /* SettingsButtonView.swift in Sources */,
 				A54F938B2C66925800EB91B7 /* PracticeTapHandler.swift in Sources */,
 				A5F1A0062E7D000600A50006 /* Authentication+ViewModel.swift in Sources */,

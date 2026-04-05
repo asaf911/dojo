@@ -143,6 +143,7 @@ private struct PostMeditationsRequestBody: Encodable {
 private struct CueRequestItem: Encodable {
     let id: String
     let trigger: CueTriggerValue
+    let durationMinutes: Int?
 }
 
 /// Trigger for manual meditation request: "start" | "end" | minute number
@@ -185,7 +186,7 @@ struct MeditationsService {
         _ duration: Int,
         _ backgroundSoundId: String,
         _ binauralBeatId: String?,
-        _ cues: [(id: String, trigger: CueTriggerValue)],
+        _ cues: [(id: String, trigger: CueTriggerValue, durationMinutes: Int?)],
         _ triggerContext: String?
     ) async throws -> MeditationPackage
 
@@ -212,7 +213,7 @@ extension MeditationsService {
         cueSettings: [CueSetting],
         triggerContext: String? = nil
     ) async throws -> MeditationPackage {
-        let cues = cueSettings.map { cs -> (id: String, trigger: CueTriggerValue) in
+        let cues = cueSettings.map { cs -> (id: String, trigger: CueTriggerValue, durationMinutes: Int?) in
             let trigger: CueTriggerValue
             switch cs.triggerType {
             case .start: trigger = .start
@@ -220,7 +221,7 @@ extension MeditationsService {
             case .minute: trigger = .minute(cs.minute ?? 1)
             case .second: trigger = .start
             }
-            return (cs.cue.id, trigger)
+            return (cs.cue.id, trigger, cs.fractionalDuration)
         }
         return try await createMeditationManual(duration, backgroundSoundId, binauralBeatId, cues, triggerContext)
     }
@@ -244,7 +245,7 @@ extension MeditationsService {
                 duration: duration,
                 backgroundSoundId: backgroundSoundId,
                 binauralBeatId: binauralBeatId,
-                cues: cues.map { CueRequestItem(id: $0.id, trigger: $0.trigger) }
+                cues: cues.map { CueRequestItem(id: $0.id, trigger: $0.trigger, durationMinutes: $0.durationMinutes) }
             )
             request.httpBody = try JSONEncoder().encode(body)
             let (data, response) = try await URLSession.shared.data(for: request)
