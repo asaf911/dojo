@@ -128,7 +128,7 @@ struct CueConfigurationView: View {
                 get: { cueSettings[index].fractionalDuration ?? 3 },
                 set: { cueSettings[index].fractionalDuration = $0 }
             ),
-            range: 1...min(20, max(1, selectedMinutes - 1))
+            range: 1...min(20, max(1, selectedMinutes))
         )
 
         Text("at")
