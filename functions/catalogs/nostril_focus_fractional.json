@@ -16,6 +16,7 @@
       "clipId": "NF_C002",
       "role": "instruction",
       "order": 2,
+      "priority": "p1",
       "text": "Breathe normally through your nose and stay relaxed.",
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C002_ASAF.mp3"
@@ -25,6 +26,7 @@
       "clipId": "NF_C003",
       "role": "instruction",
       "order": 3,
+      "priority": "p0",
       "text": "Direct your attention to the sensation of the breath in your nose.",
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C003_ASAF.mp3"
@@ -34,6 +36,7 @@
       "clipId": "NF_C004",
       "role": "instruction",
       "order": 4,
+      "priority": "p1",
       "text": "Feel the breath flowing in and out.",
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C004_ASAF.mp3"
@@ -43,6 +46,7 @@
       "clipId": "NF_C005",
       "role": "instruction",
       "order": 5,
+      "priority": "p2",
       "text": "Notice the cool air as you breathe in. Notice the warmer air as you breathe out.",
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C005_ASAF.mp3"
@@ -52,6 +56,7 @@
       "clipId": "NF_C006",
       "role": "instruction",
       "order": 6,
+      "priority": "p2",
       "text": "No rhythm is too fast or too slow. Let the breath be the way it is.",
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C006_ASAF.mp3"

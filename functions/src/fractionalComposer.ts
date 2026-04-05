@@ -1,8 +1,12 @@
 /**
  * Fractional module composition: builds a second-precision playback timeline
- * from atomic audio clips (intro → instructions → reminders loop).
+ * from atomic audio clips using priority-based selection and dynamic gap scaling.
  *
- * Gap progression starts short and grows per step, capped by duration tier.
+ * Two-phase approach:
+ *   Phase 1 — select which clips to include (priority + randomisation)
+ *   Phase 2 — place them on the timeline with growing gaps
+ *
+ * See docs/fractional-module-composition.md for the full design reference.
  */
 
 import * as functions from "firebase-functions";
@@ -19,6 +23,7 @@ export interface FractionalClip {
   order: number;
   text: string;
   voices: Record<string, string>;
+  priority?: "p0" | "p1" | "p2";
 }
 
 export interface FractionalPlanItem {
@@ -41,19 +46,233 @@ export interface FractionalPlan {
 // Constants
 // ---------------------------------------------------------------------------
 
-const ESTIMATED_CLIP_DURATION_SEC = 5;
-const END_BUFFER_SEC = 5;
-const INITIAL_GAP_SEC = 5;
-const GAP_GROWTH_FACTOR = 1.3;
+const ESTIMATED_CLIP_SEC = 5;
+const TRAILING_BUFFER_FACTOR = 1.1;
+const INTRO_THRESHOLD_SEC = 240;
+const REMINDER_THRESHOLD_SEC = 120;
 
-function maxGapForDuration(durationSec: number): number {
-  if (durationSec <= 180) return 20;
-  if (durationSec <= 420) return 45;
-  return 75;
+interface GapTier {
+  maxDurationSec: number;
+  initialGap: number;
+  targetGap: number;
+  capGap: number;
+}
+
+const GAP_TIERS: GapTier[] = [
+  { maxDurationSec: 180,  initialGap: 5,  targetGap: 18,  capGap: 20  },
+  { maxDurationSec: 360,  initialGap: 5,  targetGap: 38,  capGap: 45  },
+  { maxDurationSec: 480,  initialGap: 7,  targetGap: 55,  capGap: 60  },
+  { maxDurationSec: 600,  initialGap: 8,  targetGap: 82,  capGap: 90  },
+  { maxDurationSec: Infinity, initialGap: 10, targetGap: 105, capGap: 120 },
+];
+
+function gapTierForDuration(durationSec: number): GapTier {
+  return GAP_TIERS.find((t) => durationSec <= t.maxDurationSec) ?? GAP_TIERS[GAP_TIERS.length - 1];
 }
 
 // ---------------------------------------------------------------------------
-// Composer
+// Helpers
+// ---------------------------------------------------------------------------
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickRandom<T>(pool: T[], count: number): T[] {
+  return shuffle(pool).slice(0, count);
+}
+
+function computeGrowthFactor(initial: number, target: number, steps: number): number {
+  if (steps <= 1) return 1;
+  return Math.pow(target / initial, 1 / (steps - 1));
+}
+
+/**
+ * Estimate total seconds consumed by `clipCount` clips placed with
+ * progressive gaps starting at `initialGap` with the given growth factor.
+ * Includes a trailing buffer after the last clip.
+ */
+function estimateTimeline(
+  clipCount: number,
+  initialGap: number,
+  growthFactor: number,
+  capGap: number
+): number {
+  let total = 0;
+  let gap = initialGap;
+  for (let i = 0; i < clipCount; i++) {
+    if (i > 0) {
+      total += Math.min(gap, capGap);
+      gap *= growthFactor;
+    }
+    total += ESTIMATED_CLIP_SEC;
+  }
+  const lastGap = Math.min(gap / growthFactor, capGap);
+  total += lastGap * TRAILING_BUFFER_FACTOR;
+  return total;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1: Select clips
+// ---------------------------------------------------------------------------
+
+function selectClips(
+  clips: FractionalClip[],
+  durationSec: number
+): FractionalClip[] {
+  const sorted = [...clips].sort((a, b) => a.order - b.order);
+
+  const intros = sorted.filter((c) => c.role === "intro");
+  const instructions = sorted.filter((c) => c.role === "instruction");
+  const reminders = sorted.filter((c) => c.role === "reminder");
+
+  const p0 = instructions.filter((c) => c.priority === "p0");
+  const p1 = instructions.filter((c) => c.priority === "p1");
+  const p2 = instructions.filter((c) => c.priority === "p2");
+
+  const tier = gapTierForDuration(durationSec);
+
+  const selected: FractionalClip[] = [];
+
+  if (durationSec >= INTRO_THRESHOLD_SEC && intros.length > 0) {
+    selected.push(intros[0]);
+  }
+
+  selected.push(...p0);
+  selected.push(...shuffle(p1));
+  selected.push(...shuffle(p2));
+
+  selected.sort((a, b) => a.order - b.order);
+
+  // Trim instructions that don't fit (never remove P0 or intro)
+  let gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+  let timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+
+  while (timeline > durationSec && selected.length > 1) {
+    let removeIdx = -1;
+    for (let i = selected.length - 1; i >= 0; i--) {
+      if (selected[i].priority === "p2") { removeIdx = i; break; }
+    }
+    if (removeIdx === -1) {
+      for (let i = selected.length - 1; i >= 0; i--) {
+        if (selected[i].priority === "p1") { removeIdx = i; break; }
+      }
+    }
+    if (removeIdx === -1) break;
+    selected.splice(removeIdx, 1);
+    gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+    timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+  }
+
+  // Determine how many reminders fit alongside the selected instructions
+  let reminderCount = 0;
+  if (durationSec >= REMINDER_THRESHOLD_SEC && reminders.length > 0) {
+    const instrCount = selected.length;
+    for (let r = 1; r <= reminders.length; r++) {
+      const total = instrCount + r;
+      const gfCandidate = computeGrowthFactor(tier.initialGap, tier.targetGap, total);
+      const est = estimateTimeline(total, tier.initialGap, gfCandidate, tier.capGap);
+      if (est > durationSec) break;
+      reminderCount = r;
+    }
+    reminderCount = Math.max(1, reminderCount);
+  }
+
+  selected.push(...pickRandom(reminders, reminderCount));
+  selected.sort((a, b) => a.order - b.order);
+
+  // Safety-net trim in case the combined list still exceeds the budget
+  gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+  timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+
+  while (timeline > durationSec && selected.length > 1) {
+    let removeIdx = -1;
+    for (let i = selected.length - 1; i >= 0; i--) {
+      if (selected[i].role === "reminder") { removeIdx = i; break; }
+    }
+    if (removeIdx === -1) {
+      for (let i = selected.length - 1; i >= 0; i--) {
+        if (selected[i].priority === "p2") { removeIdx = i; break; }
+      }
+    }
+    if (removeIdx === -1) {
+      for (let i = selected.length - 1; i >= 0; i--) {
+        if (selected[i].priority === "p1") { removeIdx = i; break; }
+      }
+    }
+    if (removeIdx === -1) break;
+    selected.splice(removeIdx, 1);
+    gf = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+    timeline = estimateTimeline(selected.length, tier.initialGap, gf, tier.capGap);
+  }
+
+  return selected;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Place clips on timeline
+// ---------------------------------------------------------------------------
+
+function placeOnTimeline(
+  selected: FractionalClip[],
+  durationSec: number,
+  voiceId: string
+): FractionalPlanItem[] {
+  if (selected.length === 0) return [];
+
+  const tier = gapTierForDuration(durationSec);
+  const growthFactor = computeGrowthFactor(tier.initialGap, tier.targetGap, selected.length);
+
+  const items: FractionalPlanItem[] = [];
+  let cursor = 0;
+  let currentGap = tier.initialGap;
+  let lastGapUsed = tier.initialGap;
+
+  for (let i = 0; i < selected.length; i++) {
+    const clip = selected[i];
+
+    if (i === 0) {
+      items.push({
+        atSec: 0,
+        clipId: clip.clipId,
+        role: clip.role,
+        text: clip.text,
+        url: clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "",
+      });
+      cursor = ESTIMATED_CLIP_SEC;
+    } else {
+      const gap = Math.min(currentGap, tier.capGap);
+      const atSec = cursor + gap;
+      items.push({
+        atSec: Math.round(atSec),
+        clipId: clip.clipId,
+        role: clip.role,
+        text: clip.text,
+        url: clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "",
+      });
+      lastGapUsed = gap;
+      cursor = atSec + ESTIMATED_CLIP_SEC;
+      currentGap *= growthFactor;
+    }
+  }
+
+  // Trailing buffer: the plan's last clip should have room to breathe.
+  // We don't push a clip here — we just ensure the total timeline
+  // (last clip + clip duration + trailing silence) fits in durationSec.
+  // The caller (expandFractionalCues) already stops at the window boundary.
+  const _trailingEnd = cursor + lastGapUsed * TRAILING_BUFFER_FACTOR;
+  void _trailingEnd;
+
+  return items;
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point
 // ---------------------------------------------------------------------------
 
 export function composeFractionalPlan(
@@ -63,89 +282,21 @@ export function composeFractionalPlan(
   moduleId: string
 ): FractionalPlan {
   const TAG = "[FractionalComposer]";
-  const sorted = [...clips].sort((a, b) => a.order - b.order);
 
-  const intros = sorted.filter((c) => c.role === "intro");
-  const instructions = sorted.filter((c) => c.role === "instruction");
-  const reminders = sorted.filter((c) => c.role === "reminder");
-
-  const items: FractionalPlanItem[] = [];
-  const maxGap = maxGapForDuration(durationSec);
-  const deadline = durationSec - END_BUFFER_SEC;
-  let cursor = 0;
-  let gap = INITIAL_GAP_SEC;
-
-  function resolveUrl(clip: FractionalClip): string {
-    return clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
-  }
-
-  function push(clip: FractionalClip, atSec: number): void {
-    items.push({
-      atSec: Math.round(atSec),
-      clipId: clip.clipId,
-      role: clip.role,
-      text: clip.text,
-      url: resolveUrl(clip),
-    });
-  }
-
-  function wouldExceedDeadline(atSec: number): boolean {
-    return atSec + ESTIMATED_CLIP_DURATION_SEC > deadline;
-  }
-
-  function advanceGap(): number {
-    const current = gap;
-    gap = Math.min(maxGap, gap * GAP_GROWTH_FACTOR);
-    return current;
-  }
-
-  // 1. Intro at t=0
-  if (intros.length > 0) {
-    push(intros[0], 0);
-    cursor = ESTIMATED_CLIP_DURATION_SEC;
-  }
-
-  // 2. Instructions in order
-  for (const clip of instructions) {
-    const nextAt = cursor + advanceGap();
-    if (wouldExceedDeadline(nextAt)) break;
-    push(clip, nextAt);
-    cursor = nextAt + ESTIMATED_CLIP_DURATION_SEC;
-  }
-
-  // 3. Reminders loop until budget exhausted
-  let reminderIdx = 0;
-  let lastClipId: string | null = null;
-  while (reminders.length > 0) {
-    const nextAt = cursor + advanceGap();
-    if (wouldExceedDeadline(nextAt)) break;
-
-    let clip = reminders[reminderIdx % reminders.length];
-    // Avoid immediate repeat of same clip
-    if (clip.clipId === lastClipId && reminders.length > 1) {
-      reminderIdx++;
-      clip = reminders[reminderIdx % reminders.length];
-    }
-
-    push(clip, nextAt);
-    lastClipId = clip.clipId;
-    cursor = nextAt + ESTIMATED_CLIP_DURATION_SEC;
-    reminderIdx++;
-  }
+  const selected = selectClips(clips, durationSec);
+  const items = placeOnTimeline(selected, durationSec, voiceId);
 
   const planId = `${moduleId.toLowerCase()}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
 
+  const introCount = selected.filter((c) => c.role === "intro").length;
+  const instrCount = selected.filter((c) => c.role === "instruction").length;
+  const remCount = selected.filter((c) => c.role === "reminder").length;
+
   functions.logger.info(
-    `${TAG} composed plan=${planId} duration=${durationSec}s items=${items.length} voice=${voiceId}`
+    `${TAG} composed plan=${planId} duration=${durationSec}s total=${items.length} intro=${introCount} instr=${instrCount} rem=${remCount} voice=${voiceId}`
   );
 
-  return {
-    planId,
-    moduleId,
-    durationSec,
-    voiceId,
-    items,
-  };
+  return { planId, moduleId, durationSec, voiceId, items };
 }
 
 // ---------------------------------------------------------------------------
@@ -234,9 +385,9 @@ export function expandFractionalCues(
 
     let endSec: number;
     if (cue.durationMinutes && cue.durationMinutes > 0) {
-      endSec = Math.min(startSec + cue.durationMinutes * 60, durationSec - END_BUFFER_SEC);
+      endSec = Math.min(startSec + cue.durationMinutes * 60, durationSec);
     } else {
-      endSec = durationSec - END_BUFFER_SEC;
+      endSec = durationSec;
       for (let j = i + 1; j < cues.length; j++) {
         const nextSec = triggerToSeconds(cues[j].trigger);
         if (nextSec !== null && nextSec > startSec) {
