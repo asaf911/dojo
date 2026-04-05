@@ -6,7 +6,8 @@
       "name": "Nostril Focus",
       "path": "modules/nostril_focus_fractional/asaf/NF_C001_ASAF.mp3",
       "voices": {
-        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C001_ASAF.mp3"
+        "Asaf": "modules/nostril_focus_fractional/asaf/NF_C001_ASAF.mp3",
+        "Dan": "modules/nostril_focus_fractional/dan/NF_C001_DAN.mp3"
       },
       "fractional": true
     }
