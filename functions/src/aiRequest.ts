@@ -6,6 +6,7 @@
 import * as functions from "firebase-functions";
 import { generateAIMeditation } from "./aiMeditation";
 import type { LoadedCatalogs } from "./aiMeditation";
+import { expandFractionalCues } from "./fractionalComposer";
 
 const TAG = "[Server][AI]";
 
@@ -314,6 +315,9 @@ function buildMeditationPackage(
     }
   }
 
+  // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
+  const expandedCues = expandFractionalCues(resolvedCues, meditation.duration, voiceId);
+
   return {
     id: randomUUID(),
     title: meditation.title ?? null,
@@ -323,7 +327,7 @@ function buildMeditationPackage(
     binauralBeat: binauralBeat
       ? { id: binauralBeat.id, name: binauralBeat.name, url: binauralBeat.url, description: binauralBeat.description ?? undefined }
       : null,
-    cues: resolvedCues,
+    cues: expandedCues,
   };
 }
 

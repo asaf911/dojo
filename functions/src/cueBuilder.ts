@@ -52,8 +52,11 @@ export function buildCuesFromAllocation(
       allocation.focusType === "NF" ? 1 : IM_MIN,
       Math.min(10, focus)
     );
-    const prefix = allocation.focusType === "NF" ? "NF" : "IM";
-    cues.push({ id: `${prefix}${n}`, trigger: String(currentMinute) });
+    if (allocation.focusType === "NF") {
+      cues.push({ id: "NF_FRAC", trigger: String(currentMinute) });
+    } else {
+      cues.push({ id: `IM${n}`, trigger: String(currentMinute) });
+    }
     currentMinute += n;
   }
 

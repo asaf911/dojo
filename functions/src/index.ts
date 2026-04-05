@@ -4,7 +4,7 @@ import {createHash} from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
-import { composeFractionalPlan, type FractionalClip } from "./fractionalComposer";
+import { composeFractionalPlan, expandFractionalCues, type FractionalClip } from "./fractionalComposer";
 
 admin.initializeApp();
 
@@ -1001,7 +1001,10 @@ export const postMeditations = functions.runWith({
           );
           return;
         }
-        const cueTrigger = c.trigger;
+        let cueTrigger: string | number = c.trigger;
+        if (typeof cueTrigger === "string" && /^\d+$/.test(cueTrigger)) {
+          cueTrigger = parseInt(cueTrigger, 10);
+        }
         const validTrigger =
           cueTrigger === "start" ||
           cueTrigger === "end" ||
@@ -1025,6 +1028,9 @@ export const postMeditations = functions.runWith({
         });
       }
 
+      // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
+      const expandedCues = expandFractionalCues(resolvedCues, duration, voiceId);
+
       const response = {
         id: randomUUID(),
         title: null,
@@ -1043,7 +1049,7 @@ export const postMeditations = functions.runWith({
               description: binauralBeat.description ?? undefined,
             }
           : null,
-        cues: resolvedCues,
+        cues: expandedCues,
       };
 
       functions.logger.info(

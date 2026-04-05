@@ -37,11 +37,12 @@ struct MeditationCue: Codable {
     let trigger: CueTrigger
 }
 
-/// Server returns trigger as "start" | "end" | number
+/// Server returns trigger as "start" | "end" | number | "s{seconds}"
 enum CueTrigger: Codable {
     case start
     case end
     case minute(Int)
+    case second(Int)
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -50,7 +51,9 @@ enum CueTrigger: Codable {
             case "start": self = .start
             case "end": self = .end
             default:
-                if let n = Int(s) {
+                if s.hasPrefix("s"), let n = Int(s.dropFirst()) {
+                    self = .second(n)
+                } else if let n = Int(s) {
                     self = .minute(n)
                 } else {
                     throw DecodingError.dataCorruptedError(
@@ -75,6 +78,7 @@ enum CueTrigger: Codable {
         case .start: try container.encode("start")
         case .end: try container.encode("end")
         case .minute(let m): try container.encode(m)
+        case .second(let s): try container.encode("s\(s)")
         }
     }
 }
@@ -109,6 +113,8 @@ extension MeditationPackage {
                 return CueSetting(triggerType: .end, minute: nil, cue: cue)
             case .minute(let m):
                 return CueSetting(triggerType: .minute, minute: m, cue: cue)
+            case .second(let s):
+                return CueSetting(triggerType: .second, minute: s, cue: cue)
             }
         }
         return TimerSessionConfig(
