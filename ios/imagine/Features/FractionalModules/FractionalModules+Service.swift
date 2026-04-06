@@ -86,16 +86,29 @@ extension FractionalModules.Service {
     static let preview = FractionalModules.Service(
         fetchPlan: { moduleId, durationSec, voiceId, _ in
             try await Task.sleep(nanoseconds: 300_000_000)
+
+            let items: [FractionalModules.PlanItem]
+            switch moduleId {
+            case "IM_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "IM_C002", role: "instruction", text: "Begin repeating the following mantra in your mind.", url: "gs://preview/IM_C002.mp3"),
+                    FractionalModules.PlanItem(atSec: 10, clipId: "IM_C003", role: "instruction", text: "I AM, I AM, I AM", url: "gs://preview/IM_C003.mp3"),
+                    FractionalModules.PlanItem(atSec: 22, clipId: "IM_C006", role: "reminder", text: "Keep repeating the mantra.", url: "gs://preview/IM_C006.mp3"),
+                ]
+            default:
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "NF_C001", role: "intro", text: "We will now begin a focus exercise.", url: "gs://preview/NF_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 10, clipId: "NF_C002", role: "instruction", text: "Breathe normally through your nose and stay relaxed.", url: "gs://preview/NF_C002.mp3"),
+                    FractionalModules.PlanItem(atSec: 22, clipId: "NF_C007", role: "reminder", text: "Keep your attention on the breath in your nose.", url: "gs://preview/NF_C007.mp3"),
+                ]
+            }
+
             return FractionalModules.Plan(
                 planId: "preview-\(moduleId)-\(durationSec)",
                 moduleId: moduleId,
                 durationSec: durationSec,
                 voiceId: voiceId,
-                items: [
-                    FractionalModules.PlanItem(atSec: 0, clipId: "NF_C001", role: "intro", text: "We will now begin a focus exercise.", url: "gs://preview/NF_C001.mp3"),
-                    FractionalModules.PlanItem(atSec: 10, clipId: "NF_C002", role: "instruction", text: "Breathe normally through your nose and stay relaxed.", url: "gs://preview/NF_C002.mp3"),
-                    FractionalModules.PlanItem(atSec: 22, clipId: "NF_C007", role: "reminder", text: "Keep your attention on the breath in your nose.", url: "gs://preview/NF_C007.mp3"),
-                ]
+                items: items
             )
         }
     )

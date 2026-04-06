@@ -1,0 +1,119 @@
+{
+  "version": "1.0",
+  "moduleId": "IM_FRAC",
+  "title": "I AM Mantra",
+  "clips": [
+    {
+      "clipId": "IM_C001",
+      "role": "intro",
+      "order": 1,
+      "text": "We will now begin a mantra exercise.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C002",
+      "role": "instruction",
+      "order": 2,
+      "priority": "p0",
+      "text": "Begin repeating the following mantra in your mind.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C002_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C003",
+      "role": "instruction",
+      "order": 3,
+      "priority": "p0",
+      "text": "I AM, I AM, I AM",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C003_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C004",
+      "role": "instruction",
+      "order": 4,
+      "priority": "p1",
+      "text": "Repeat the mantra silently. Let the rhythm be natural.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C004_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C005",
+      "role": "instruction",
+      "order": 5,
+      "priority": "p1",
+      "text": "No rhythm is too fast or too slow.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C005_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C006",
+      "role": "reminder",
+      "order": 6,
+      "text": "Keep repeating the mantra.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C006_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C007",
+      "role": "reminder",
+      "order": 7,
+      "text": "Listen to how the mantra sounds in your mind.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C007_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C008",
+      "role": "reminder",
+      "order": 8,
+      "text": "When attention drifts... return to the mantra.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C008_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C009",
+      "role": "reminder",
+      "order": 9,
+      "text": "I AM I AM I AM",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C009_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C010",
+      "role": "reminder",
+      "order": 10,
+      "text": "Continue repeating the mantra.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C010_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C011",
+      "role": "reminder",
+      "order": 11,
+      "text": "Stay with the mantra.",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C011_ASAF.mp3"
+      }
+    },
+    {
+      "clipId": "IM_C012",
+      "role": "outro",
+      "order": 12,
+      "text": "Allow the mantra repetition to slow down",
+      "voices": {
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C012_ASAF.mp3"
+      }
+    }
+  ]
+}

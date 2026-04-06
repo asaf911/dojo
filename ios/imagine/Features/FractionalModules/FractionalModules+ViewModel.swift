@@ -17,15 +17,17 @@ extension FractionalModules {
 
     @MainActor @Observable
     final class ViewModel {
+        nonisolated(unsafe) var moduleId: String
         var selectedMinutes: Int = 3
         var isLoading = false
         var errorMessage: String?
 
         var onAction: ((Action) -> Void)?
 
-        private let dependencies: Dependencies
+        private nonisolated(unsafe) let dependencies: Dependencies
 
-        nonisolated init(dependencies: Dependencies = Dependencies()) {
+        nonisolated init(moduleId: String = "NF_FRAC", dependencies: Dependencies = Dependencies()) {
+            self.moduleId = moduleId
             self.dependencies = dependencies
         }
 
@@ -35,7 +37,7 @@ extension FractionalModules {
             errorMessage = nil
 
             let tag = "🧠 AI_DEBUG [Fractional][ViewModel]"
-            print("\(tag) play tapped duration=\(selectedMinutes)m")
+            print("\(tag) play tapped moduleId=\(moduleId) duration=\(selectedMinutes)m")
 
             Task {
                 do {
@@ -44,10 +46,10 @@ extension FractionalModules {
                         as: String.self,
                         defaultValue: "Asaf"
                     )
-                    print("\(tag) fetchPlan: requesting moduleId=NF_FRAC durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
+                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
 
                     let plan = try await dependencies.service.fetchPlan(
-                        "NF_FRAC",
+                        moduleId,
                         selectedMinutes * 60,
                         voiceId,
                         "FractionalModules|play"

@@ -12,12 +12,11 @@ export interface CueWithTrigger {
 
 const PB_CAP = 5;
 const BS_CAP = 10;
-const IM_MIN = 2;
 const IM_CAP = 10;
 
 /**
  * Builds cues from allocation. Clamps durations to available catalog variants.
- * isSleep: Use OH for focus, skip GB. Plan: default IM2 or NF2 for focus.
+ * isSleep: Use OH for focus, skip GB. Focus emits IM_FRAC or NF_FRAC.
  */
 export function buildCuesFromAllocation(
   allocation: PhaseAllocation,
@@ -48,16 +47,12 @@ export function buildCuesFromAllocation(
     cues.push({ id: "OH", trigger: String(currentMinute) });
     currentMinute += 1;
   } else if (focus > 0) {
-    const n = Math.max(
-      allocation.focusType === "NF" ? 1 : IM_MIN,
-      Math.min(10, focus)
-    );
     if (allocation.focusType === "NF") {
       cues.push({ id: "NF_FRAC", trigger: String(currentMinute) });
     } else {
-      cues.push({ id: `IM${n}`, trigger: String(currentMinute) });
+      cues.push({ id: "IM_FRAC", trigger: String(currentMinute) });
     }
-    currentMinute += n;
+    currentMinute += Math.min(10, focus);
   }
 
   if (insight > 0) {

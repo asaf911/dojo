@@ -10,6 +10,11 @@ import Foundation
 
 extension FractionalModules.Plan {
 
+    private static let moduleTitles: [String: String] = [
+        "NF_FRAC": "Nostril Focus",
+        "IM_FRAC": "I AM Mantra",
+    ]
+
     func toTimerSessionConfig(
         backgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: ""),
         binauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
@@ -27,15 +32,16 @@ extension FractionalModules.Plan {
             return CueSetting(triggerType: .second, minute: item.atSec, cue: cue)
         }
 
+        let title = Self.moduleTitles[moduleId] ?? moduleId
         let minutes = Int(ceil(Double(durationSec) / 60.0))
-        print("\(tag) result: minutes=\(minutes) cueSettings=\(cueSettings.count) title=Nostril Focus")
+        print("\(tag) result: minutes=\(minutes) cueSettings=\(cueSettings.count) title=\(title)")
 
         return TimerSessionConfig(
             minutes: minutes,
             backgroundSound: backgroundSound,
             binauralBeat: binauralBeat,
             cueSettings: cueSettings,
-            title: "Nostril Focus"
+            title: title
         )
     }
 }

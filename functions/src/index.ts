@@ -536,7 +536,10 @@ interface VoiceItem {
   name: string;
 }
 
-const DEPRECATED_CUE_IDS = new Set(["MA"]);
+const DEPRECATED_CUE_IDS = new Set([
+  "MA",
+  "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
+]);
 
 function resolveStorageUrl(relativePath: string): string {
   return `gs://${CONTENT_STORAGE_BUCKET}/${relativePath}`;
@@ -1206,6 +1209,7 @@ export const postFractionalPlan = functions.https.onRequest(
       // Map moduleId to catalog filename
       const moduleSlugMap: Record<string, string> = {
         NF_FRAC: "nostril_focus_fractional",
+        IM_FRAC: "i_am_mantra_fractional",
       };
       const catalogSlug = moduleSlugMap[moduleId];
       if (!catalogSlug) {

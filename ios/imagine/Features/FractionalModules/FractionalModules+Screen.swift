@@ -9,8 +9,21 @@ import SwiftUI
 
 extension FractionalModules {
 
+    enum Module: String, CaseIterable {
+        case nostrilFocus = "NF_FRAC"
+        case iAmMantra = "IM_FRAC"
+
+        var displayName: String {
+            switch self {
+            case .nostrilFocus: "Nostril Focus"
+            case .iAmMantra: "I AM Mantra"
+            }
+        }
+    }
+
     struct Screen: View {
         @State private var viewModel: ViewModel
+        @State private var selectedModule: Module = .nostrilFocus
         @State private var pendingConfig: TimerSessionConfig?
         @EnvironmentObject var navigationCoordinator: NavigationCoordinator
         @Environment(\.dismiss) private var dismiss
@@ -21,9 +34,26 @@ extension FractionalModules {
 
         var body: some View {
             VStack(spacing: 24) {
-                Text("Fractional Nostril Focus")
+                Text("Fractional Modules")
                     .nunitoFont(size: 20, style: .bold)
                     .foregroundColor(.foregroundLightGray)
+
+                VStack(spacing: 8) {
+                    Text("Module")
+                        .nunitoFont(size: 16, style: .regular)
+                        .foregroundColor(.foregroundLightGray)
+
+                    Picker("Module", selection: $selectedModule) {
+                        ForEach(Module.allCases, id: \.self) { module in
+                            Text(module.displayName).tag(module)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 16)
+                    .onChange(of: selectedModule) { _, newValue in
+                        viewModel.moduleId = newValue.rawValue
+                    }
+                }
 
                 VStack(spacing: 8) {
                     Text("Duration: \(viewModel.selectedMinutes) min")

@@ -19,7 +19,7 @@ import * as fs from "fs";
 
 export interface FractionalClip {
   clipId: string;
-  role: "intro" | "instruction" | "reminder";
+  role: "intro" | "instruction" | "reminder" | "outro";
   order: number;
   text: string;
   voices: Record<string, string>;
@@ -50,6 +50,7 @@ const ESTIMATED_CLIP_SEC = 5;
 const TRAILING_BUFFER_FACTOR = 1.1;
 const INTRO_THRESHOLD_SEC = 240;
 const REMINDER_THRESHOLD_SEC = 120;
+const OUTRO_THRESHOLD_SEC = 120;
 
 interface GapTier {
   maxDurationSec: number;
@@ -142,6 +143,7 @@ function selectClips(
   const intros = sorted.filter((c) => c.role === "intro");
   const instructions = sorted.filter((c) => c.role === "instruction");
   const reminders = sorted.filter((c) => c.role === "reminder");
+  const outros = sorted.filter((c) => c.role === "outro");
 
   const p0 = instructions.filter((c) => c.priority === "p0");
   const p1 = instructions.filter((c) => c.priority === "p1");
@@ -218,6 +220,10 @@ function selectClips(
     timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
   }
 
+  if (durationSec >= OUTRO_THRESHOLD_SEC && outros.length > 0) {
+    selected.push(outros[0]);
+  }
+
   return selected;
 }
 
@@ -234,6 +240,7 @@ function placeOnTimeline(
 
   const instrClips = selected.filter(c => c.role === "intro" || c.role === "instruction");
   const reminderClips = selected.filter(c => c.role === "reminder");
+  const outroClips = selected.filter(c => c.role === "outro");
 
   // --- Instruction gaps: tight, with doubling increments ---
   // gap[step] = base + 2^step - 1, capped at 30s
@@ -292,6 +299,13 @@ function placeOnTimeline(
     }
   }
 
+  if (outroClips.length > 0) {
+    const clip = outroClips[0];
+    const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
+    const outroAt = Math.max(cursor + ESTIMATED_CLIP_SEC, durationSec - ESTIMATED_CLIP_SEC * 2);
+    items.push({ atSec: Math.round(outroAt), clipId: clip.clipId, role: clip.role, text: clip.text, url });
+  }
+
   return items;
 }
 
@@ -315,9 +329,10 @@ export function composeFractionalPlan(
   const introCount = selected.filter((c) => c.role === "intro").length;
   const instrCount = selected.filter((c) => c.role === "instruction").length;
   const remCount = selected.filter((c) => c.role === "reminder").length;
+  const outroCount = selected.filter((c) => c.role === "outro").length;
 
   functions.logger.info(
-    `${TAG} composed plan=${planId} duration=${durationSec}s total=${items.length} intro=${introCount} instr=${instrCount} rem=${remCount} voice=${voiceId}`
+    `${TAG} composed plan=${planId} duration=${durationSec}s total=${items.length} intro=${introCount} instr=${instrCount} rem=${remCount} outro=${outroCount} voice=${voiceId}`
   );
 
   return { planId, moduleId, durationSec, voiceId, items };
@@ -336,6 +351,7 @@ interface FractionalCatalogFile {
 
 const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   NF_FRAC: "nostril_focus_fractional",
+  IM_FRAC: "i_am_mantra_fractional",
 };
 
 const CONTENT_STORAGE_BUCKET = "imagine-c6162.appspot.com";

@@ -350,7 +350,7 @@ extension MeditationsService {
                     MeditationCue(id: "INT_GEN_1", name: "General Introduction", url: "gs://preview", trigger: .start),
                     MeditationCue(id: "PB1", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1)),
                     MeditationCue(id: "BS1", name: "Body Scan", url: "gs://preview", trigger: .minute(2)),
-                    MeditationCue(id: "IM2", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
+                    MeditationCue(id: "IM_FRAC", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
                     MeditationCue(id: "GB", name: "Gentle Bell", url: "gs://preview", trigger: .end),
                 ]
             )

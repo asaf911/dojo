@@ -97,14 +97,14 @@ struct DevModeSettingsView: View {
                 .nunitoFont(size: 16, style: .bold)
                 .foregroundColor(.dojoTurquoise)
 
-            Text("Test runtime-composed Nostril Focus from atomic clips.")
+            Text("Test runtime-composed modules (Nostril Focus, I AM Mantra) from atomic clips.")
                 .nunitoFont(size: 12, style: .regular)
                 .foregroundColor(.white.opacity(0.5))
 
             Button {
                 showFractionalScreen = true
             } label: {
-                Text("Open Fractional NF")
+                Text("Open Fractional Modules")
                     .nunitoFont(size: 14, style: .bold)
                     .foregroundColor(.backgroundDarkPurple)
                     .frame(maxWidth: .infinity)
