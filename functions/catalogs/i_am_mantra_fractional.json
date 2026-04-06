@@ -9,7 +9,8 @@
       "order": 1,
       "text": "We will now begin a mantra exercise.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C001_DAN.mp3"
       }
     },
     {
@@ -19,7 +20,8 @@
       "priority": "p0",
       "text": "Begin repeating the following mantra in your mind.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C002_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C002_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C002_DAN.mp3"
       }
     },
     {
@@ -29,7 +31,8 @@
       "priority": "p0",
       "text": "I AM, I AM, I AM",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C003_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C003_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C003_DAN.mp3"
       }
     },
     {
@@ -39,7 +42,8 @@
       "priority": "p2",
       "text": "Repeat the mantra silently. Let the rhythm be natural.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C004_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C004_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C004_DAN.mp3"
       }
     },
     {
@@ -49,7 +53,8 @@
       "priority": "p2",
       "text": "No rhythm is too fast or too slow.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C005_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C005_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C005_DAN.mp3"
       }
     },
     {
@@ -58,7 +63,8 @@
       "order": 6,
       "text": "Keep repeating the mantra.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C006_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C006_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C006_DAN.mp3"
       }
     },
     {
@@ -67,7 +73,8 @@
       "order": 7,
       "text": "Listen to how the mantra sounds in your mind.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C007_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C007_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C007_DAN.mp3"
       }
     },
     {
@@ -76,7 +83,8 @@
       "order": 8,
       "text": "When attention drifts... return to the mantra.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C008_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C008_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C008_DAN.mp3"
       }
     },
     {
@@ -85,7 +93,8 @@
       "order": 9,
       "text": "I AM I AM I AM",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C009_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C009_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C009_DAN.mp3"
       }
     },
     {
@@ -94,7 +103,8 @@
       "order": 10,
       "text": "Continue repeating the mantra.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C010_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C010_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C010_DAN.mp3"
       }
     },
     {
@@ -103,7 +113,8 @@
       "order": 11,
       "text": "Stay with the mantra.",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C011_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C011_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C011_DAN.mp3"
       }
     },
     {
@@ -112,7 +123,8 @@
       "order": 12,
       "text": "Allow the mantra repetition to slow down",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C012_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C012_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C012_DAN.mp3"
       }
     }
   ]

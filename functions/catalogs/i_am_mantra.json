@@ -6,7 +6,8 @@
       "name": "I AM Mantra",
       "path": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3",
       "voices": {
-        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3"
+        "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3",
+        "Dan": "modules/i_am_mantra_fractional/dan/IM_C001_DAN.mp3"
       },
       "fractional": true
     }
