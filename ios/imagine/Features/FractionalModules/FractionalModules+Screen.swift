@@ -12,11 +12,13 @@ extension FractionalModules {
     enum Module: String, CaseIterable {
         case nostrilFocus = "NF_FRAC"
         case iAmMantra = "IM_FRAC"
+        case bodyScan = "BS_FRAC"
 
         var displayName: String {
             switch self {
             case .nostrilFocus: "Nostril Focus"
             case .iAmMantra: "I AM Mantra"
+            case .bodyScan: "Body Scan"
             }
         }
     }

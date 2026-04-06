@@ -8,6 +8,8 @@ import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
 export interface CueWithTrigger {
   id: string;
   trigger: string;
+  /** Set for BS_FRAC so expandFractionalCues gets the relax-phase window in minutes. */
+  durationMinutes?: number;
 }
 
 const PB_CAP = 5;
@@ -39,7 +41,11 @@ export function buildCuesFromAllocation(
   }
 
   if (relax > 0) {
-    cues.push({ id: `BS${relax}`, trigger: String(currentMinute) });
+    cues.push({
+      id: "BS_FRAC",
+      trigger: String(currentMinute),
+      durationMinutes: relax,
+    });
     currentMinute += relax;
   }
 

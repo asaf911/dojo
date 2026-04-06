@@ -48,10 +48,12 @@ extension FractionalModules {
                     )
                     print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
 
+                    let scanTier = moduleId == "BS_FRAC" ? "long" : nil
                     let plan = try await dependencies.service.fetchPlan(
                         moduleId,
                         selectedMinutes * 60,
                         voiceId,
+                        scanTier,
                         "FractionalModules|play"
                     )
 

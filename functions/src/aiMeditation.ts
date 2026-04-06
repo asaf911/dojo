@@ -18,7 +18,7 @@ export interface AIGeneratedTimer {
   duration: number;
   backgroundSoundId: string;
   binauralBeatId?: string | null;
-  cues: Array<{ id: string; trigger: string }>;
+  cues: Array<{ id: string; trigger: string; durationMinutes?: number }>;
   title: string;
   description?: string | null;
 }

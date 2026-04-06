@@ -13,6 +13,7 @@ extension FractionalModules.Plan {
     private static let moduleTitles: [String: String] = [
         "NF_FRAC": "Nostril Focus",
         "IM_FRAC": "I AM Mantra",
+        "BS_FRAC": "Body Scan",
     ]
 
     func toTimerSessionConfig(

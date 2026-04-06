@@ -828,6 +828,7 @@ extension AIRequestManager {
     private func cueDuration(for cueId: String) -> Int {
         switch cueId {
         case "PB": return 2
+        case "BS_FRAC": return 7
         case "BS1": return 1
         case "BS2": return 2
         case "BS3": return 3

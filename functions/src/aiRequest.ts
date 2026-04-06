@@ -274,7 +274,14 @@ function resolveCueUrl(
 }
 
 function buildMeditationPackage(
-  meditation: { duration: number; backgroundSoundId: string; binauralBeatId?: string | null; cues: Array<{ id: string; trigger: string }>; title?: string | null; description?: string | null },
+  meditation: {
+    duration: number;
+    backgroundSoundId: string;
+    binauralBeatId?: string | null;
+    cues: Array<{ id: string; trigger: string; durationMinutes?: number }>;
+    title?: string | null;
+    description?: string | null;
+  },
   catalogs: LoadedCatalogs,
   voiceId: string
 ): MeditationPackage {
@@ -299,7 +306,13 @@ function buildMeditationPackage(
   const bbId = meditation.binauralBeatId ?? "None";
   const binauralBeat = bbId && bbId !== "None" ? beatMap.get(bbId) ?? null : null;
 
-  const resolvedCues: Array<{ id: string; name: string; url: string; trigger: string | number }> = [];
+  const resolvedCues: Array<{
+    id: string;
+    name: string;
+    url: string;
+    trigger: string | number;
+    durationMinutes?: number;
+  }> = [];
   for (const c of meditation.cues) {
     const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
     const asset = cueMap.get(cueId);
@@ -309,6 +322,10 @@ function buildMeditationPackage(
         name: asset.name,
         url: resolveCueUrl(asset, voiceId),
         trigger: c.trigger,
+        durationMinutes:
+          typeof c.durationMinutes === "number" && c.durationMinutes > 0
+            ? c.durationMinutes
+            : undefined,
       });
     } else if (c.id === "GB") {
       resolvedCues.push({ id: c.id, name: c.id, url: "", trigger: c.trigger });

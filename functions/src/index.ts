@@ -4,7 +4,12 @@ import {createHash} from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
-import { composeFractionalPlan, expandFractionalCues, type FractionalClip } from "./fractionalComposer";
+import {
+  composeBodyScanLongPlan,
+  composeFractionalPlan,
+  expandFractionalCues,
+  type FractionalClip,
+} from "./fractionalComposer";
 
 admin.initializeApp();
 
@@ -864,6 +869,7 @@ export const postMeditations = functions.runWith({
           name: string;
           url: string;
           trigger: string | number;
+          durationMinutes?: number;
         }> = [];
         for (const c of meditation.cues) {
           const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
@@ -874,6 +880,10 @@ export const postMeditations = functions.runWith({
               name: asset.name,
               url: resolveCueUrl(asset, voiceId),
               trigger: c.trigger,
+              durationMinutes:
+                typeof c.durationMinutes === "number" && c.durationMinutes > 0
+                  ? c.durationMinutes
+                  : undefined,
             });
           } else if (c.id === "GB") {
             resolvedCues.push({
@@ -884,6 +894,12 @@ export const postMeditations = functions.runWith({
             });
           }
         }
+
+        const expandedCues = expandFractionalCues(
+          resolvedCues,
+          meditation.duration,
+          voiceId
+        );
 
         const response = {
           id: randomUUID(),
@@ -903,7 +919,7 @@ export const postMeditations = functions.runWith({
                 description: binauralBeat.description ?? undefined,
               }
             : null,
-          cues: resolvedCues,
+          cues: expandedCues,
         };
 
         functions.logger.info(
@@ -1146,6 +1162,8 @@ interface PostFractionalPlanRequest {
   moduleId: string;
   durationSec: number;
   voiceId?: string;
+  /** Body scan only; default "long". Medium/short reserved for future catalogs. */
+  scanTier?: "long" | "medium" | "short";
 }
 
 const TAG_FRACTIONAL = "[Server][Fractional]";
@@ -1185,6 +1203,7 @@ export const postFractionalPlan = functions.https.onRequest(
       const moduleId = body?.moduleId;
       const durationSec = body?.durationSec;
       const voiceId = body?.voiceId ?? "Asaf";
+      const scanTier = body?.scanTier ?? "long";
 
       if (!moduleId || typeof moduleId !== "string") {
         functions.logger.warn(
@@ -1211,7 +1230,28 @@ export const postFractionalPlan = functions.https.onRequest(
         NF_FRAC: "nostril_focus_fractional",
         IM_FRAC: "i_am_mantra_fractional",
       };
-      const catalogSlug = moduleSlugMap[moduleId];
+
+      let catalogSlug: string | undefined;
+      let useBodyScanLong = false;
+
+      if (moduleId === "BS_FRAC") {
+        if (scanTier === "medium" || scanTier === "short") {
+          functions.logger.warn(
+            `${TAG_FRACTIONAL} validation failed reason=scanTier_not_implemented moduleId=${moduleId} scanTier=${scanTier} trigger=${trigger}`
+          );
+          res.status(400).send(
+            JSON.stringify({
+              error: `scanTier "${scanTier}" is not available for BS_FRAC yet; use "long".`,
+            })
+          );
+          return;
+        }
+        catalogSlug = "body_scan_fractional_long";
+        useBodyScanLong = true;
+      } else {
+        catalogSlug = moduleSlugMap[moduleId];
+      }
+
       if (!catalogSlug) {
         functions.logger.warn(
           `${TAG_FRACTIONAL} validation failed reason=unknown_moduleId moduleId=${moduleId} trigger=${trigger}`
@@ -1223,7 +1263,7 @@ export const postFractionalPlan = functions.https.onRequest(
       }
 
       functions.logger.info(
-        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} trigger=${trigger}`
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} scanTier=${scanTier} trigger=${trigger}`
       );
 
       const catalog = loadFractionalCatalog(catalogSlug);
@@ -1245,7 +1285,9 @@ export const postFractionalPlan = functions.https.onRequest(
         ),
       }));
 
-      const plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+      const plan = useBodyScanLong
+        ? composeBodyScanLongPlan(resolvedClips, durationSec, voiceId, moduleId)
+        : composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
 
       functions.logger.info(
         `${TAG_FRACTIONAL} success planId=${plan.planId} items=${plan.items.length} trigger=${trigger}`
