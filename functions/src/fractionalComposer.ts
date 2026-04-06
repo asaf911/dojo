@@ -23,6 +23,8 @@ export interface FractionalClip {
   order: number;
   text: string;
   voices: Record<string, string>;
+  /** Measured MP3 length (e.g. from scripts/scanBodyScanDurations.mjs). Falls back to estimate if absent. */
+  durationSec?: number;
   priority?: "p0" | "p1" | "p2";
 }
 
@@ -346,6 +348,17 @@ const MIN_GAP_BODY_SCAN = 2;
 /** Fixed silence: intro → preliminary instruction (C002), and BS_C040 → BS_C041. */
 const BODY_SCAN_FIXED_BRIDGE_GAP_SEC = 7;
 
+function bodyScanClipAudioSec(clip: FractionalClip): number {
+  if (
+    typeof clip.durationSec === "number" &&
+    Number.isFinite(clip.durationSec) &&
+    clip.durationSec > 0
+  ) {
+    return clip.durationSec;
+  }
+  return ESTIMATED_CLIP_SEC;
+}
+
 function selectBodyScanLongClips(
   clips: FractionalClip[],
   durationSec: number
@@ -378,7 +391,7 @@ function selectBodyScanLongClips(
     let t = 0;
     for (let i = 0; i < sel.length; i++) {
       if (i > 0) t += MIN_GAP_BODY_SCAN;
-      t += ESTIMATED_CLIP_SEC;
+      t += bodyScanClipAudioSec(sel[i]);
     }
     return t;
   };
@@ -429,7 +442,7 @@ function bodyScanGapsAndTrailing(
   const n = all.length;
   if (n === 0) return { between: [], trailing: 0 };
 
-  const audioTotal = n * ESTIMATED_CLIP_SEC;
+  const audioTotal = all.reduce((sum, c) => sum + bodyScanClipAudioSec(c), 0);
   const gapBudget = Math.max(0, durationSec - audioTotal);
 
   if (n === 1) {
@@ -483,21 +496,24 @@ function placeBodyScanLongTimeline(
   const { between } = bodyScanGapsAndTrailing(all, durationSec);
 
   const items: FractionalPlanItem[] = [];
-  let cursor = 0;
+  // Integer `atSec` matches the timer (`elapsed >= sec`). Next start = round(end of prior clip + gap),
+  // not a float cursor that only rounded the label — that drifted silence away from `between[]`.
+  let startSec = 0;
 
   for (let i = 0; i < n; i++) {
     const clip = all[i];
     const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
     items.push({
-      atSec: Math.round(cursor),
+      atSec: startSec,
       clipId: clip.clipId,
       role: clip.role,
       text: clip.text,
       url,
     });
-    cursor += ESTIMATED_CLIP_SEC;
+    const audioSec = bodyScanClipAudioSec(clip);
+    const endTime = startSec + audioSec;
     if (i < n - 1) {
-      cursor += between[i];
+      startSec = Math.round(endTime + between[i]);
     }
   }
 

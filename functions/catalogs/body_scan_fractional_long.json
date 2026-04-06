@@ -10,7 +10,8 @@
       "text": "We will now begin a body scan",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C001_ASAF.mp3"
-      }
+      },
+      "durationSec": 2.116
     },
     {
       "clipId": "BS_C002",
@@ -19,7 +20,8 @@
       "text": "As I name each part of the body, bring your full attention to it. Feel it from within. Notice any tension or discomfort and relax it as much as you can",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C002_ASAF.mp3"
-      }
+      },
+      "durationSec": 11.546
     },
     {
       "clipId": "BS_C003",
@@ -28,7 +30,8 @@
       "text": "Bring your attention to the top of your head and let it relax",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C003_ASAF.mp3"
-      }
+      },
+      "durationSec": 3.918
     },
     {
       "clipId": "BS_C004",
@@ -37,7 +40,8 @@
       "text": "Forehead",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C004_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.993
     },
     {
       "clipId": "BS_C005",
@@ -46,7 +50,8 @@
       "text": "Eyebrows",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C005_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.045
     },
     {
       "clipId": "BS_C006",
@@ -55,7 +60,8 @@
       "text": "Eyelids",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C006_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.94
     },
     {
       "clipId": "BS_C007",
@@ -64,7 +70,8 @@
       "text": "Eyeballs",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C007_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.993
     },
     {
       "clipId": "BS_C008",
@@ -73,7 +80,8 @@
       "text": "The muscles behind your eyes",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C008_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.829
     },
     {
       "clipId": "BS_C009",
@@ -82,7 +90,8 @@
       "text": "Temples",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C009_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.993
     },
     {
       "clipId": "BS_C010",
@@ -91,7 +100,8 @@
       "text": "Cheeks",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C010_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.862
     },
     {
       "clipId": "BS_C011",
@@ -100,7 +110,8 @@
       "text": "Nose",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C011_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.862
     },
     {
       "clipId": "BS_C012",
@@ -109,7 +120,8 @@
       "text": "Mouth",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C012_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.888
     },
     {
       "clipId": "BS_C013",
@@ -118,7 +130,8 @@
       "text": "Lips",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C013_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.81
     },
     {
       "clipId": "BS_C014",
@@ -127,7 +140,8 @@
       "text": "Tongue",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C014_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.888
     },
     {
       "clipId": "BS_C015",
@@ -136,7 +150,8 @@
       "text": "Inside of your mouth",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C015_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.593
     },
     {
       "clipId": "BS_C016",
@@ -145,7 +160,8 @@
       "text": "Joints of the jaw",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C016_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.411
     },
     {
       "clipId": "BS_C017",
@@ -154,7 +170,8 @@
       "text": "Throat",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C017_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.888
     },
     {
       "clipId": "BS_C018",
@@ -163,7 +180,8 @@
       "text": "Neck",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C018_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.81
     },
     {
       "clipId": "BS_C019",
@@ -172,7 +190,8 @@
       "text": "Shoulders",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C019_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.993
     },
     {
       "clipId": "BS_C020",
@@ -181,7 +200,8 @@
       "text": "Upper arms",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C020_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.176
     },
     {
       "clipId": "BS_C021",
@@ -190,7 +210,8 @@
       "text": "Elbows",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C021_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.94
     },
     {
       "clipId": "BS_C022",
@@ -199,7 +220,8 @@
       "text": "Forearms",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C022_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.176
     },
     {
       "clipId": "BS_C023",
@@ -208,7 +230,8 @@
       "text": "Palms",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C023_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.993
     },
     {
       "clipId": "BS_C024",
@@ -217,7 +240,8 @@
       "text": "Each finger, one by one",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C024_ASAF.mp3"
-      }
+      },
+      "durationSec": 2.011
     },
     {
       "clipId": "BS_C025",
@@ -226,7 +250,8 @@
       "text": "Chest and heart",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C025_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.306
     },
     {
       "clipId": "BS_C026",
@@ -235,7 +260,8 @@
       "text": "Ribcage",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C026_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.097
     },
     {
       "clipId": "BS_C027",
@@ -244,7 +270,8 @@
       "text": "Sides of your torso",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C027_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.593
     },
     {
       "clipId": "BS_C028",
@@ -253,7 +280,8 @@
       "text": "Upper back",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C028_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.045
     },
     {
       "clipId": "BS_C029",
@@ -262,7 +290,8 @@
       "text": "Belly - let it rise and fall with your breath",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C029_ASAF.mp3"
-      }
+      },
+      "durationSec": 3.814
     },
     {
       "clipId": "BS_C030",
@@ -271,7 +300,8 @@
       "text": "Lower back",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C030_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.123
     },
     {
       "clipId": "BS_C031",
@@ -280,7 +310,8 @@
       "text": "Pelvic floor",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C031_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.123
     },
     {
       "clipId": "BS_C032",
@@ -289,7 +320,8 @@
       "text": "Hips and thighs",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C032_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.411
     },
     {
       "clipId": "BS_C033",
@@ -298,7 +330,8 @@
       "text": "Knees",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C033_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.81
     },
     {
       "clipId": "BS_C034",
@@ -307,7 +340,8 @@
       "text": "Shins and calves",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C034_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.463
     },
     {
       "clipId": "BS_C035",
@@ -316,7 +350,8 @@
       "text": "Ankles",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C035_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.862
     },
     {
       "clipId": "BS_C036",
@@ -325,7 +360,8 @@
       "text": "Heels",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C036_ASAF.mp3"
-      }
+      },
+      "durationSec": 0.94
     },
     {
       "clipId": "BS_C037",
@@ -334,7 +370,8 @@
       "text": "Tops of your feet",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C037_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.463
     },
     {
       "clipId": "BS_C038",
@@ -343,7 +380,8 @@
       "text": "Soles of your feet",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C038_ASAF.mp3"
-      }
+      },
+      "durationSec": 1.411
     },
     {
       "clipId": "BS_C039",
@@ -352,7 +390,8 @@
       "text": "Each toe, one by one",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C039_ASAF.mp3"
-      }
+      },
+      "durationSec": 2.247
     },
     {
       "clipId": "BS_C040",
@@ -361,7 +400,8 @@
       "text": "Now bring your awareness to your entire body",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C040_ASAF.mp3"
-      }
+      },
+      "durationSec": 3.187
     },
     {
       "clipId": "BS_C041",
@@ -370,7 +410,8 @@
       "text": "Sense your whole body as one and let the relaxation deepen",
       "voices": {
         "Asaf": "modules/body_scan_fractional/long/asaf/BS_C041_ASAF.mp3"
-      }
+      },
+      "durationSec": 4.101
     }
   ]
 }
