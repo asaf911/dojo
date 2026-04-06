@@ -36,7 +36,7 @@
       "clipId": "IM_C004",
       "role": "instruction",
       "order": 4,
-      "priority": "p1",
+      "priority": "p2",
       "text": "Repeat the mantra silently. Let the rhythm be natural.",
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C004_ASAF.mp3"
@@ -46,7 +46,7 @@
       "clipId": "IM_C005",
       "role": "instruction",
       "order": 5,
-      "priority": "p1",
+      "priority": "p2",
       "text": "No rhythm is too fast or too slow.",
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C005_ASAF.mp3"

@@ -60,7 +60,7 @@ interface GapTier {
 }
 
 const GAP_TIERS: GapTier[] = [
-  { maxDurationSec: 180,  initialGap: 5,  targetGap: 18,  capGap: 20  },
+  { maxDurationSec: 180,  initialGap: 12, targetGap: 35,  capGap: 40  },
   { maxDurationSec: 360,  initialGap: 5,  targetGap: 38,  capGap: 45  },
   { maxDurationSec: 480,  initialGap: 7,  targetGap: 55,  capGap: 60  },
   { maxDurationSec: 600,  initialGap: 8,  targetGap: 82,  capGap: 90  },
