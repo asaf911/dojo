@@ -1,6 +1,8 @@
 /**
  * Body scan BS_FRAC: per-macro-zone tier (macro | regional | micro),
- * 15–25s gaps between body instructions, optional entry + integration clips.
+ * Equal silence between “parts”: body instructions and integration clips (outros) are scheduled
+ * the same way—each part is followed by an equal share of the gap budget (including after the last part).
+ * Outros are only chosen when the session can afford that full gap treatment (see minVariableSilenceBudget).
  *
  * `bodyScanDirection` **composer** (not product labels): `"up"` = zones head→feet (top to bottom);
  * `"down"` = feet→head (bottom to top). Cue IDs: BS_FRAC_DOWN → `"up"`, BS_FRAC_UP → `"down"`.
@@ -24,7 +26,6 @@ export interface BodyScanTierPlanParams {
 const ESTIMATED_CLIP_SEC = 5;
 const BRIDGE_SEC = 7;
 const BODY_GAP_MIN = 15;
-const BODY_GAP_MAX = 25;
 
 function clipAudioSec(clip: FractionalClip): number {
   const d = clip.durationSec;
@@ -109,6 +110,21 @@ export function integrationClipsSorted(clips: FractionalClip[]): FractionalClip[
 }
 
 /**
+ * Split `total` into `n` non‑negative integers as evenly as possible (sum equals `total`).
+ * Used for body-scan silence so every pause (including after the last part) gets the same budget.
+ */
+export function distributeGapsEqual(total: number, n: number): number[] {
+  if (n === 0) return [];
+  if (total < 0 || !Number.isFinite(total)) {
+    throw new Error("distributeGapsEqual: total must be a finite number >= 0");
+  }
+  const t = Math.floor(total);
+  const base = Math.floor(t / n);
+  const rem = t - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < rem ? 1 : 0));
+}
+
+/**
  * Distribute `totalTarget` seconds across `slotCount` gaps, each in [minG, maxG].
  * If totalTarget exceeds slotCount*maxG, gaps are all maxG and remainder is returned for trailing silence.
  */
@@ -164,18 +180,30 @@ function bridgesSec(includeEntry: boolean): number {
   return (includeEntry ? 2 : 1) * BRIDGE_SEC;
 }
 
-function variableGapSlotCount(
+/**
+ * Variable silence slots: one after each “part” (body instruction or integration/outro), same pool, equal split.
+ * Slot count = nBody + kIntegration (e.g. 3 zones + 2 outros ⇒ 5 gaps).
+ */
+export function variableGapSlotCount(
   nBody: number,
   kIntegration: number
 ): number {
-  const betweenBody = Math.max(0, nBody - 1);
-  const afterBodyBeforeInt = kIntegration > 0 && nBody > 0 ? 1 : 0;
-  const betweenInt = kIntegration > 1 ? 1 : 0;
-  return betweenBody + afterBodyBeforeInt + betweenInt;
+  return nBody + kIntegration;
 }
 
-function minVariableSilence(nVarSlots: number): number {
-  return nVarSlots * BODY_GAP_MIN;
+/**
+ * Minimum total silence required before we accept a plan. With kIntegration === 0 we keep the looser
+ * floor (only between-body minimums; trailing slot shares that budget). With any outro, every part
+ * must support the same gap standard: (nBody + kIntegration) slots each at least BODY_GAP_MIN.
+ */
+export function minVariableSilenceBudget(
+  nBody: number,
+  kIntegration: number
+): number {
+  if (kIntegration === 0) {
+    return Math.max(0, nBody - 1) * BODY_GAP_MIN;
+  }
+  return (nBody + kIntegration) * BODY_GAP_MIN;
 }
 
 function computeMinTotal(
@@ -198,8 +226,7 @@ function computeMinTotal(
   }
 
   const b = bridgesSec(includeEntry);
-  const nVar = variableGapSlotCount(nB, kIntegration);
-  const vMin = minVariableSilence(nVar);
+  const vMin = minVariableSilenceBudget(nB, kIntegration);
   return audio + b + vMin;
 }
 
@@ -338,12 +365,7 @@ export function composeBodyScanTierPlan(
   const nVar = variableGapSlotCount(nB, kI);
   const fixedNonVar = audioTotal + bridges;
   const budgetForVariableGaps = Math.max(0, durationSec - fixedNonVar);
-  const { gaps: varGaps, trailingFromGaps } = distributeGapsBetweenBounds(
-    nVar,
-    budgetForVariableGaps,
-    BODY_GAP_MIN,
-    BODY_GAP_MAX
-  );
+  const varGaps = distributeGapsEqual(budgetForVariableGaps, nVar);
 
   const items: FractionalPlanItem[] = [];
   let t = 0;
@@ -367,6 +389,11 @@ export function composeBodyScanTierPlan(
     });
     t += clipAudioSec(clip);
     if (i === sequence.length - 1) {
+      const isPart =
+        clip.role === "instruction" || clip.role === "integration";
+      if (isPart && nVar > 0) {
+        t += takeGap();
+      }
       break;
     }
 
@@ -394,7 +421,11 @@ export function composeBodyScanTierPlan(
     }
   }
 
-  t += trailingFromGaps;
+  if (gi !== varGaps.length) {
+    throw new Error(
+      `Body scan gap mismatch: consumed ${gi} gaps, expected ${varGaps.length}`
+    );
+  }
 
   const planId = `${moduleId.toLowerCase()}-tier-${params.bodyScanDirection}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
 

@@ -4,8 +4,11 @@ import type { FractionalClip } from "./fractionalComposer";
 import {
   collectBodyInstructions,
   distributeGapsBetweenBounds,
+  distributeGapsEqual,
+  minVariableSilenceBudget,
   pickEntryClip,
   chooseBodyScanPlan,
+  variableGapSlotCount,
 } from "./bodyScanTierPlan";
 
 const macro = (zone: 1 | 2 | 3, id: string, ou: number, od: number): FractionalClip => ({
@@ -18,6 +21,25 @@ const macro = (zone: 1 | 2 | 3, id: string, ou: number, od: number): FractionalC
   bodyTier: "macro",
   orderUp: ou,
   orderDown: od,
+});
+
+test("variableGapSlotCount treats outros like body parts", () => {
+  assert.equal(variableGapSlotCount(3, 0), 3);
+  assert.equal(variableGapSlotCount(3, 1), 4);
+  assert.equal(variableGapSlotCount(3, 2), 5);
+});
+
+test("minVariableSilenceBudget tightens when outros are included", () => {
+  assert.equal(minVariableSilenceBudget(3, 0), 30);
+  assert.equal(minVariableSilenceBudget(3, 1), 60);
+  assert.equal(minVariableSilenceBudget(3, 2), 75);
+});
+
+test("distributeGapsEqual splits evenly", () => {
+  assert.deepEqual(distributeGapsEqual(10, 3), [4, 3, 3]);
+  assert.deepEqual(distributeGapsEqual(9, 3), [3, 3, 3]);
+  assert.deepEqual(distributeGapsEqual(0, 2), [0, 0]);
+  assert.deepEqual(distributeGapsEqual(7, 1), [7]);
 });
 
 test("distributeGapsBetweenBounds sums to target within caps", () => {
