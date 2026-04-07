@@ -1,0 +1,408 @@
+/**
+ * Body scan BS_FRAC: per-macro-zone tier (macro | regional | micro),
+ * 15–25s gaps between body instructions, optional entry + integration clips.
+ *
+ * `bodyScanDirection` **composer** (not product labels): `"up"` = zones head→feet (top to bottom);
+ * `"down"` = feet→head (bottom to top). Cue IDs: BS_FRAC_DOWN → `"up"`, BS_FRAC_UP → `"down"`.
+ */
+
+import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
+
+export type BodyTier = "macro" | "regional" | "micro";
+export type BodyScanDirection = "up" | "down";
+export type IntroStyle = "short" | "long";
+
+export interface BodyScanTierPlanParams {
+  durationSec: number;
+  bodyScanDirection: BodyScanDirection;
+  introStyle: IntroStyle;
+  includeEntry: boolean;
+  voiceId: string;
+  moduleId: string;
+}
+
+const ESTIMATED_CLIP_SEC = 5;
+const BRIDGE_SEC = 7;
+const BODY_GAP_MIN = 15;
+const BODY_GAP_MAX = 25;
+
+function clipAudioSec(clip: FractionalClip): number {
+  const d = clip.durationSec;
+  if (typeof d === "number" && Number.isFinite(d) && d > 0) return d;
+  return ESTIMATED_CLIP_SEC;
+}
+
+function tierRank(t: BodyTier): number {
+  return t === "macro" ? 0 : t === "regional" ? 1 : 2;
+}
+
+/** Ordered body instructions for one triple and direction (before entry skip). */
+export function collectBodyInstructions(
+  clips: FractionalClip[],
+  triple: readonly [BodyTier, BodyTier, BodyTier],
+  direction: BodyScanDirection
+): FractionalClip[] {
+  const zoneOrder = direction === "up" ? [1, 2, 3] : [3, 2, 1];
+  const out: FractionalClip[] = [];
+  for (const z of zoneOrder) {
+    const tier = triple[z - 1];
+    const tierClips = clips.filter(
+      (c) =>
+        c.role === "instruction" &&
+        c.macroZone === z &&
+        c.bodyTier === tier
+    );
+    tierClips.sort((a, b) => {
+      const va = direction === "up" ? (a.orderUp ?? 0) : (a.orderDown ?? 0);
+      const vb = direction === "up" ? (b.orderUp ?? 0) : (b.orderDown ?? 0);
+      return va - vb;
+    });
+    out.push(...tierClips);
+  }
+  return out;
+}
+
+export function firstZoneTierForDirection(
+  triple: readonly [BodyTier, BodyTier, BodyTier],
+  direction: BodyScanDirection
+): BodyTier {
+  return direction === "up" ? triple[0] : triple[2];
+}
+
+export function pickEntryClip(
+  clips: FractionalClip[],
+  direction: BodyScanDirection,
+  firstTier: BodyTier
+): FractionalClip | null {
+  const end = direction === "up" ? "top" : "bottom";
+  return (
+    clips.find(
+      (c) =>
+        c.role === "entry" &&
+        c.entryScanEnd === end &&
+        c.entryTier === firstTier
+    ) ?? null
+  );
+}
+
+export function pickIntroClip(
+  clips: FractionalClip[],
+  style: IntroStyle
+): FractionalClip {
+  const v = style === "short" ? "short" : "long";
+  const found = clips.find(
+    (c) => c.role === "intro" && c.introVariant === v
+  );
+  if (!found) {
+    throw new Error(`Body scan catalog missing introVariant=${v}`);
+  }
+  return found;
+}
+
+export function integrationClipsSorted(clips: FractionalClip[]): FractionalClip[] {
+  return clips
+    .filter((c) => c.role === "integration")
+    .sort(
+      (a, b) =>
+        (a.integrationOrder ?? 0) - (b.integrationOrder ?? 0)
+    );
+}
+
+/**
+ * Distribute `totalTarget` seconds across `slotCount` gaps, each in [minG, maxG].
+ * If totalTarget exceeds slotCount*maxG, gaps are all maxG and remainder is returned for trailing silence.
+ */
+export function distributeGapsBetweenBounds(
+  slotCount: number,
+  totalTarget: number,
+  minG: number,
+  maxG: number
+): { gaps: number[]; trailingFromGaps: number } {
+  if (slotCount === 0) {
+    return { gaps: [], trailingFromGaps: Math.max(0, totalTarget) };
+  }
+  const minSum = slotCount * minG;
+  const maxSum = slotCount * maxG;
+  if (totalTarget < minSum) {
+    throw new Error(
+      `Gap budget infeasible: need >=${minSum}s for ${slotCount} slots, got ${totalTarget}`
+    );
+  }
+  if (totalTarget >= maxSum) {
+    return {
+      gaps: Array(slotCount).fill(maxG),
+      trailingFromGaps: totalTarget - maxSum,
+    };
+  }
+  const extra = totalTarget - minSum;
+  const gaps = Array(slotCount).fill(minG);
+  let placed = 0;
+  let slot = 0;
+  while (placed < extra) {
+    if (gaps[slot % slotCount] < maxG) {
+      gaps[slot % slotCount]++;
+      placed++;
+    }
+    slot++;
+    if (slot > slotCount * (maxG - minG + extra + 5)) {
+      throw new Error("distributeGapsBetweenBounds: failed to place extra");
+    }
+  }
+  return { gaps, trailingFromGaps: 0 };
+}
+
+interface FeasibleChoice {
+  triple: [BodyTier, BodyTier, BodyTier];
+  kIntegration: number;
+  bodyList: FractionalClip[];
+  minTotal: number;
+  tierScore: number;
+  nBody: number;
+}
+
+function bridgesSec(includeEntry: boolean): number {
+  return (includeEntry ? 2 : 1) * BRIDGE_SEC;
+}
+
+function variableGapSlotCount(
+  nBody: number,
+  kIntegration: number
+): number {
+  const betweenBody = Math.max(0, nBody - 1);
+  const afterBodyBeforeInt = kIntegration > 0 && nBody > 0 ? 1 : 0;
+  const betweenInt = kIntegration > 1 ? 1 : 0;
+  return betweenBody + afterBodyBeforeInt + betweenInt;
+}
+
+function minVariableSilence(nVarSlots: number): number {
+  return nVarSlots * BODY_GAP_MIN;
+}
+
+function computeMinTotal(
+  intro: FractionalClip,
+  entry: FractionalClip | null,
+  includeEntry: boolean,
+  bodyList: FractionalClip[],
+  kIntegration: number,
+  integrationList: FractionalClip[]
+): number {
+  const nB = bodyList.length;
+  if (nB === 0) return Infinity;
+
+  let audio =
+    clipAudioSec(intro) +
+    (includeEntry && entry ? clipAudioSec(entry) : 0) +
+    bodyList.reduce((s, c) => s + clipAudioSec(c), 0);
+  for (let i = 0; i < kIntegration; i++) {
+    audio += clipAudioSec(integrationList[i]);
+  }
+
+  const b = bridgesSec(includeEntry);
+  const nVar = variableGapSlotCount(nB, kIntegration);
+  const vMin = minVariableSilence(nVar);
+  return audio + b + vMin;
+}
+
+export function chooseBodyScanPlan(
+  clips: FractionalClip[],
+  params: BodyScanTierPlanParams
+): {
+  triple: [BodyTier, BodyTier, BodyTier];
+  kIntegration: number;
+  intro: FractionalClip;
+  entry: FractionalClip | null;
+  bodyInstructions: FractionalClip[];
+  integrations: FractionalClip[];
+} {
+  const { durationSec, bodyScanDirection, introStyle, includeEntry } = params;
+  const intro = pickIntroClip(clips, introStyle);
+  const allInt = integrationClipsSorted(clips);
+
+  const tiers: BodyTier[] = ["macro", "regional", "micro"];
+  const feasible: FeasibleChoice[] = [];
+
+  for (const t1 of tiers) {
+    for (const t2 of tiers) {
+      for (const t3 of tiers) {
+        const triple = [t1, t2, t3] as [BodyTier, BodyTier, BodyTier];
+        const bodyFull = collectBodyInstructions(
+          clips,
+          triple,
+          bodyScanDirection
+        );
+        const firstTier = firstZoneTierForDirection(triple, bodyScanDirection);
+        const entry = includeEntry
+          ? pickEntryClip(clips, bodyScanDirection, firstTier)
+          : null;
+        if (includeEntry && !entry) {
+          continue;
+        }
+
+        const bodyList =
+          includeEntry && bodyFull.length > 0 ? bodyFull.slice(1) : bodyFull;
+
+        if (bodyList.length === 0) {
+          continue;
+        }
+
+        const tierScore = tierRank(t1) + tierRank(t2) + tierRank(t3);
+        const nB = bodyList.length;
+
+        for (let k = 2; k >= 0; k--) {
+          const minT = computeMinTotal(
+            intro,
+            entry,
+            Boolean(includeEntry && entry),
+            bodyList,
+            k,
+            allInt
+          );
+          if (minT <= durationSec) {
+            feasible.push({
+              triple,
+              kIntegration: k,
+              bodyList: [...bodyList],
+              minTotal: minT,
+              tierScore,
+              nBody: nB,
+            });
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (feasible.length === 0) {
+    throw new Error(
+      "No feasible body scan plan for durationSec; try a longer session (minimum uses all-macro tiers)."
+    );
+  }
+
+  feasible.sort((a, b) => {
+    if (b.kIntegration !== a.kIntegration) return b.kIntegration - a.kIntegration;
+    if (b.tierScore !== a.tierScore) return b.tierScore - a.tierScore;
+    if (b.nBody !== a.nBody) return b.nBody - a.nBody;
+    const lex = (tr: [BodyTier, BodyTier, BodyTier]) =>
+      `${tr[0]},${tr[1]},${tr[2]}`;
+    return lex(a.triple).localeCompare(lex(b.triple));
+  });
+
+  const best = feasible[0];
+  const entryResolved = includeEntry
+    ? pickEntryClip(
+        clips,
+        bodyScanDirection,
+        firstZoneTierForDirection(best.triple, bodyScanDirection)
+      )
+    : null;
+  if (includeEntry && !entryResolved) {
+    throw new Error("includeEntry true but no matching entry clip in catalog");
+  }
+
+  const integrations = allInt.slice(0, best.kIntegration);
+
+  return {
+    triple: best.triple,
+    kIntegration: best.kIntegration,
+    intro,
+    entry: entryResolved,
+    bodyInstructions: best.bodyList,
+    integrations,
+  };
+}
+
+function voiceUrl(clip: FractionalClip, voiceId: string): string {
+  return clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
+}
+
+export function composeBodyScanTierPlan(
+  clips: FractionalClip[],
+  params: BodyScanTierPlanParams
+): FractionalPlan {
+  const { durationSec, voiceId, moduleId, includeEntry } = params;
+
+  const choice = chooseBodyScanPlan(clips, params);
+  const { intro, entry, bodyInstructions, integrations } = choice;
+
+  const sequence: FractionalClip[] = [intro];
+  if (includeEntry && entry) sequence.push(entry);
+  sequence.push(...bodyInstructions);
+  sequence.push(...integrations);
+
+  const nB = bodyInstructions.length;
+  const kI = integrations.length;
+
+  const audioTotal = sequence.reduce((s, c) => s + clipAudioSec(c), 0);
+  const bridges = bridgesSec(Boolean(includeEntry && entry));
+  const nVar = variableGapSlotCount(nB, kI);
+  const fixedNonVar = audioTotal + bridges;
+  const budgetForVariableGaps = Math.max(0, durationSec - fixedNonVar);
+  const { gaps: varGaps, trailingFromGaps } = distributeGapsBetweenBounds(
+    nVar,
+    budgetForVariableGaps,
+    BODY_GAP_MIN,
+    BODY_GAP_MAX
+  );
+
+  const items: FractionalPlanItem[] = [];
+  let t = 0;
+  let gi = 0;
+
+  const takeGap = (): number => {
+    if (gi >= varGaps.length) {
+      throw new Error("Body scan gap index overflow");
+    }
+    return varGaps[gi++];
+  };
+
+  for (let i = 0; i < sequence.length; i++) {
+    const clip = sequence[i];
+    items.push({
+      atSec: Math.round(t),
+      clipId: clip.clipId,
+      role: clip.role,
+      text: clip.text,
+      url: voiceUrl(clip, voiceId),
+    });
+    t += clipAudioSec(clip);
+    if (i === sequence.length - 1) {
+      break;
+    }
+
+    const next = sequence[i + 1];
+
+    if (clip.role === "intro") {
+      t += BRIDGE_SEC;
+      continue;
+    }
+    if (clip.role === "entry") {
+      t += BRIDGE_SEC;
+      continue;
+    }
+    if (clip.role === "instruction" && next.role === "instruction") {
+      t += takeGap();
+      continue;
+    }
+    if (clip.role === "instruction" && next.role === "integration") {
+      t += takeGap();
+      continue;
+    }
+    if (clip.role === "integration" && next.role === "integration") {
+      t += takeGap();
+      continue;
+    }
+  }
+
+  t += trailingFromGaps;
+
+  const planId = `${moduleId.toLowerCase()}-tier-${params.bodyScanDirection}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
+
+  return {
+    planId,
+    moduleId,
+    durationSec,
+    voiceId,
+    items,
+  };
+}

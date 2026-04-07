@@ -11,6 +11,16 @@ extension FractionalModules {
         case playSession(TimerSessionConfig)
     }
 
+    enum BodyScanDirection: String, CaseIterable {
+        case up = "up"
+        case down = "down"
+    }
+
+    enum IntroStyle: String, CaseIterable {
+        case short = "short"
+        case long = "long"
+    }
+
     struct Dependencies {
         var service: Service = .live
     }
@@ -19,6 +29,9 @@ extension FractionalModules {
     final class ViewModel {
         nonisolated(unsafe) var moduleId: String
         var selectedMinutes: Int = 3
+        var bodyScanDirection: BodyScanDirection = .up
+        var introStyle: IntroStyle = .short
+        var includeBodyScanEntry: Bool = false
         var isLoading = false
         var errorMessage: String?
 
@@ -48,12 +61,21 @@ extension FractionalModules {
                     )
                     print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
 
-                    let scanTier = moduleId == "BS_FRAC" ? "long" : nil
+                    let bodyScan: (direction: String, introStyle: String, includeEntry: Bool)? = {
+                        guard moduleId == "BS_FRAC" else { return nil }
+                        // Picker Up = bottom→top → composer "down"; Down = top→bottom → composer "up"
+                        let apiDirection = bodyScanDirection == .up ? "down" : "up"
+                        return (
+                            direction: apiDirection,
+                            introStyle: introStyle.rawValue,
+                            includeEntry: includeBodyScanEntry
+                        )
+                    }()
                     let plan = try await dependencies.service.fetchPlan(
                         moduleId,
                         selectedMinutes * 60,
                         voiceId,
-                        scanTier,
+                        bodyScan,
                         "FractionalModules|play"
                     )
 

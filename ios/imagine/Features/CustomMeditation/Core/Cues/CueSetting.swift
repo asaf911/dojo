@@ -24,7 +24,10 @@ struct CueSetting: Identifiable, Codable, Equatable {
     /// Explicit duration in minutes for fractional modules (nil = auto-fill gap).
     var fractionalDuration: Int?
 
-    var isFractional: Bool { cue.id.hasSuffix("_FRAC") }
+    var isFractional: Bool {
+        if cue.id.hasSuffix("_FRAC") { return true }
+        return cue.id.hasPrefix("BS_FRAC_")
+    }
 
     static func == (lhs: CueSetting, rhs: CueSetting) -> Bool {
         lhs.id == rhs.id &&

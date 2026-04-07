@@ -101,7 +101,9 @@ struct CueConfigurationView: View {
                 Button(cue.name) {
                     cueSettings[index].cue = cue
                     if CueSetting(cue: cue).isFractional {
-                        cueSettings[index].fractionalDuration = cueSettings[index].fractionalDuration ?? 3
+                        let cap = max(1, selectedMinutes)
+                        let prior = cueSettings[index].fractionalDuration
+                        cueSettings[index].fractionalDuration = min(prior ?? selectedMinutes, cap)
                     } else {
                         cueSettings[index].fractionalDuration = nil
                     }
@@ -125,8 +127,11 @@ struct CueConfigurationView: View {
     private func fractionalRow(index: Int) -> some View {
         FractionalDurationStepper(
             duration: Binding(
-                get: { cueSettings[index].fractionalDuration ?? 3 },
-                set: { cueSettings[index].fractionalDuration = $0 }
+                get: {
+                    let cap = max(1, selectedMinutes)
+                    return min(cueSettings[index].fractionalDuration ?? cap, cap)
+                },
+                set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
             ),
             range: 1...min(20, max(1, selectedMinutes))
         )

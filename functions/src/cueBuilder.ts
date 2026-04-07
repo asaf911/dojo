@@ -8,8 +8,16 @@ import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
 export interface CueWithTrigger {
   id: string;
   trigger: string;
-  /** Set for BS_FRAC so expandFractionalCues gets the relax-phase window in minutes. */
+  /** Set for BS_FRAC_* so expandFractionalCues gets the relax-phase window in minutes. */
   durationMinutes?: number;
+}
+
+export interface BuildCuesFromAllocationOptions {
+  /**
+   * Semantic from AI extract: `"down"` = top→bottom (→ BS_FRAC_DOWN), `"up"` = bottom→top (→ BS_FRAC_UP).
+   * Omit for pseudo-random cue choice.
+   */
+  bodyScanDirection?: "up" | "down";
 }
 
 const PB_CAP = 5;
@@ -22,7 +30,8 @@ const IM_CAP = 10;
  */
 export function buildCuesFromAllocation(
   allocation: PhaseAllocation,
-  prefs: SessionPreferences
+  prefs: SessionPreferences,
+  options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
   const cues: CueWithTrigger[] = [];
   let currentMinute = 1;
@@ -41,8 +50,17 @@ export function buildCuesFromAllocation(
   }
 
   if (relax > 0) {
+    const dir =
+      options?.bodyScanDirection === "up" ||
+      options?.bodyScanDirection === "down"
+        ? options.bodyScanDirection
+        : Math.random() < 0.5
+          ? "up"
+          : "down";
+    // dir "down" = head→feet (top to bottom) → BS_FRAC_DOWN; "up" = feet→head → BS_FRAC_UP
+    const bodyScanId = dir === "down" ? "BS_FRAC_DOWN" : "BS_FRAC_UP";
     cues.push({
-      id: "BS_FRAC",
+      id: bodyScanId,
       trigger: String(currentMinute),
       durationMinutes: relax,
     });

@@ -5,11 +5,11 @@ import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
 import {
-  composeBodyScanLongPlan,
   composeFractionalPlan,
   expandFractionalCues,
   type FractionalClip,
 } from "./fractionalComposer";
+import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 
 admin.initializeApp();
 
@@ -1040,12 +1040,17 @@ export const postMeditations = functions.runWith({
           );
           return;
         }
+        const rawDm =
+          typeof c.durationMinutes === "number" ? c.durationMinutes : undefined;
+        const durationMinutes =
+          rawDm !== undefined ? Math.min(Math.max(0, rawDm), duration) : undefined;
+
         resolvedCues.push({
           id: cueAsset.id,
           name: cueAsset.name,
           url: resolveCueUrl(cueAsset, voiceId),
           trigger: cueTrigger,
-          durationMinutes: typeof c.durationMinutes === "number" ? c.durationMinutes : undefined,
+          durationMinutes,
         });
       }
 
@@ -1162,8 +1167,10 @@ interface PostFractionalPlanRequest {
   moduleId: string;
   durationSec: number;
   voiceId?: string;
-  /** Body scan only; default "long". Medium/short reserved for future catalogs. */
-  scanTier?: "long" | "medium" | "short";
+  /** BS_FRAC only */
+  bodyScanDirection?: "up" | "down";
+  introStyle?: "short" | "long";
+  includeEntry?: boolean;
 }
 
 const TAG_FRACTIONAL = "[Server][Fractional]";
@@ -1203,7 +1210,16 @@ export const postFractionalPlan = functions.https.onRequest(
       const moduleId = body?.moduleId;
       const durationSec = body?.durationSec;
       const voiceId = body?.voiceId ?? "Asaf";
-      const scanTier = body?.scanTier ?? "long";
+      let bodyScanDirection: "up" | "down" =
+        body?.bodyScanDirection === "down" ? "down" : "up";
+      // BS_FRAC_DOWN = top→bottom → composer "up"; BS_FRAC_UP = bottom→top → composer "down"
+      if (moduleId === "BS_FRAC_UP") {
+        bodyScanDirection = "down";
+      } else if (moduleId === "BS_FRAC_DOWN") {
+        bodyScanDirection = "up";
+      }
+      const introStyle = body?.introStyle === "long" ? "long" : "short";
+      const includeEntry = Boolean(body?.includeEntry);
 
       if (!moduleId || typeof moduleId !== "string") {
         functions.logger.warn(
@@ -1232,22 +1248,15 @@ export const postFractionalPlan = functions.https.onRequest(
       };
 
       let catalogSlug: string | undefined;
-      let useBodyScanLong = false;
+      let isBodyScanTier = false;
 
-      if (moduleId === "BS_FRAC") {
-        if (scanTier === "medium" || scanTier === "short") {
-          functions.logger.warn(
-            `${TAG_FRACTIONAL} validation failed reason=scanTier_not_implemented moduleId=${moduleId} scanTier=${scanTier} trigger=${trigger}`
-          );
-          res.status(400).send(
-            JSON.stringify({
-              error: `scanTier "${scanTier}" is not available for BS_FRAC yet; use "long".`,
-            })
-          );
-          return;
-        }
-        catalogSlug = "body_scan_fractional_long";
-        useBodyScanLong = true;
+      if (
+        moduleId === "BS_FRAC" ||
+        moduleId === "BS_FRAC_UP" ||
+        moduleId === "BS_FRAC_DOWN"
+      ) {
+        catalogSlug = "body_scan_fractional";
+        isBodyScanTier = true;
       } else {
         catalogSlug = moduleSlugMap[moduleId];
       }
@@ -1263,7 +1272,7 @@ export const postFractionalPlan = functions.https.onRequest(
       }
 
       functions.logger.info(
-        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} scanTier=${scanTier} trigger=${trigger}`
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} intro=${introStyle} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
       );
 
       const catalog = loadFractionalCatalog(catalogSlug);
@@ -1285,9 +1294,19 @@ export const postFractionalPlan = functions.https.onRequest(
         ),
       }));
 
-      const plan = useBodyScanLong
-        ? composeBodyScanLongPlan(resolvedClips, durationSec, voiceId, moduleId)
-        : composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+      let plan;
+      if (isBodyScanTier) {
+        plan = composeBodyScanTierPlan(resolvedClips, {
+          durationSec,
+          bodyScanDirection,
+          introStyle,
+          includeEntry,
+          voiceId,
+          moduleId,
+        });
+      } else {
+        plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+      }
 
       functions.logger.info(
         `${TAG_FRACTIONAL} success planId=${plan.planId} items=${plan.items.length} trigger=${trigger}`

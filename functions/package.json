@@ -11,7 +11,8 @@
     "deploy:dev": "firebase use dev && firebase deploy --only functions",
     "deploy:dev-to-prod": "firebase use default && firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "scan:body-scan-durations": "node scripts/scanBodyScanDurations.mjs"
+    "scan:body-scan-durations": "node scripts/scanBodyScanDurations.mjs",
+    "test": "tsc && node --test lib/bodyScanTierPlan.test.js"
   },
   "engines": {
     "node": "20"

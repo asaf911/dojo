@@ -12,20 +12,38 @@
 import * as functions from "firebase-functions";
 import * as path from "path";
 import * as fs from "fs";
+import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+export type FractionalClipRole =
+  | "intro"
+  | "entry"
+  | "instruction"
+  | "integration"
+  | "reminder"
+  | "outro";
+
 export interface FractionalClip {
   clipId: string;
-  role: "intro" | "instruction" | "reminder" | "outro";
+  role: FractionalClipRole;
   order: number;
   text: string;
   voices: Record<string, string>;
   /** Measured MP3 length (e.g. from scripts/scanBodyScanDurations.mjs). Falls back to estimate if absent. */
   durationSec?: number;
   priority?: "p0" | "p1" | "p2";
+  /** Body scan (BS_FRAC): macro zone 1=head/face/neck, 2=chest/belly/pelvic, 3=legs/feet */
+  macroZone?: 1 | 2 | 3;
+  bodyTier?: "macro" | "regional" | "micro";
+  orderUp?: number;
+  orderDown?: number;
+  introVariant?: "short" | "long";
+  entryScanEnd?: "top" | "bottom";
+  entryTier?: "macro" | "regional" | "micro";
+  integrationOrder?: number;
 }
 
 export interface FractionalPlanItem {
@@ -136,11 +154,20 @@ function estimateTimeline(
 // Phase 1: Select clips
 // ---------------------------------------------------------------------------
 
+const NF_IM_CLIP_ROLES: ReadonlySet<FractionalClipRole> = new Set([
+  "intro",
+  "instruction",
+  "reminder",
+  "outro",
+]);
+
 function selectClips(
   clips: FractionalClip[],
   durationSec: number
 ): FractionalClip[] {
-  const sorted = [...clips].sort((a, b) => a.order - b.order);
+  const sorted = [...clips]
+    .filter((c) => NF_IM_CLIP_ROLES.has(c.role))
+    .sort((a, b) => a.order - b.order);
 
   const intros = sorted.filter((c) => c.role === "intro");
   const instructions = sorted.filter((c) => c.role === "instruction");
@@ -341,214 +368,6 @@ export function composeFractionalPlan(
 }
 
 // ---------------------------------------------------------------------------
-// Body scan (LONG): strict head-to-toe order, no shuffling, dual outro
-// ---------------------------------------------------------------------------
-
-const MIN_GAP_BODY_SCAN = 2;
-/** Fixed silence: intro → preliminary instruction (C002), and BS_C040 → BS_C041. */
-const BODY_SCAN_FIXED_BRIDGE_GAP_SEC = 7;
-
-function bodyScanClipAudioSec(clip: FractionalClip): number {
-  if (
-    typeof clip.durationSec === "number" &&
-    Number.isFinite(clip.durationSec) &&
-    clip.durationSec > 0
-  ) {
-    return clip.durationSec;
-  }
-  return ESTIMATED_CLIP_SEC;
-}
-
-function selectBodyScanLongClips(
-  clips: FractionalClip[],
-  durationSec: number
-): FractionalClip[] {
-  const sorted = [...clips].sort((a, b) => a.order - b.order);
-  const intros = sorted.filter((c) => c.role === "intro");
-  const instructions = sorted
-    .filter((c) => c.role === "instruction")
-    .sort((a, b) => a.order - b.order);
-  const outros = sorted
-    .filter((c) => c.role === "outro")
-    .sort((a, b) => a.order - b.order);
-
-  if (instructions.length === 0) {
-    return [...intros, ...outros];
-  }
-
-  const prelim = instructions[0];
-  let scanOnly = instructions.slice(1);
-  const minScanParts = 4;
-
-  const buildSelected = (): FractionalClip[] => [
-    ...intros,
-    prelim,
-    ...scanOnly,
-    ...outros,
-  ];
-
-  const minimalDuration = (sel: FractionalClip[]): number => {
-    let t = 0;
-    for (let i = 0; i < sel.length; i++) {
-      if (i > 0) t += MIN_GAP_BODY_SCAN;
-      t += bodyScanClipAudioSec(sel[i]);
-    }
-    return t;
-  };
-
-  while (
-    scanOnly.length > minScanParts &&
-    minimalDuration(buildSelected()) > durationSec
-  ) {
-    const mid = Math.floor(scanOnly.length / 2);
-    scanOnly.splice(mid, 1);
-  }
-
-  while (
-    scanOnly.length > 0 &&
-    minimalDuration(buildSelected()) > durationSec
-  ) {
-    const mid = Math.floor(scanOnly.length / 2);
-    scanOnly.splice(mid, 1);
-  }
-
-  let workingIntros = [...intros];
-  while (
-    workingIntros.length > 0 &&
-    minimalDuration([...workingIntros, prelim, ...scanOnly, ...outros]) >
-      durationSec
-  ) {
-    workingIntros = workingIntros.slice(0, -1);
-  }
-
-  return [...workingIntros, prelim, ...scanOnly, ...outros];
-}
-
-/**
- * Inter-clip gaps + trailing silence after the last clip (through session end).
- *
- * Fixed {@link BODY_SCAN_FIXED_BRIDGE_GAP_SEC}s after:
- * - Intro → preliminary instruction (C002)
- * - BS_C040 → BS_C041
- *
- * All other inter-clip silences (C002 → C003 “top of head” and every body part step,
- * last body part → C040, etc.) share one equal value G. Trailing silence after C041
- * also equals G so the module tail matches body spacing.
- */
-function bodyScanGapsAndTrailing(
-  all: FractionalClip[],
-  durationSec: number
-): { between: number[]; trailing: number } {
-  const n = all.length;
-  if (n === 0) return { between: [], trailing: 0 };
-
-  const audioTotal = all.reduce((sum, c) => sum + bodyScanClipAudioSec(c), 0);
-  const gapBudget = Math.max(0, durationSec - audioTotal);
-
-  if (n === 1) {
-    const trailing = Math.max(MIN_GAP_BODY_SCAN, gapBudget);
-    return { between: [], trailing };
-  }
-
-  const fixedBridge = new Set<number>();
-  if (all[0].role === "intro") {
-    fixedBridge.add(0);
-  }
-  for (let i = 0; i < n - 1; i++) {
-    if (all[i].clipId === "BS_C040" && all[i + 1].clipId === "BS_C041") {
-      fixedBridge.add(i);
-    }
-  }
-
-  const f = fixedBridge.size;
-  // (n - 1 - f) inter-clip slots at G, plus 1 trailing slot at G
-  const gSlotCount = n - f;
-  const fixedSum = f * BODY_SCAN_FIXED_BRIDGE_GAP_SEC;
-  let G = gSlotCount > 0 ? (gapBudget - fixedSum) / gSlotCount : MIN_GAP_BODY_SCAN;
-  G = Math.max(MIN_GAP_BODY_SCAN, G);
-
-  const between: number[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    between.push(
-      fixedBridge.has(i) ? BODY_SCAN_FIXED_BRIDGE_GAP_SEC : G
-    );
-  }
-
-  return { between, trailing: G };
-}
-
-function placeBodyScanLongTimeline(
-  selected: FractionalClip[],
-  durationSec: number,
-  voiceId: string
-): FractionalPlanItem[] {
-  const head = selected
-    .filter((c) => c.role !== "outro")
-    .sort((a, b) => a.order - b.order);
-  const outros = selected
-    .filter((c) => c.role === "outro")
-    .sort((a, b) => a.order - b.order);
-
-  const all = [...head, ...outros];
-  const n = all.length;
-  if (n === 0) return [];
-
-  const { between } = bodyScanGapsAndTrailing(all, durationSec);
-
-  const items: FractionalPlanItem[] = [];
-  // Integer `atSec` matches the timer (`elapsed >= sec`). Next start = round(end of prior clip + gap),
-  // not a float cursor that only rounded the label — that drifted silence away from `between[]`.
-  let startSec = 0;
-
-  for (let i = 0; i < n; i++) {
-    const clip = all[i];
-    const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
-    items.push({
-      atSec: startSec,
-      clipId: clip.clipId,
-      role: clip.role,
-      text: clip.text,
-      url,
-    });
-    const audioSec = bodyScanClipAudioSec(clip);
-    const endTime = startSec + audioSec;
-    if (i < n - 1) {
-      startSec = Math.round(endTime + between[i]);
-    }
-  }
-
-  return items;
-}
-
-/**
- * Body scan LONG: fixed order (catalog order), optional middle trim if duration is tight;
- * always schedules two closing clips when present.
- */
-export function composeBodyScanLongPlan(
-  clips: FractionalClip[],
-  durationSec: number,
-  voiceId: string,
-  moduleId: string
-): FractionalPlan {
-  const TAG = "[FractionalComposer][BodyScanLong]";
-
-  const selected = selectBodyScanLongClips(clips, durationSec);
-  const items = placeBodyScanLongTimeline(selected, durationSec, voiceId);
-
-  const planId = `${moduleId.toLowerCase()}-long-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
-
-  const introCount = selected.filter((c) => c.role === "intro").length;
-  const instrCount = selected.filter((c) => c.role === "instruction").length;
-  const outroCount = selected.filter((c) => c.role === "outro").length;
-
-  functions.logger.info(
-    `${TAG} plan=${planId} duration=${durationSec}s items=${items.length} intro=${introCount} instr=${instrCount} outro=${outroCount} voice=${voiceId}`
-  );
-
-  return { planId, moduleId, durationSec, voiceId, items };
-}
-
-// ---------------------------------------------------------------------------
 // Fractional expansion for inline use in postMeditations / postAIRequest
 // ---------------------------------------------------------------------------
 
@@ -562,10 +381,22 @@ interface FractionalCatalogFile {
 const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   NF_FRAC: "nostril_focus_fractional",
   IM_FRAC: "i_am_mantra_fractional",
-  BS_FRAC: "body_scan_fractional_long",
+  BS_FRAC: "body_scan_fractional",
+  BS_FRAC_UP: "body_scan_fractional",
+  BS_FRAC_DOWN: "body_scan_fractional",
 };
 
-const BODY_SCAN_LONG_MODULE_IDS = new Set<string>(["BS_FRAC"]);
+/**
+ * Maps catalog cue id → composer `bodyScanDirection`.
+ * Product naming: Body Scan **Down** = top→bottom (head→feet) = composer `"up"`.
+ * Body Scan **Up** = bottom→top (feet→head) = composer `"down"`.
+ */
+function resolveBodyScanExpandDirection(cueId: string): "up" | "down" {
+  if (cueId === "BS_FRAC_DOWN") return "up";
+  if (cueId === "BS_FRAC_UP") return "down";
+  if (cueId === "BS_FRAC") return Math.random() < 0.5 ? "up" : "down";
+  return "up";
+}
 
 const CONTENT_STORAGE_BUCKET = "imagine-c6162.appspot.com";
 
@@ -627,7 +458,7 @@ export function expandFractionalCues(
 
   for (let i = 0; i < cues.length; i++) {
     const cue = cues[i];
-    const catalogSlug = FRACTIONAL_MODULE_MAP[cue.id];
+    let catalogSlug = FRACTIONAL_MODULE_MAP[cue.id];
 
     if (!catalogSlug) {
       result.push(cue);
@@ -657,6 +488,18 @@ export function expandFractionalCues(
       continue;
     }
 
+    let bodyScanExpandDir: "up" | "down" | undefined;
+    if (
+      cue.id === "BS_FRAC" ||
+      cue.id === "BS_FRAC_UP" ||
+      cue.id === "BS_FRAC_DOWN"
+    ) {
+      bodyScanExpandDir = resolveBodyScanExpandDirection(cue.id);
+      functions.logger.info(
+        `${TAG} ${cue.id} window=${windowSec}s catalog=${catalogSlug} dir=${bodyScanExpandDir}`
+      );
+    }
+
     const catalog = loadFractionalCatalogLocal(catalogSlug);
     if (!catalog || !catalog.clips || catalog.clips.length === 0) {
       functions.logger.warn(`${TAG} catalog not found for ${catalogSlug}, passing cue through`);
@@ -671,9 +514,24 @@ export function expandFractionalCues(
       ),
     }));
 
-    const plan = BODY_SCAN_LONG_MODULE_IDS.has(cue.id)
-      ? composeBodyScanLongPlan(resolvedClips, windowSec, voiceId, cue.id)
-      : composeFractionalPlan(resolvedClips, windowSec, voiceId, cue.id);
+    let plan: FractionalPlan;
+    if (
+      cue.id === "BS_FRAC" ||
+      cue.id === "BS_FRAC_UP" ||
+      cue.id === "BS_FRAC_DOWN"
+    ) {
+      const dir = bodyScanExpandDir ?? resolveBodyScanExpandDirection(cue.id);
+      plan = composeBodyScanTierPlan(resolvedClips, {
+        durationSec: windowSec,
+        bodyScanDirection: dir,
+        introStyle: "short",
+        includeEntry: false,
+        voiceId,
+        moduleId: cue.id,
+      });
+    } else {
+      plan = composeFractionalPlan(resolvedClips, windowSec, voiceId, cue.id);
+    }
 
     functions.logger.info(
       `${TAG} expanded ${cue.id} at ${startSec}s: window=${windowSec}s items=${plan.items.length}`

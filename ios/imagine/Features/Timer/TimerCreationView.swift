@@ -155,6 +155,7 @@ struct TimerView: View {
         }
 
         .onChange(of: selectedMinutes) { _, _ in
+            clampFractionalDurationsToSessionCap()
             updateShareLink()
         }
         .onChange(of: selectedBackgroundSound) { _, _ in
@@ -192,8 +193,19 @@ struct TimerView: View {
             print("🎛️ TimerView: Successfully applied deep linked timer settings")
             logger.eventMessage("TimerView: Applied deep linked timer setting - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
 
+            clampFractionalDurationsToSessionCap()
             // Update share link after applying deep link settings
             updateShareLink()
+        }
+    }
+
+    /// Keeps fractional module duration ≤ session length so server-side expansion fits the relax-phase window.
+    private func clampFractionalDurationsToSessionCap() {
+        let cap = max(1, selectedMinutes)
+        for i in cueSettings.indices where cueSettings[i].isFractional {
+            if let fd = cueSettings[i].fractionalDuration, fd > cap {
+                cueSettings[i].fractionalDuration = cap
+            }
         }
     }
     
@@ -226,7 +238,8 @@ struct TimerView: View {
                 selectedBinauralBeat = beat
             }
             logger.eventMessage("TimerView: Loaded saved timer configuration: \(savedSetting)")
-            
+
+            clampFractionalDurationsToSessionCap()
             // Update share link after loading configuration
             updateShareLink()
         }

@@ -16,14 +16,17 @@ private struct PostFractionalPlanRequestBody: Encodable {
     let moduleId: String
     let durationSec: Int
     let voiceId: String
-    /// Sent only for body scan (`BS_FRAC`); server defaults to `long` if omitted.
-    let scanTier: String?
+    let bodyScanDirection: String?
+    let introStyle: String?
+    let includeEntry: Bool?
 
     enum CodingKeys: String, CodingKey {
         case moduleId
         case durationSec
         case voiceId
-        case scanTier
+        case bodyScanDirection
+        case introStyle
+        case includeEntry
     }
 
     func encode(to encoder: Encoder) throws {
@@ -31,7 +34,9 @@ private struct PostFractionalPlanRequestBody: Encodable {
         try container.encode(moduleId, forKey: .moduleId)
         try container.encode(durationSec, forKey: .durationSec)
         try container.encode(voiceId, forKey: .voiceId)
-        try container.encodeIfPresent(scanTier, forKey: .scanTier)
+        try container.encodeIfPresent(bodyScanDirection, forKey: .bodyScanDirection)
+        try container.encodeIfPresent(introStyle, forKey: .introStyle)
+        try container.encodeIfPresent(includeEntry, forKey: .includeEntry)
     }
 }
 
@@ -44,7 +49,7 @@ extension FractionalModules {
             _ moduleId: String,
             _ durationSec: Int,
             _ voiceId: String,
-            _ scanTier: String?,
+            _ bodyScan: (direction: String, introStyle: String, includeEntry: Bool)?,
             _ triggerContext: String?
         ) async throws -> Plan
     }
@@ -55,10 +60,14 @@ extension FractionalModules {
 extension FractionalModules.Service {
 
     static let live = FractionalModules.Service(
-        fetchPlan: { moduleId, durationSec, voiceId, scanTier, triggerContext in
+        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, triggerContext in
             let tag = "🧠 AI_DEBUG [Fractional][Service]"
             let trigger = triggerContext ?? "unknown"
-            print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) scanTier=\(scanTier ?? "nil")")
+            let bsLog: String = {
+                guard let b = bodyScan else { return "nil" }
+                return "\(b.direction) intro=\(b.introStyle) entry=\(b.includeEntry)"
+            }()
+            print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) bodyScan=\(bsLog)")
 
             var request = URLRequest(url: Config.fractionalPlanURL)
             request.httpMethod = "POST"
@@ -69,7 +78,9 @@ extension FractionalModules.Service {
                 moduleId: moduleId,
                 durationSec: durationSec,
                 voiceId: voiceId,
-                scanTier: scanTier
+                bodyScanDirection: bodyScan?.direction,
+                introStyle: bodyScan?.introStyle,
+                includeEntry: bodyScan.map { $0.includeEntry }
             )
             request.httpBody = try JSONEncoder().encode(body)
 
@@ -103,7 +114,7 @@ extension FractionalModules.Service {
 extension FractionalModules.Service {
 
     static let preview = FractionalModules.Service(
-        fetchPlan: { moduleId, durationSec, voiceId, _, _ in
+        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, _ in
             try await Task.sleep(nanoseconds: 300_000_000)
 
             let items: [FractionalModules.PlanItem]
@@ -115,14 +126,19 @@ extension FractionalModules.Service {
                     FractionalModules.PlanItem(atSec: 22, clipId: "IM_C006", role: "reminder", text: "Keep repeating the mantra.", url: "gs://preview/IM_C006.mp3"),
                 ]
             case "BS_FRAC":
-                items = [
-                    FractionalModules.PlanItem(atSec: 0, clipId: "BS_C001", role: "intro", text: "We will now begin a body scan", url: "gs://preview/BS_C001.mp3"),
-                    FractionalModules.PlanItem(atSec: 8, clipId: "BS_C002", role: "instruction", text: "As I name each part of the body, bring your full attention to it.", url: "gs://preview/BS_C002.mp3"),
-                    FractionalModules.PlanItem(atSec: 20, clipId: "BS_C003", role: "instruction", text: "Bring your attention to the top of your head and let it relax", url: "gs://preview/BS_C003.mp3"),
-                    FractionalModules.PlanItem(atSec: 32, clipId: "BS_C039", role: "instruction", text: "Each toe, one by one", url: "gs://preview/BS_C039.mp3"),
-                    FractionalModules.PlanItem(atSec: 44, clipId: "BS_C040", role: "outro", text: "Now bring your awareness to your entire body", url: "gs://preview/BS_C040.mp3"),
-                    FractionalModules.PlanItem(atSec: 54, clipId: "BS_C041", role: "outro", text: "Sense your whole body as one and let the relaxation deepen", url: "gs://preview/BS_C041.mp3"),
-                ]
+                let entry = bodyScan?.includeEntry == true
+                var t = 0
+                var list: [FractionalModules.PlanItem] = []
+                list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_000_INTRO_SHORT_ASAF", role: "intro", text: "We will now begin a body scan", url: "gs://preview/intro.mp3"))
+                t += 5 + 7
+                if entry {
+                    list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_020_ENTRY_TOP_MACRO_ASAF", role: "entry", text: "Relax your head face and neck", url: "gs://preview/entry.mp3"))
+                    t += 5 + 7
+                }
+                list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_MAC_120_CHEST_BELLY_ASAF", role: "instruction", text: "Relax your chest and belly", url: "gs://preview/m2.mp3"))
+                t += 5 + 20
+                list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_MAC_140_LEGS_FEET_ASAF", role: "instruction", text: "Relax your legs and feet", url: "gs://preview/m3.mp3"))
+                items = list
             default:
                 items = [
                     FractionalModules.PlanItem(atSec: 0, clipId: "NF_C001", role: "intro", text: "We will now begin a focus exercise.", url: "gs://preview/NF_C001.mp3"),

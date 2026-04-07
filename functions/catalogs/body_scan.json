@@ -2,11 +2,20 @@
   "version": "1.0",
   "models": [
     {
-      "id": "BS_FRAC",
-      "name": "Body Scan",
-      "path": "modules/body_scan_fractional/long/asaf/BS_C001_ASAF.mp3",
+      "id": "BS_FRAC_UP",
+      "name": "Body Scan Up",
+      "path": "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3",
       "voices": {
-        "Asaf": "modules/body_scan_fractional/long/asaf/BS_C001_ASAF.mp3"
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3"
+      },
+      "fractional": true
+    },
+    {
+      "id": "BS_FRAC_DOWN",
+      "name": "Body Scan Down",
+      "path": "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3"
       },
       "fractional": true
     }

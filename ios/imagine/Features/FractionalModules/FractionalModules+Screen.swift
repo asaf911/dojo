@@ -71,6 +71,37 @@ extension FractionalModules {
                     .padding(.horizontal, 16)
                 }
 
+                if selectedModule == .bodyScan {
+                    VStack(spacing: 8) {
+                        Text("Scan direction")
+                            .nunitoFont(size: 16, style: .regular)
+                            .foregroundColor(.foregroundLightGray)
+                        Picker("Direction", selection: $viewModel.bodyScanDirection) {
+                            Text("Up (feet → head)").tag(FractionalModules.BodyScanDirection.up)
+                            Text("Down (head → feet)").tag(FractionalModules.BodyScanDirection.down)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 16)
+                    }
+                    VStack(spacing: 8) {
+                        Text("Intro")
+                            .nunitoFont(size: 16, style: .regular)
+                            .foregroundColor(.foregroundLightGray)
+                        Picker("Intro", selection: $viewModel.introStyle) {
+                            Text("Short").tag(FractionalModules.IntroStyle.short)
+                            Text("Long").tag(FractionalModules.IntroStyle.long)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 16)
+                    }
+                    Toggle(isOn: $viewModel.includeBodyScanEntry) {
+                        Text("Entry cue")
+                            .nunitoFont(size: 16, style: .regular)
+                            .foregroundColor(.foregroundLightGray)
+                    }
+                    .padding(.horizontal, 24)
+                }
+
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .nunitoFont(size: 13, style: .regular)

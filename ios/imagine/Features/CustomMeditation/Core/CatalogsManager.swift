@@ -101,7 +101,9 @@ final class CatalogsManager: ObservableObject {
                 let decoded = try JSONDecoder().decode(CatalogsResponse.self, from: data)
                 let sounds = decoded.backgroundSounds.map { BackgroundSound(id: $0.id, name: $0.name, url: $0.url) }
                 let beats = decoded.binauralBeats.map { BinauralBeat(id: $0.id, name: $0.name, url: $0.url, description: $0.description) }
-                let cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+                let cues = Self.normalizedCatalogCues(
+                    decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+                )
                 let voices = (decoded.voices ?? []).map { VoiceItem(id: $0.id, name: $0.name) }
                 DispatchQueue.main.async {
                     self.sounds = sounds
@@ -144,7 +146,9 @@ final class CatalogsManager: ObservableObject {
             let decoded = try JSONDecoder().decode(CatalogsResponse.self, from: data)
             sounds = decoded.backgroundSounds.map { BackgroundSound(id: $0.id, name: $0.name, url: $0.url) }
             beats = decoded.binauralBeats.map { BinauralBeat(id: $0.id, name: $0.name, url: $0.url, description: $0.description) }
-            cues = decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+            cues = Self.normalizedCatalogCues(
+                decoded.cues.map { Cue(id: $0.id, name: $0.name, url: $0.url, urlsByVoice: $0.urlsByVoice) }
+            )
             voices = (decoded.voices ?? []).map { VoiceItem(id: $0.id, name: $0.name) }
             bodyScanDurations = decoded.bodyScanDurations
             print("\(kCatalogsServerTag) loadCachedCatalogs: loaded from cache - sounds=\(sounds.count) beats=\(beats.count) cues=\(cues.count) voices=\(voices.count)")
@@ -158,6 +162,42 @@ final class CatalogsManager: ObservableObject {
     private func localCacheURL() -> URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("catalogs_cache.json")
+    }
+
+    /// Drops legacy `BS_FRAC`, ensures fractional body scan up/down cues exist with stable display names (stale server/cache safe).
+    private static func normalizedCatalogCues(_ cues: [Cue]) -> [Cue] {
+        let upId = "BS_FRAC_UP"
+        let downId = "BS_FRAC_DOWN"
+        let legacyId = "BS_FRAC"
+        let legacy = cues.first { $0.id == legacyId }
+        let placeholderPath = "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3"
+        let fallbackUrl = Config.contentStoragePath + placeholderPath
+
+        var out: [Cue] = []
+        out.reserveCapacity(cues.count + 2)
+        for c in cues where c.id != legacyId {
+            if c.id == upId {
+                out.append(Cue(id: c.id, name: "Body Scan Up", url: c.url, urlsByVoice: c.urlsByVoice))
+            } else if c.id == downId {
+                out.append(Cue(id: c.id, name: "Body Scan Down", url: c.url, urlsByVoice: c.urlsByVoice))
+            } else {
+                out.append(c)
+            }
+        }
+
+        let templateUrl: String = {
+            if let leg = legacy, !leg.url.isEmpty { return leg.url }
+            return fallbackUrl
+        }()
+        let templateVoices = legacy?.urlsByVoice
+
+        if !out.contains(where: { $0.id == upId }) {
+            out.append(Cue(id: upId, name: "Body Scan Up", url: templateUrl, urlsByVoice: templateVoices))
+        }
+        if !out.contains(where: { $0.id == downId }) {
+            out.append(Cue(id: downId, name: "Body Scan Down", url: templateUrl, urlsByVoice: templateVoices))
+        }
+        return out
     }
 
     /// Clears the catalogs cache file and in-memory state. Fresh data will be fetched on next fetchCatalogs.
