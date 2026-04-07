@@ -83,17 +83,39 @@ extension FractionalModules {
                         .pickerStyle(.segmented)
                         .padding(.horizontal, 16)
                     }
-                    VStack(spacing: 8) {
-                        Text("Intro")
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Intro clips")
                             .nunitoFont(size: 16, style: .regular)
                             .foregroundColor(.foregroundLightGray)
-                        Picker("Intro", selection: $viewModel.introStyle) {
-                            Text("Short").tag(FractionalModules.IntroStyle.short)
-                            Text("Long").tag(FractionalModules.IntroStyle.long)
+                            .frame(maxWidth: .infinity)
+                        Toggle(isOn: Binding(
+                            get: { viewModel.includeIntroShort },
+                            set: { newValue in
+                                viewModel.includeIntroShort = newValue
+                                if !newValue, !viewModel.includeIntroLong {
+                                    viewModel.includeIntroLong = true
+                                }
+                            }
+                        )) {
+                            Text("Short (\"We will now begin a body scan\")")
+                                .nunitoFont(size: 16, style: .regular)
+                                .foregroundColor(.foregroundLightGray)
                         }
-                        .pickerStyle(.segmented)
-                        .padding(.horizontal, 16)
+                        Toggle(isOn: Binding(
+                            get: { viewModel.includeIntroLong },
+                            set: { newValue in
+                                viewModel.includeIntroLong = newValue
+                                if !newValue, !viewModel.includeIntroShort {
+                                    viewModel.includeIntroShort = true
+                                }
+                            }
+                        )) {
+                            Text("Long (full guidance)")
+                                .nunitoFont(size: 16, style: .regular)
+                                .foregroundColor(.foregroundLightGray)
+                        }
                     }
+                    .padding(.horizontal, 24)
                     Toggle(isOn: $viewModel.includeBodyScanEntry) {
                         Text("Entry cue")
                             .nunitoFont(size: 16, style: .regular)

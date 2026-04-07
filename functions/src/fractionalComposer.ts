@@ -524,8 +524,9 @@ export function expandFractionalCues(
       plan = composeBodyScanTierPlan(resolvedClips, {
         durationSec: windowSec,
         bodyScanDirection: dir,
-        introStyle: "short",
-        includeEntry: false,
+        introShort: true,
+        introLong: false,
+        includeEntry: true,
         voiceId,
         moduleId: cue.id,
       });

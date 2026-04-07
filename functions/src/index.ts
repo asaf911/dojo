@@ -1169,8 +1169,36 @@ interface PostFractionalPlanRequest {
   voiceId?: string;
   /** BS_FRAC only */
   bodyScanDirection?: "up" | "down";
+  /** Legacy: ignored if `introShort` / `introLong` are sent */
   introStyle?: "short" | "long";
+  introShort?: boolean;
+  introLong?: boolean;
+  /**
+   * BS_FRAC: use catalog ENTRY_* for the first scanned part and omit the duplicate instruction.
+   * Defaults to true when omitted; send false to skip entry and use the plain instruction clip.
+   */
   includeEntry?: boolean;
+}
+
+function resolveBodyScanIntroFlags(body: PostFractionalPlanRequest): {
+  introShort: boolean;
+  introLong: boolean;
+} {
+  const hasNew =
+    typeof body.introShort === "boolean" ||
+    typeof body.introLong === "boolean";
+  if (hasNew) {
+    const s = body.introShort === true;
+    const l = body.introLong === true;
+    if (!s && !l) {
+      return { introShort: true, introLong: false };
+    }
+    return { introShort: s, introLong: l };
+  }
+  if (body.introStyle === "long") {
+    return { introShort: false, introLong: true };
+  }
+  return { introShort: true, introLong: false };
 }
 
 const TAG_FRACTIONAL = "[Server][Fractional]";
@@ -1218,8 +1246,7 @@ export const postFractionalPlan = functions.https.onRequest(
       } else if (moduleId === "BS_FRAC_DOWN") {
         bodyScanDirection = "up";
       }
-      const introStyle = body?.introStyle === "long" ? "long" : "short";
-      const includeEntry = Boolean(body?.includeEntry);
+      const { introShort, introLong } = resolveBodyScanIntroFlags(body);
 
       if (!moduleId || typeof moduleId !== "string") {
         functions.logger.warn(
@@ -1271,8 +1298,12 @@ export const postFractionalPlan = functions.https.onRequest(
         return;
       }
 
+      const includeEntry = isBodyScanTier
+        ? body?.includeEntry !== false
+        : Boolean(body?.includeEntry);
+
       functions.logger.info(
-        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} intro=${introStyle} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} introShort=${introShort} introLong=${introLong} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
       );
 
       const catalog = loadFractionalCatalog(catalogSlug);
@@ -1299,7 +1330,8 @@ export const postFractionalPlan = functions.https.onRequest(
         plan = composeBodyScanTierPlan(resolvedClips, {
           durationSec,
           bodyScanDirection,
-          introStyle,
+          introShort,
+          introLong,
           includeEntry,
           voiceId,
           moduleId,

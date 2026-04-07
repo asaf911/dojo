@@ -16,11 +16,6 @@ extension FractionalModules {
         case down = "down"
     }
 
-    enum IntroStyle: String, CaseIterable {
-        case short = "short"
-        case long = "long"
-    }
-
     struct Dependencies {
         var service: Service = .live
     }
@@ -30,8 +25,9 @@ extension FractionalModules {
         nonisolated(unsafe) var moduleId: String
         var selectedMinutes: Int = 3
         var bodyScanDirection: BodyScanDirection = .up
-        var introStyle: IntroStyle = .short
-        var includeBodyScanEntry: Bool = false
+        var includeIntroShort: Bool = true
+        var includeIntroLong: Bool = false
+        var includeBodyScanEntry: Bool = true
         var isLoading = false
         var errorMessage: String?
 
@@ -61,13 +57,19 @@ extension FractionalModules {
                     )
                     print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
 
-                    let bodyScan: (direction: String, introStyle: String, includeEntry: Bool)? = {
+                    let bodyScan: (
+                        direction: String,
+                        introShort: Bool,
+                        introLong: Bool,
+                        includeEntry: Bool
+                    )? = {
                         guard moduleId == "BS_FRAC" else { return nil }
                         // Picker Up = bottom→top → composer "down"; Down = top→bottom → composer "up"
                         let apiDirection = bodyScanDirection == .up ? "down" : "up"
                         return (
                             direction: apiDirection,
-                            introStyle: introStyle.rawValue,
+                            introShort: includeIntroShort,
+                            introLong: includeIntroLong,
                             includeEntry: includeBodyScanEntry
                         )
                     }()

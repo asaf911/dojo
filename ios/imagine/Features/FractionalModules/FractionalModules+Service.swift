@@ -17,7 +17,8 @@ private struct PostFractionalPlanRequestBody: Encodable {
     let durationSec: Int
     let voiceId: String
     let bodyScanDirection: String?
-    let introStyle: String?
+    let introShort: Bool?
+    let introLong: Bool?
     let includeEntry: Bool?
 
     enum CodingKeys: String, CodingKey {
@@ -25,7 +26,8 @@ private struct PostFractionalPlanRequestBody: Encodable {
         case durationSec
         case voiceId
         case bodyScanDirection
-        case introStyle
+        case introShort
+        case introLong
         case includeEntry
     }
 
@@ -35,7 +37,8 @@ private struct PostFractionalPlanRequestBody: Encodable {
         try container.encode(durationSec, forKey: .durationSec)
         try container.encode(voiceId, forKey: .voiceId)
         try container.encodeIfPresent(bodyScanDirection, forKey: .bodyScanDirection)
-        try container.encodeIfPresent(introStyle, forKey: .introStyle)
+        try container.encodeIfPresent(introShort, forKey: .introShort)
+        try container.encodeIfPresent(introLong, forKey: .introLong)
         try container.encodeIfPresent(includeEntry, forKey: .includeEntry)
     }
 }
@@ -49,7 +52,7 @@ extension FractionalModules {
             _ moduleId: String,
             _ durationSec: Int,
             _ voiceId: String,
-            _ bodyScan: (direction: String, introStyle: String, includeEntry: Bool)?,
+            _ bodyScan: (direction: String, introShort: Bool, introLong: Bool, includeEntry: Bool)?,
             _ triggerContext: String?
         ) async throws -> Plan
     }
@@ -65,7 +68,7 @@ extension FractionalModules.Service {
             let trigger = triggerContext ?? "unknown"
             let bsLog: String = {
                 guard let b = bodyScan else { return "nil" }
-                return "\(b.direction) intro=\(b.introStyle) entry=\(b.includeEntry)"
+                return "\(b.direction) introShort=\(b.introShort) introLong=\(b.introLong) entry=\(b.includeEntry)"
             }()
             print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) bodyScan=\(bsLog)")
 
@@ -79,7 +82,8 @@ extension FractionalModules.Service {
                 durationSec: durationSec,
                 voiceId: voiceId,
                 bodyScanDirection: bodyScan?.direction,
-                introStyle: bodyScan?.introStyle,
+                introShort: bodyScan?.introShort,
+                introLong: bodyScan?.introLong,
                 includeEntry: bodyScan.map { $0.includeEntry }
             )
             request.httpBody = try JSONEncoder().encode(body)
@@ -127,10 +131,18 @@ extension FractionalModules.Service {
                 ]
             case "BS_FRAC":
                 let entry = bodyScan?.includeEntry == true
+                let shortOn = bodyScan?.introShort != false
+                let longOn = bodyScan?.introLong == true
                 var t = 0
                 var list: [FractionalModules.PlanItem] = []
-                list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_000_INTRO_SHORT_ASAF", role: "intro", text: "We will now begin a body scan", url: "gs://preview/intro.mp3"))
-                t += 5 + 7
+                if shortOn {
+                    list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_000_INTRO_SHORT_ASAF", role: "intro", text: "We will now begin a body scan", url: "gs://preview/intro-short.mp3"))
+                    t += 5 + 7
+                }
+                if longOn {
+                    list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_010_INTRO_LONG_ASAF", role: "intro", text: "Long intro", url: "gs://preview/intro-long.mp3"))
+                    t += 5 + 7
+                }
                 if entry {
                     list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_SYS_020_ENTRY_TOP_MACRO_ASAF", role: "entry", text: "Relax your head face and neck", url: "gs://preview/entry.mp3"))
                     t += 5 + 7

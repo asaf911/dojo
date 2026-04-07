@@ -17,7 +17,10 @@ export type IntroStyle = "short" | "long";
 export interface BodyScanTierPlanParams {
   durationSec: number;
   bodyScanDirection: BodyScanDirection;
-  introStyle: IntroStyle;
+  /** Opening line “We will now begin a body scan” */
+  introShort: boolean;
+  /** Long guidance clip; may be combined with short (short first, then long) */
+  introLong: boolean;
   includeEntry: boolean;
   voiceId: string;
   moduleId: string;
@@ -86,6 +89,27 @@ export function pickEntryClip(
   );
 }
 
+/**
+ * Remove the first instruction for the first scanned macro zone that matches the entry tier
+ * (same anchor the ENTRY_* clip replaces, e.g. micro “top of head” → BS_SYS_060 not BS_MIC_300).
+ */
+export function stripEntryAnchorInstruction(
+  bodyFull: FractionalClip[],
+  triple: readonly [BodyTier, BodyTier, BodyTier],
+  direction: BodyScanDirection
+): FractionalClip[] | null {
+  const firstZone = direction === "up" ? 1 : 3;
+  const firstTier = firstZoneTierForDirection(triple, direction);
+  const idx = bodyFull.findIndex(
+    (c) =>
+      c.role === "instruction" &&
+      c.macroZone === firstZone &&
+      c.bodyTier === firstTier
+  );
+  if (idx < 0) return null;
+  return [...bodyFull.slice(0, idx), ...bodyFull.slice(idx + 1)];
+}
+
 export function pickIntroClip(
   clips: FractionalClip[],
   style: IntroStyle
@@ -98,6 +122,21 @@ export function pickIntroClip(
     throw new Error(`Body scan catalog missing introVariant=${v}`);
   }
   return found;
+}
+
+/** Short first, then long when both are requested. At least one flag must be true. */
+export function pickIntroClips(
+  clips: FractionalClip[],
+  includeShort: boolean,
+  includeLong: boolean
+): FractionalClip[] {
+  if (!includeShort && !includeLong) {
+    throw new Error("pickIntroClips: at least one of introShort or introLong must be true");
+  }
+  const out: FractionalClip[] = [];
+  if (includeShort) out.push(pickIntroClip(clips, "short"));
+  if (includeLong) out.push(pickIntroClip(clips, "long"));
+  return out;
 }
 
 export function integrationClipsSorted(clips: FractionalClip[]): FractionalClip[] {
@@ -176,8 +215,9 @@ interface FeasibleChoice {
   nBody: number;
 }
 
-function bridgesSec(includeEntry: boolean): number {
-  return (includeEntry ? 2 : 1) * BRIDGE_SEC;
+/** One bridge after each intro clip, plus one after entry when present. */
+function bridgesSec(introCount: number, includeEntry: boolean): number {
+  return (introCount + (includeEntry ? 1 : 0)) * BRIDGE_SEC;
 }
 
 /**
@@ -207,7 +247,7 @@ export function minVariableSilenceBudget(
 }
 
 function computeMinTotal(
-  intro: FractionalClip,
+  intros: FractionalClip[],
   entry: FractionalClip | null,
   includeEntry: boolean,
   bodyList: FractionalClip[],
@@ -217,15 +257,15 @@ function computeMinTotal(
   const nB = bodyList.length;
   if (nB === 0) return Infinity;
 
-  let audio =
-    clipAudioSec(intro) +
+  let audio = intros.reduce((s, c) => s + clipAudioSec(c), 0);
+  audio +=
     (includeEntry && entry ? clipAudioSec(entry) : 0) +
     bodyList.reduce((s, c) => s + clipAudioSec(c), 0);
   for (let i = 0; i < kIntegration; i++) {
     audio += clipAudioSec(integrationList[i]);
   }
 
-  const b = bridgesSec(includeEntry);
+  const b = bridgesSec(intros.length, Boolean(includeEntry && entry));
   const vMin = minVariableSilenceBudget(nB, kIntegration);
   return audio + b + vMin;
 }
@@ -236,13 +276,14 @@ export function chooseBodyScanPlan(
 ): {
   triple: [BodyTier, BodyTier, BodyTier];
   kIntegration: number;
-  intro: FractionalClip;
+  intros: FractionalClip[];
   entry: FractionalClip | null;
   bodyInstructions: FractionalClip[];
   integrations: FractionalClip[];
 } {
-  const { durationSec, bodyScanDirection, introStyle, includeEntry } = params;
-  const intro = pickIntroClip(clips, introStyle);
+  const { durationSec, bodyScanDirection, introShort, introLong, includeEntry } =
+    params;
+  const intros = pickIntroClips(clips, introShort, introLong);
   const allInt = integrationClipsSorted(clips);
 
   const tiers: BodyTier[] = ["macro", "regional", "micro"];
@@ -265,8 +306,20 @@ export function chooseBodyScanPlan(
           continue;
         }
 
-        const bodyList =
-          includeEntry && bodyFull.length > 0 ? bodyFull.slice(1) : bodyFull;
+        let bodyList: FractionalClip[];
+        if (includeEntry && entry) {
+          const stripped = stripEntryAnchorInstruction(
+            bodyFull,
+            triple,
+            bodyScanDirection
+          );
+          if (!stripped || stripped.length === 0) {
+            continue;
+          }
+          bodyList = stripped;
+        } else {
+          bodyList = bodyFull;
+        }
 
         if (bodyList.length === 0) {
           continue;
@@ -277,7 +330,7 @@ export function chooseBodyScanPlan(
 
         for (let k = 2; k >= 0; k--) {
           const minT = computeMinTotal(
-            intro,
+            intros,
             entry,
             Boolean(includeEntry && entry),
             bodyList,
@@ -332,7 +385,7 @@ export function chooseBodyScanPlan(
   return {
     triple: best.triple,
     kIntegration: best.kIntegration,
-    intro,
+    intros,
     entry: entryResolved,
     bodyInstructions: best.bodyList,
     integrations,
@@ -350,9 +403,9 @@ export function composeBodyScanTierPlan(
   const { durationSec, voiceId, moduleId, includeEntry } = params;
 
   const choice = chooseBodyScanPlan(clips, params);
-  const { intro, entry, bodyInstructions, integrations } = choice;
+  const { intros, entry, bodyInstructions, integrations } = choice;
 
-  const sequence: FractionalClip[] = [intro];
+  const sequence: FractionalClip[] = [...intros];
   if (includeEntry && entry) sequence.push(entry);
   sequence.push(...bodyInstructions);
   sequence.push(...integrations);
@@ -361,7 +414,7 @@ export function composeBodyScanTierPlan(
   const kI = integrations.length;
 
   const audioTotal = sequence.reduce((s, c) => s + clipAudioSec(c), 0);
-  const bridges = bridgesSec(Boolean(includeEntry && entry));
+  const bridges = bridgesSec(intros.length, Boolean(includeEntry && entry));
   const nVar = variableGapSlotCount(nB, kI);
   const fixedNonVar = audioTotal + bridges;
   const budgetForVariableGaps = Math.max(0, durationSec - fixedNonVar);
