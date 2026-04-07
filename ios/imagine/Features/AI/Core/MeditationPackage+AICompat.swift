@@ -35,6 +35,8 @@ extension MeditationPackage {
                 return CueSetting(triggerType: .end, minute: nil, cue: cue)
             case .minute(let m):
                 return CueSetting(triggerType: .minute, minute: m, cue: cue)
+            case .second(let s):
+                return CueSetting(triggerType: .second, minute: s, cue: cue)
             }
         }
         let config = MeditationConfiguration(
@@ -67,6 +69,7 @@ extension MeditationPackage {
             case .start: trigger = "S"
             case .end: trigger = "E"
             case .minute: trigger = "\(cueSetting.minute ?? 0)"
+            case .second: trigger = "s\(cueSetting.minute ?? 0)"
             }
             return "\(id):\(trigger)"
         }.joined(separator: ",")

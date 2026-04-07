@@ -393,6 +393,7 @@ class AIRequestManager: ObservableObject {
                             case .minute: trig = String(setting.minute ?? 0)
                             case .start: trig = "start"
                             case .end: trig = "end"
+                            case .second: trig = "s\(setting.minute ?? 0)"
                             }
                             return "\(setting.cue.id)@\(trig)"
                         }.joined(separator: ",")
@@ -827,6 +828,7 @@ extension AIRequestManager {
     private func cueDuration(for cueId: String) -> Int {
         switch cueId {
         case "PB": return 2
+        case "BS_FRAC", "BS_FRAC_UP", "BS_FRAC_DOWN": return 7
         case "BS1": return 1
         case "BS2": return 2
         case "BS3": return 3

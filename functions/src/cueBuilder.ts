@@ -8,20 +8,30 @@ import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
 export interface CueWithTrigger {
   id: string;
   trigger: string;
+  /** Set for BS_FRAC_* so expandFractionalCues gets the relax-phase window in minutes. */
+  durationMinutes?: number;
+}
+
+export interface BuildCuesFromAllocationOptions {
+  /**
+   * Semantic from AI extract: `"down"` = top→bottom (→ BS_FRAC_DOWN), `"up"` = bottom→top (→ BS_FRAC_UP).
+   * Omit for pseudo-random cue choice.
+   */
+  bodyScanDirection?: "up" | "down";
 }
 
 const PB_CAP = 5;
 const BS_CAP = 10;
-const IM_MIN = 2;
 const IM_CAP = 10;
 
 /**
  * Builds cues from allocation. Clamps durations to available catalog variants.
- * isSleep: Use OH for focus, skip GB. Plan: default IM2 or NF2 for focus.
+ * isSleep: Use OH for focus, skip GB. Focus emits IM_FRAC or NF_FRAC.
  */
 export function buildCuesFromAllocation(
   allocation: PhaseAllocation,
-  prefs: SessionPreferences
+  prefs: SessionPreferences,
+  options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
   const cues: CueWithTrigger[] = [];
   let currentMinute = 1;
@@ -40,7 +50,20 @@ export function buildCuesFromAllocation(
   }
 
   if (relax > 0) {
-    cues.push({ id: `BS${relax}`, trigger: String(currentMinute) });
+    const dir =
+      options?.bodyScanDirection === "up" ||
+      options?.bodyScanDirection === "down"
+        ? options.bodyScanDirection
+        : Math.random() < 0.5
+          ? "up"
+          : "down";
+    // dir "down" = head→feet (top to bottom) → BS_FRAC_DOWN; "up" = feet→head → BS_FRAC_UP
+    const bodyScanId = dir === "down" ? "BS_FRAC_DOWN" : "BS_FRAC_UP";
+    cues.push({
+      id: bodyScanId,
+      trigger: String(currentMinute),
+      durationMinutes: relax,
+    });
     currentMinute += relax;
   }
 
@@ -48,13 +71,12 @@ export function buildCuesFromAllocation(
     cues.push({ id: "OH", trigger: String(currentMinute) });
     currentMinute += 1;
   } else if (focus > 0) {
-    const n = Math.max(
-      allocation.focusType === "NF" ? 1 : IM_MIN,
-      Math.min(10, focus)
-    );
-    const prefix = allocation.focusType === "NF" ? "NF" : "IM";
-    cues.push({ id: `${prefix}${n}`, trigger: String(currentMinute) });
-    currentMinute += n;
+    if (allocation.focusType === "NF") {
+      cues.push({ id: "NF_FRAC", trigger: String(currentMinute) });
+    } else {
+      cues.push({ id: "IM_FRAC", trigger: String(currentMinute) });
+    }
+    currentMinute += Math.min(10, focus);
   }
 
   if (insight > 0) {
