@@ -267,7 +267,8 @@ function selectClips(
 function placeOnTimeline(
   selected: FractionalClip[],
   durationSec: number,
-  voiceId: string
+  voiceId: string,
+  moduleId: string
 ): FractionalPlanItem[] {
   if (selected.length === 0) return [];
 
@@ -296,7 +297,15 @@ function placeOnTimeline(
       items.push({ atSec: 0, clipId: clip.clipId, role: clip.role, text: clip.text, url });
       cursor = ESTIMATED_CLIP_SEC;
     } else {
-      const gap = instrGapAt(i - 1);
+      let gap = instrGapAt(i - 1);
+      // I AM mantra: keep a short, fixed pause between setup (IM_C002) and the mantra line (IM_C003).
+      if (
+        moduleId === "IM_FRAC" &&
+        instrClips[i - 1].clipId === "IM_C002" &&
+        instrClips[i].clipId === "IM_C003"
+      ) {
+        gap = 5;
+      }
       const atSec = cursor + gap;
       items.push({ atSec: Math.round(atSec), clipId: clip.clipId, role: clip.role, text: clip.text, url });
       cursor = atSec + ESTIMATED_CLIP_SEC;
@@ -355,7 +364,7 @@ export function composeFractionalPlan(
   const TAG = "[FractionalComposer]";
 
   const selected = selectClips(clips, durationSec);
-  const items = placeOnTimeline(selected, durationSec, voiceId);
+  const items = placeOnTimeline(selected, durationSec, voiceId, moduleId);
 
   const planId = `${moduleId.toLowerCase()}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
 
