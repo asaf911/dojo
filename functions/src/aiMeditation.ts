@@ -18,7 +18,7 @@ export interface AIGeneratedTimer {
   duration: number;
   backgroundSoundId: string;
   binauralBeatId?: string | null;
-  cues: Array<{ id: string; trigger: string }>;
+  cues: Array<{ id: string; trigger: string; durationMinutes?: number }>;
   title: string;
   description?: string | null;
 }
@@ -87,6 +87,8 @@ interface AIStructureRequirements {
   bodyScanMinutes?: number;
   breathMinutes?: number;
   focusType?: "IM" | "NF";
+  /** Body scan direction when user specifies (head-to-toe vs feet-to-head). */
+  bodyScanDirection?: "up" | "down";
 }
 
 async function extractUserStructureRequirements(
@@ -95,17 +97,29 @@ async function extractUserStructureRequirements(
   apiKey: string
 ): Promise<AIStructureRequirements | null> {
   const systemPrompt = `You extract meditation structure requirements from the user's message.
-The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath").
-Return JSON only with keys you can infer. Use null for unspecified. Focus type: "IM" for mantra/chant/affirmation, "NF" for nostril/alternate nostril.
+The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath"), focus type.
+
+Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down").
+- focusType "IM" = mantra, chant, affirmation, I AM
+- focusType "NF" = nostril, nostril focus, nostril breathing, alternate nostril, nasal focus, breath focus on nose
+IMPORTANT: If the user mentions nostril, nose, or nasal breathing/focus, ALWAYS set focusType to "NF".
+- bodyScanDirection "down" = head to toe, top to bottom, crown to feet, start at head (matches cue BS_FRAC_DOWN)
+- bodyScanDirection "up" = feet to head, bottom to top, toes to crown, start at feet (matches cue BS_FRAC_UP)
+
+Return JSON only with keys you can infer. Use null for unspecified.
 
 Examples:
 - "Make a 3m relaxation. 2m mantra" → {"totalDuration":3,"mantraMinutes":2,"focusType":"IM"}
 - "5 min with 2m body scan" → {"totalDuration":5,"bodyScanMinutes":2}
+- "8 min body scan from head to toe" → {"totalDuration":8,"bodyScanMinutes":5,"bodyScanDirection":"down"}
+- "relaxation scan starting at my feet" → {"bodyScanDirection":"up"}
 - "10m meditation, 3 minutes mantra" → {"totalDuration":10,"mantraMinutes":3,"focusType":"IM"}
+- "10 minute nostril focus meditation" → {"totalDuration":10,"focusType":"NF"}
+- "5 min nostril breathing" → {"totalDuration":5,"focusType":"NF"}
 - "just a quick 2 min" → {"totalDuration":2}
 - "5m" → {"totalDuration":5}
 
-Return ONLY valid JSON, e.g. {"totalDuration":3,"mantraMinutes":2,"focusType":"IM"}. No other text.`;
+Return ONLY valid JSON. No other text.`;
 
   const messages: Array<{ role: string; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -129,11 +143,17 @@ Return ONLY valid JSON, e.g. {"totalDuration":3,"mantraMinutes":2,"focusType":"I
     });
 
     const body = await response.text();
-    if (!response.ok) return null;
+    if (!response.ok) {
+      functions.logger.warn(`${TAG_AI} extractStructure API error status=${response.status}`);
+      return null;
+    }
 
     const parsed = JSON.parse(body);
     const content = parsed?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== "string") return null;
+    if (!content || typeof content !== "string") {
+      functions.logger.warn(`${TAG_AI} extractStructure no content`);
+      return null;
+    }
 
     let s = content.trim();
     if (s.startsWith("```json")) s = s.slice(7);
@@ -146,13 +166,22 @@ Return ONLY valid JSON, e.g. {"totalDuration":3,"mantraMinutes":2,"focusType":"I
     s = s.replace(/,\s*}/g, "}");
     s = s.replace(/,\s*]/g, "]");
 
-    const result = JSON.parse(s) as AIStructureRequirements;
+    const raw = JSON.parse(s) as AIStructureRequirements;
+    const bodyScanDirection =
+      raw.bodyScanDirection === "up" || raw.bodyScanDirection === "down"
+        ? raw.bodyScanDirection
+        : undefined;
+    const result: AIStructureRequirements = { ...raw, bodyScanDirection };
+    functions.logger.info(`${TAG_AI} extractStructure raw=${JSON.stringify(result)}`);
     const hasOverride =
       result.mantraMinutes != null ||
       result.bodyScanMinutes != null ||
-      result.breathMinutes != null;
+      result.breathMinutes != null ||
+      result.focusType != null ||
+      bodyScanDirection != null;
     return hasOverride ? result : null;
-  } catch {
+  } catch (e) {
+    functions.logger.warn(`${TAG_AI} extractStructure error: ${e}`);
     return null;
   }
 }
@@ -322,13 +351,22 @@ export async function generateAIMeditation(
   const hasExplicitOverrides =
     overrides.mantraMinutes != null ||
     overrides.bodyScanMinutes != null ||
-    overrides.breathMinutes != null;
+    overrides.breathMinutes != null ||
+    overrides.focusType != null;
 
   const allocation = hasExplicitOverrides
     ? allocatePhasesFromOverrides(duration, overrides, prefs)
     : allocatePhases(duration, prefs);
 
-  const cues = buildCuesFromAllocation(allocation, prefs);
+  const bodyScanDirectionForCue =
+    userOverrides?.bodyScanDirection === "up" ||
+    userOverrides?.bodyScanDirection === "down"
+      ? userOverrides.bodyScanDirection
+      : undefined;
+
+  const cues = buildCuesFromAllocation(allocation, prefs, {
+    bodyScanDirection: bodyScanDirectionForCue,
+  });
 
   const structureContext = cues.map((c) => `${c.id}@${c.trigger}`).join(", ");
   functions.logger.info(

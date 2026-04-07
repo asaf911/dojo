@@ -24,11 +24,13 @@ struct DevModeSettingsView: View {
     
     @State private var selectedVoiceId: String = "Asaf"
     @State private var useDevServer: Bool = false
+    @State private var showFractionalScreen: Bool = false
 
     var body: some View {
         VStack(spacing: 12) {
             devModeHeader
             serverCard
+            fractionalModulesCard
             currentStateCard
             narrationVoiceCard
             skipDestinationCard
@@ -85,6 +87,40 @@ struct DevModeSettingsView: View {
         .padding(.horizontal, 16)
         .background(Color.backgroundPurple)
         .cornerRadius(12)
+    }
+
+    // MARK: - Fractional Modules Card
+
+    private var fractionalModulesCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Fractional Modules (MVP)")
+                .nunitoFont(size: 16, style: .bold)
+                .foregroundColor(.dojoTurquoise)
+
+            Text("Test runtime-composed modules (Nostril Focus, I AM Mantra, Body Scan) from atomic clips.")
+                .nunitoFont(size: 12, style: .regular)
+                .foregroundColor(.white.opacity(0.5))
+
+            Button {
+                showFractionalScreen = true
+            } label: {
+                Text("Open Fractional Modules")
+                    .nunitoFont(size: 14, style: .bold)
+                    .foregroundColor(.backgroundDarkPurple)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color.dojoTurquoise)
+                    .cornerRadius(8)
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .background(Color.backgroundPurple)
+        .cornerRadius(12)
+        .sheet(isPresented: $showFractionalScreen) {
+            FractionalModules.Screen()
+                .environmentObject(navigationCoordinator)
+        }
     }
     
     // MARK: - Current State Card

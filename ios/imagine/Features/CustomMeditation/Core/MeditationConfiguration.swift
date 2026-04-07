@@ -133,15 +133,18 @@ extension MeditationConfiguration {
         guard let cue = CatalogsManager.shared.cues.first(where: { $0.id == cueID }) else { return nil }
         
         var triggerType: CueTriggerType = .minute
-        var minute: Int? = 1 // default for minute trigger
+        var minute: Int? = 1
         if parts.count > 1 {
-            let triggerString = parts[1].uppercased()
-            if triggerString == "S" {
+            let triggerString = String(parts[1])
+            if triggerString.uppercased() == "S" {
                 triggerType = .start
                 minute = nil
-            } else if triggerString == "E" {
+            } else if triggerString.uppercased() == "E" {
                 triggerType = .end
                 minute = nil
+            } else if triggerString.hasPrefix("s"), let sec = Int(triggerString.dropFirst()) {
+                triggerType = .second
+                minute = sec
             } else if let minValue = Int(triggerString) {
                 triggerType = .minute
                 minute = minValue

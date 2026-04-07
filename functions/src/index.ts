@@ -4,6 +4,12 @@ import {createHash} from "crypto";
 import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
+import {
+  composeFractionalPlan,
+  expandFractionalCues,
+  type FractionalClip,
+} from "./fractionalComposer";
+import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 
 admin.initializeApp();
 
@@ -535,7 +541,10 @@ interface VoiceItem {
   name: string;
 }
 
-const DEPRECATED_CUE_IDS = new Set(["MA"]);
+const DEPRECATED_CUE_IDS = new Set([
+  "MA",
+  "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
+]);
 
 function resolveStorageUrl(relativePath: string): string {
   return `gs://${CONTENT_STORAGE_BUCKET}/${relativePath}`;
@@ -739,7 +748,7 @@ interface PostMeditationsRequest {
   duration?: number;
   backgroundSoundId?: string;
   binauralBeatId?: string;
-  cues?: Array<{ id: string; trigger: string | number }>;
+  cues?: Array<{ id: string; trigger: string | number; durationMinutes?: number }>;
   prompt?: string;
   conversationHistory?: Array<{ role: string; content: string }>;
   maxDuration?: number;
@@ -860,6 +869,7 @@ export const postMeditations = functions.runWith({
           name: string;
           url: string;
           trigger: string | number;
+          durationMinutes?: number;
         }> = [];
         for (const c of meditation.cues) {
           const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
@@ -870,6 +880,10 @@ export const postMeditations = functions.runWith({
               name: asset.name,
               url: resolveCueUrl(asset, voiceId),
               trigger: c.trigger,
+              durationMinutes:
+                typeof c.durationMinutes === "number" && c.durationMinutes > 0
+                  ? c.durationMinutes
+                  : undefined,
             });
           } else if (c.id === "GB") {
             resolvedCues.push({
@@ -880,6 +894,12 @@ export const postMeditations = functions.runWith({
             });
           }
         }
+
+        const expandedCues = expandFractionalCues(
+          resolvedCues,
+          meditation.duration,
+          voiceId
+        );
 
         const response = {
           id: randomUUID(),
@@ -899,7 +919,7 @@ export const postMeditations = functions.runWith({
                 description: binauralBeat.description ?? undefined,
               }
             : null,
-          cues: resolvedCues,
+          cues: expandedCues,
         };
 
         functions.logger.info(
@@ -978,6 +998,7 @@ export const postMeditations = functions.runWith({
         name: string;
         url: string;
         trigger: string | number;
+        durationMinutes?: number;
       }> = [];
 
       for (const c of cues) {
@@ -1000,7 +1021,10 @@ export const postMeditations = functions.runWith({
           );
           return;
         }
-        const cueTrigger = c.trigger;
+        let cueTrigger: string | number = c.trigger;
+        if (typeof cueTrigger === "string" && /^\d+$/.test(cueTrigger)) {
+          cueTrigger = parseInt(cueTrigger, 10);
+        }
         const validTrigger =
           cueTrigger === "start" ||
           cueTrigger === "end" ||
@@ -1016,13 +1040,22 @@ export const postMeditations = functions.runWith({
           );
           return;
         }
+        const rawDm =
+          typeof c.durationMinutes === "number" ? c.durationMinutes : undefined;
+        const durationMinutes =
+          rawDm !== undefined ? Math.min(Math.max(0, rawDm), duration) : undefined;
+
         resolvedCues.push({
           id: cueAsset.id,
           name: cueAsset.name,
           url: resolveCueUrl(cueAsset, voiceId),
           trigger: cueTrigger,
+          durationMinutes,
         });
       }
+
+      // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
+      const expandedCues = expandFractionalCues(resolvedCues, duration, voiceId);
 
       const response = {
         id: randomUUID(),
@@ -1042,7 +1075,7 @@ export const postMeditations = functions.runWith({
               description: binauralBeat.description ?? undefined,
             }
           : null,
-        cues: resolvedCues,
+        cues: expandedCues,
       };
 
       functions.logger.info(
@@ -1114,6 +1147,232 @@ export const postAIRequest = functions.runWith({
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       functions.logger.error(`${TAG_AI_REQUEST} error trigger=${trigger} - ${errMsg}`);
+      res.status(500).send(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 8. postFractionalPlan — Fractional module composition (second-precision timeline)
+// ---------------------------------------------------------------------------
+// Body scan tier composer: docs/body-scan-tier-composer.md
+
+const BODY_SCAN_MODULE_IDS = new Set([
+  "BS_FRAC",
+  "BS_FRAC_UP",
+  "BS_FRAC_DOWN",
+]);
+
+function isBodyScanModuleId(moduleId: string): boolean {
+  return BODY_SCAN_MODULE_IDS.has(moduleId);
+}
+
+/** Composer direction; module id overrides explicit body when UP/DOWN. */
+function resolveBodyScanComposerDirection(
+  moduleId: string | undefined,
+  requested: PostFractionalPlanRequest["bodyScanDirection"]
+): "up" | "down" {
+  if (moduleId === "BS_FRAC_UP") return "down";
+  if (moduleId === "BS_FRAC_DOWN") return "up";
+  return requested === "down" ? "down" : "up";
+}
+
+function fractionalIncludeEntry(
+  isBodyScanTier: boolean,
+  body: PostFractionalPlanRequest | undefined
+): boolean {
+  if (isBodyScanTier) {
+    return body?.includeEntry !== false;
+  }
+  return Boolean(body?.includeEntry);
+}
+
+interface FractionalCatalogFile {
+  version: string;
+  moduleId: string;
+  title: string;
+  clips: FractionalClip[];
+}
+
+/** POST /postFractionalPlan JSON. Body-scan fields: docs/body-scan-tier-composer.md */
+interface PostFractionalPlanRequest {
+  moduleId: string;
+  durationSec: number;
+  voiceId?: string;
+  /** BS_FRAC tier composer only; overridden by BS_FRAC_UP / BS_FRAC_DOWN moduleId. */
+  bodyScanDirection?: "up" | "down";
+  /** Legacy: ignored if `introShort` / `introLong` are sent */
+  introStyle?: "short" | "long";
+  introShort?: boolean;
+  introLong?: boolean;
+  /**
+   * BS_FRAC: use catalog ENTRY_* for the first scanned part and omit the duplicate instruction.
+   * Defaults to true when omitted; send false to skip entry and use the plain instruction clip.
+   */
+  includeEntry?: boolean;
+}
+
+function resolveBodyScanIntroFlags(body: PostFractionalPlanRequest): {
+  introShort: boolean;
+  introLong: boolean;
+} {
+  const hasNew =
+    typeof body.introShort === "boolean" ||
+    typeof body.introLong === "boolean";
+  if (hasNew) {
+    const s = body.introShort === true;
+    const l = body.introLong === true;
+    if (!s && !l) {
+      return { introShort: true, introLong: false };
+    }
+    return { introShort: s, introLong: l };
+  }
+  if (body.introStyle === "long") {
+    return { introShort: false, introLong: true };
+  }
+  return { introShort: true, introLong: false };
+}
+
+const TAG_FRACTIONAL = "[Server][Fractional]";
+
+function loadFractionalCatalog(moduleSlug: string): FractionalCatalogFile | null {
+  const catalogsDir = path.join(__dirname, "../catalogs");
+  try {
+    const data = fs.readFileSync(
+      path.join(catalogsDir, `${moduleSlug}.json`),
+      "utf8"
+    );
+    return JSON.parse(data) as FractionalCatalogFile;
+  } catch (e) {
+    functions.logger.warn(`${TAG_FRACTIONAL} Failed to load catalog: ${moduleSlug}`, e);
+    return null;
+  }
+}
+
+export const postFractionalPlan = functions.https.onRequest(
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    if (req.method === "OPTIONS") {
+      res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set("Access-Control-Allow-Headers", "Content-Type, X-Trigger");
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const trigger = (req.headers["x-trigger"] as string) ?? "unknown";
+
+    try {
+      const body = req.body as PostFractionalPlanRequest;
+      const moduleId = body?.moduleId;
+      const durationSec = body?.durationSec;
+      const voiceId = body?.voiceId ?? "Asaf";
+      const bodyScanDirection = resolveBodyScanComposerDirection(
+        moduleId,
+        body?.bodyScanDirection
+      );
+      const { introShort, introLong } = resolveBodyScanIntroFlags(body);
+
+      if (!moduleId || typeof moduleId !== "string") {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=missing_moduleId trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: "moduleId is required" })
+        );
+        return;
+      }
+
+      if (typeof durationSec !== "number" || durationSec < 60 || durationSec > 1200) {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec value=${durationSec} trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: "durationSec must be 60-1200" })
+        );
+        return;
+      }
+
+      // Map moduleId to catalog filename
+      const moduleSlugMap: Record<string, string> = {
+        NF_FRAC: "nostril_focus_fractional",
+        IM_FRAC: "i_am_mantra_fractional",
+      };
+
+      let catalogSlug: string | undefined;
+      let isBodyScanTier = false;
+
+      if (isBodyScanModuleId(moduleId)) {
+        catalogSlug = "body_scan_fractional";
+        isBodyScanTier = true;
+      } else {
+        catalogSlug = moduleSlugMap[moduleId];
+      }
+
+      if (!catalogSlug) {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=unknown_moduleId moduleId=${moduleId} trigger=${trigger}`
+        );
+        res.status(400).send(
+          JSON.stringify({ error: `Unknown moduleId: ${moduleId}` })
+        );
+        return;
+      }
+
+      const includeEntry = fractionalIncludeEntry(isBodyScanTier, body);
+
+      functions.logger.info(
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} introShort=${introShort} introLong=${introLong} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
+      );
+
+      const catalog = loadFractionalCatalog(catalogSlug);
+      if (!catalog || !catalog.clips || catalog.clips.length === 0) {
+        functions.logger.error(
+          `${TAG_FRACTIONAL} catalog empty or missing for ${catalogSlug}`
+        );
+        res.status(500).send(
+          JSON.stringify({ error: "Fractional catalog not available" })
+        );
+        return;
+      }
+
+      // Resolve relative voice paths to full gs:// URLs
+      const resolvedClips: FractionalClip[] = catalog.clips.map((clip) => ({
+        ...clip,
+        voices: Object.fromEntries(
+          Object.entries(clip.voices).map(([v, p]) => [v, resolveStorageUrl(p)])
+        ),
+      }));
+
+      let plan;
+      if (isBodyScanTier) {
+        plan = composeBodyScanTierPlan(resolvedClips, {
+          durationSec,
+          bodyScanDirection,
+          introShort,
+          introLong,
+          includeEntry,
+          voiceId,
+          moduleId,
+        });
+      } else {
+        plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+      }
+
+      functions.logger.info(
+        `${TAG_FRACTIONAL} success planId=${plan.planId} items=${plan.items.length} trigger=${trigger}`
+      );
+
+      res.set("Content-Type", "application/json");
+      res.status(200).send(JSON.stringify(plan));
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      functions.logger.error(
+        `${TAG_FRACTIONAL} error trigger=${trigger} - ${errMsg}`
+      );
       res.status(500).send(JSON.stringify({ error: "Internal server error" }));
     }
   }

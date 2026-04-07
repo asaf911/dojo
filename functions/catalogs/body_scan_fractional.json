@@ -1,0 +1,725 @@
+{
+  "version": "2.0",
+  "moduleId": "BS_FRAC",
+  "title": "Body Scan",
+  "clips": [
+    {
+      "clipId": "BS_SYS_000_INTRO_SHORT_ASAF",
+      "role": "intro",
+      "text": "We will now begin a body scan",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_000_INTRO_SHORT_DAN.mp3"
+      },
+      "introVariant": "short",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_010_INTRO_LONG_ASAF",
+      "role": "intro",
+      "text": "As I name each part of the body, bring your full attention to it. Feel it from within. Notice any tension or discomfort, and relax it as much as you can",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_010_INTRO_LONG_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_010_INTRO_LONG_DAN.mp3"
+      },
+      "introVariant": "long",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_020_ENTRY_TOP_MACRO_ASAF",
+      "role": "entry",
+      "text": "Relax your head face and neck",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_020_ENTRY_TOP_MACRO_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_020_ENTRY_TOP_MACRO_DAN.mp3"
+      },
+      "entryScanEnd": "top",
+      "entryTier": "macro",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_030_ENTRY_BOTTOM_MACRO_ASAF",
+      "role": "entry",
+      "text": "Relax your legs and feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_030_ENTRY_BOTTOM_MACRO_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_030_ENTRY_BOTTOM_MACRO_DAN.mp3"
+      },
+      "entryScanEnd": "bottom",
+      "entryTier": "macro",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_040_ENTRY_TOP_REGIONAL_ASAF",
+      "role": "entry",
+      "text": "Relax your head",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_040_ENTRY_TOP_REGIONAL_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_040_ENTRY_TOP_REGIONAL_DAN.mp3"
+      },
+      "entryScanEnd": "top",
+      "entryTier": "regional",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_050_ENTRY_BOTTOM_REGIONAL_ASAF",
+      "role": "entry",
+      "text": "Relax your feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_050_ENTRY_BOTTOM_REGIONAL_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_050_ENTRY_BOTTOM_REGIONAL_DAN.mp3"
+      },
+      "entryScanEnd": "bottom",
+      "entryTier": "regional",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_060_ENTRY_TOP_MICRO_ASAF",
+      "role": "entry",
+      "text": "Relax the top of your head",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_060_ENTRY_TOP_MICRO_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_060_ENTRY_TOP_MICRO_DAN.mp3"
+      },
+      "entryScanEnd": "top",
+      "entryTier": "micro",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_070_ENTRY_BOTTOM_MICRO_ASAF",
+      "role": "entry",
+      "text": "Relax your toes",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_070_ENTRY_BOTTOM_MICRO_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_070_ENTRY_BOTTOM_MICRO_DAN.mp3"
+      },
+      "entryScanEnd": "bottom",
+      "entryTier": "micro",
+      "order": 0
+    },
+    {
+      "clipId": "BS_SYS_080_FULL_BODY_ASAF",
+      "role": "integration",
+      "text": "Now bring your awareness to your entire body",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_080_FULL_BODY_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_080_FULL_BODY_DAN.mp3"
+      },
+      "integrationOrder": 1,
+      "order": 9998
+    },
+    {
+      "clipId": "BS_SYS_090_FULL_BODY_DEEPEN_ASAF",
+      "role": "integration",
+      "text": "Sense your whole body as one and let the relaxation deepen",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_090_FULL_BODY_DEEPEN_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_SYS_090_FULL_BODY_DEEPEN_DAN.mp3"
+      },
+      "integrationOrder": 2,
+      "order": 9999
+    },
+    {
+      "clipId": "BS_MAC_100_HEAD_FACE_NECK_ASAF",
+      "role": "instruction",
+      "text": "Head face and neck",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_100_HEAD_FACE_NECK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MAC_100_HEAD_FACE_NECK_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "macro",
+      "orderUp": 100,
+      "orderDown": 100,
+      "order": 100
+    },
+    {
+      "clipId": "BS_MAC_120_CHEST_BELLY_ASAF",
+      "role": "instruction",
+      "text": "Chest and belly",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_120_CHEST_BELLY_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MAC_120_CHEST_BELLY_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "macro",
+      "orderUp": 120,
+      "orderDown": 120,
+      "order": 120
+    },
+    {
+      "clipId": "BS_MAC_140_LEGS_FEET_ASAF",
+      "role": "instruction",
+      "text": "Legs and feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_140_LEGS_FEET_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MAC_140_LEGS_FEET_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "macro",
+      "orderUp": 140,
+      "orderDown": 140,
+      "order": 140
+    },
+    {
+      "clipId": "BS_REG_200_HEAD_ASAF",
+      "role": "instruction",
+      "text": "Head",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_200_HEAD_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_200_HEAD_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "regional",
+      "orderUp": 200,
+      "orderDown": 230,
+      "order": 200
+    },
+    {
+      "clipId": "BS_REG_210_FACE_ASAF",
+      "role": "instruction",
+      "text": "Face",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_210_FACE_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_210_FACE_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "regional",
+      "orderUp": 210,
+      "orderDown": 220,
+      "order": 210
+    },
+    {
+      "clipId": "BS_REG_220_NECK_ASAF",
+      "role": "instruction",
+      "text": "Neck",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_220_NECK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_220_NECK_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "regional",
+      "orderUp": 220,
+      "orderDown": 210,
+      "order": 220
+    },
+    {
+      "clipId": "BS_MIC_300_HEAD_TOP_ASAF",
+      "role": "instruction",
+      "text": "Top of your head",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_300_HEAD_TOP_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_300_HEAD_TOP_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 300,
+      "orderDown": 16,
+      "order": 300
+    },
+    {
+      "clipId": "BS_MIC_310_HEAD_FOREHEAD_ASAF",
+      "role": "instruction",
+      "text": "Forehead",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_310_HEAD_FOREHEAD_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_310_HEAD_FOREHEAD_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 310,
+      "orderDown": 15,
+      "order": 310
+    },
+    {
+      "clipId": "BS_MIC_320_FACE_EYEBROWS_ASAF",
+      "role": "instruction",
+      "text": "Eyebrows",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_320_FACE_EYEBROWS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_320_FACE_EYEBROWS_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 320,
+      "orderDown": 14,
+      "order": 320
+    },
+    {
+      "clipId": "BS_MIC_330_FACE_EYELIDS_ASAF",
+      "role": "instruction",
+      "text": "Eyelids",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_330_FACE_EYELIDS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_330_FACE_EYELIDS_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 330,
+      "orderDown": 13,
+      "order": 330
+    },
+    {
+      "clipId": "BS_MIC_340_FACE_EYEBALLS_ASAF",
+      "role": "instruction",
+      "text": "Eyeballs",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_340_FACE_EYEBALLS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_340_FACE_EYEBALLS_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 340,
+      "orderDown": 12,
+      "order": 340
+    },
+    {
+      "clipId": "BS_MIC_350_FACE_EYE_MUSCLES_ASAF",
+      "role": "instruction",
+      "text": "The muscles behind your eyes",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_350_FACE_EYE_MUSCLES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_350_FACE_EYE_MUSCLES_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 350,
+      "orderDown": 11,
+      "order": 350
+    },
+    {
+      "clipId": "BS_MIC_360_FACE_TEMPLES_ASAF",
+      "role": "instruction",
+      "text": "Temples",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_360_FACE_TEMPLES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_360_FACE_TEMPLES_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 360,
+      "orderDown": 10,
+      "order": 360
+    },
+    {
+      "clipId": "BS_MIC_370_FACE_CHEEKS_ASAF",
+      "role": "instruction",
+      "text": "Cheeks",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_370_FACE_CHEEKS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_370_FACE_CHEEKS_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 370,
+      "orderDown": 9,
+      "order": 370
+    },
+    {
+      "clipId": "BS_MIC_380_FACE_NOSE_ASAF",
+      "role": "instruction",
+      "text": "Nose",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_380_FACE_NOSE_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_380_FACE_NOSE_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 380,
+      "orderDown": 8,
+      "order": 380
+    },
+    {
+      "clipId": "BS_MIC_390_FACE_MOUTH_ASAF",
+      "role": "instruction",
+      "text": "Mouth",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_390_FACE_MOUTH_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_390_FACE_MOUTH_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 390,
+      "orderDown": 7,
+      "order": 390
+    },
+    {
+      "clipId": "BS_MIC_392_FACE_LIPS_ASAF",
+      "role": "instruction",
+      "text": "Lips",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_392_FACE_LIPS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_392_FACE_LIPS_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 392,
+      "orderDown": 6,
+      "order": 392
+    },
+    {
+      "clipId": "BS_MIC_394_FACE_TONGUE_ASAF",
+      "role": "instruction",
+      "text": "Tongue",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_394_FACE_TONGUE_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_394_FACE_TONGUE_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 394,
+      "orderDown": 5,
+      "order": 394
+    },
+    {
+      "clipId": "BS_MIC_396_FACE_INNER_MOUTH_ASAF",
+      "role": "instruction",
+      "text": "Inside of your mouth",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_396_FACE_INNER_MOUTH_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_396_FACE_INNER_MOUTH_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 396,
+      "orderDown": 4,
+      "order": 396
+    },
+    {
+      "clipId": "BS_MIC_398_FACE_JAW_ASAF",
+      "role": "instruction",
+      "text": "Joints of the jaw",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_398_FACE_JAW_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_398_FACE_JAW_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 398,
+      "orderDown": 3,
+      "order": 398
+    },
+    {
+      "clipId": "BS_MIC_400_NECK_THROAT_ASAF",
+      "role": "instruction",
+      "text": "Throat",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_400_NECK_THROAT_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_400_NECK_THROAT_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 400,
+      "orderDown": 2,
+      "order": 400
+    },
+    {
+      "clipId": "BS_MIC_410_NECK_BACK_ASAF",
+      "role": "instruction",
+      "text": "Neck",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_410_NECK_BACK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_410_NECK_BACK_DAN.mp3"
+      },
+      "macroZone": 1,
+      "bodyTier": "micro",
+      "orderUp": 410,
+      "orderDown": 1,
+      "order": 410
+    },
+    {
+      "clipId": "BS_REG_240_CHEST_ASAF",
+      "role": "instruction",
+      "text": "Chest and heart",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_240_CHEST_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_240_CHEST_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "regional",
+      "orderUp": 240,
+      "orderDown": 270,
+      "order": 240
+    },
+    {
+      "clipId": "BS_REG_250_BELLY_SIDES_ASAF",
+      "role": "instruction",
+      "text": "Belly and sides",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_250_BELLY_SIDES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_250_BELLY_SIDES_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "regional",
+      "orderUp": 250,
+      "orderDown": 260,
+      "order": 250
+    },
+    {
+      "clipId": "BS_REG_260_PELVIC_LOWERBACK_ASAF",
+      "role": "instruction",
+      "text": "Pelvic floor and lower back",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_260_PELVIC_LOWERBACK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_260_PELVIC_LOWERBACK_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "regional",
+      "orderUp": 260,
+      "orderDown": 250,
+      "order": 260
+    },
+    {
+      "clipId": "BS_MIC_420_CHEST_HEART_ASAF",
+      "role": "instruction",
+      "text": "Chest and heart",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_420_CHEST_HEART_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_420_CHEST_HEART_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 420,
+      "orderDown": 7,
+      "order": 420
+    },
+    {
+      "clipId": "BS_MIC_430_RIBCAGE_ASAF",
+      "role": "instruction",
+      "text": "Ribcage",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_430_RIBCAGE_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_430_RIBCAGE_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 430,
+      "orderDown": 6,
+      "order": 430
+    },
+    {
+      "clipId": "BS_MIC_440_UPPER_BACK_ASAF",
+      "role": "instruction",
+      "text": "Upper back",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_440_UPPER_BACK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_440_UPPER_BACK_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 440,
+      "orderDown": 5,
+      "order": 440
+    },
+    {
+      "clipId": "BS_MIC_450_BELLY_ASAF",
+      "role": "instruction",
+      "text": "Belly, let it rise and fall with your breath",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_450_BELLY_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_450_BELLY_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 450,
+      "orderDown": 4,
+      "order": 450
+    },
+    {
+      "clipId": "BS_MIC_460_SIDES_BODY_ASAF",
+      "role": "instruction",
+      "text": "Sides of your body",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_460_SIDES_BODY_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_460_SIDES_BODY_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 460,
+      "orderDown": 3,
+      "order": 460
+    },
+    {
+      "clipId": "BS_MIC_470_LOWER_BACK_ASAF",
+      "role": "instruction",
+      "text": "Lower back",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_470_LOWER_BACK_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_470_LOWER_BACK_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 470,
+      "orderDown": 2,
+      "order": 470
+    },
+    {
+      "clipId": "BS_MIC_480_PELVIC_FLOOR_ASAF",
+      "role": "instruction",
+      "text": "Pelvic floor",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_480_PELVIC_FLOOR_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_480_PELVIC_FLOOR_DAN.mp3"
+      },
+      "macroZone": 2,
+      "bodyTier": "micro",
+      "orderUp": 480,
+      "orderDown": 1,
+      "order": 480
+    },
+    {
+      "clipId": "BS_REG_280_UPPER_LEGS_ASAF",
+      "role": "instruction",
+      "text": "Upper legs",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_280_UPPER_LEGS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_280_UPPER_LEGS_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "regional",
+      "orderUp": 280,
+      "orderDown": 295,
+      "order": 280
+    },
+    {
+      "clipId": "BS_REG_290_LOWER_LEGS_ASAF",
+      "role": "instruction",
+      "text": "Lower legs",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_290_LOWER_LEGS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_290_LOWER_LEGS_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "regional",
+      "orderUp": 290,
+      "orderDown": 290,
+      "order": 290
+    },
+    {
+      "clipId": "BS_REG_295_FEET_ASAF",
+      "role": "instruction",
+      "text": "Feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_REG_295_FEET_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_REG_295_FEET_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "regional",
+      "orderUp": 295,
+      "orderDown": 280,
+      "order": 295
+    },
+    {
+      "clipId": "BS_MIC_500_HIPS_THIGHS_ASAF",
+      "role": "instruction",
+      "text": "Hips and thighs",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_500_HIPS_THIGHS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_500_HIPS_THIGHS_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 500,
+      "orderDown": 8,
+      "order": 500
+    },
+    {
+      "clipId": "BS_MIC_510_KNEES_ASAF",
+      "role": "instruction",
+      "text": "Knees",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_510_KNEES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_510_KNEES_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 510,
+      "orderDown": 7,
+      "order": 510
+    },
+    {
+      "clipId": "BS_MIC_520_SHINS_CALVES_ASAF",
+      "role": "instruction",
+      "text": "Shins and calves",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_520_SHINS_CALVES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_520_SHINS_CALVES_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 520,
+      "orderDown": 6,
+      "order": 520
+    },
+    {
+      "clipId": "BS_MIC_530_ANKLES_ASAF",
+      "role": "instruction",
+      "text": "Ankles",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_530_ANKLES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_530_ANKLES_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 530,
+      "orderDown": 5,
+      "order": 530
+    },
+    {
+      "clipId": "BS_MIC_540_HEELS_ASAF",
+      "role": "instruction",
+      "text": "Heels",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_540_HEELS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_540_HEELS_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 540,
+      "orderDown": 4,
+      "order": 540
+    },
+    {
+      "clipId": "BS_MIC_550_FEET_TOPS_ASAF",
+      "role": "instruction",
+      "text": "Tops of your feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_550_FEET_TOPS_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_550_FEET_TOPS_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 550,
+      "orderDown": 3,
+      "order": 550
+    },
+    {
+      "clipId": "BS_MIC_560_FEET_SOLES_ASAF",
+      "role": "instruction",
+      "text": "Soles of your feet",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_560_FEET_SOLES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_560_FEET_SOLES_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 560,
+      "orderDown": 2,
+      "order": 560
+    },
+    {
+      "clipId": "BS_MIC_570_FEET_TOES_ASAF",
+      "role": "instruction",
+      "text": "Each toe, one by one",
+      "voices": {
+        "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_570_FEET_TOES_ASAF.mp3",
+        "Dan": "modules/body_scan_fractional/dan/BS_MIC_570_FEET_TOES_DAN.mp3"
+      },
+      "macroZone": 3,
+      "bodyTier": "micro",
+      "orderUp": 570,
+      "orderDown": 1,
+      "order": 570
+    }
+  ]
+}
