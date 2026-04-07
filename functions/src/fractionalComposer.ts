@@ -7,12 +7,16 @@
  *   Phase 2 — place them on the timeline with growing gaps
  *
  * See docs/fractional-module-composition.md for the full design reference.
+ * Body scan (BS_FRAC): docs/body-scan-tier-composer.md — `composeBodyScanTierPlan` in bodyScanTierPlan.ts.
  */
 
 import * as functions from "firebase-functions";
 import * as path from "path";
 import * as fs from "fs";
-import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
+import {
+  composeBodyScanTierPlan,
+  type BodyScanTierPlanParams,
+} from "./bodyScanTierPlan";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -386,10 +390,19 @@ const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   BS_FRAC_DOWN: "body_scan_fractional",
 };
 
+/** Inline expansion defaults for BS_FRAC* (see `docs/body-scan-tier-composer.md`). */
+const DEFAULT_BODY_SCAN_EXPAND_PARAMS: Pick<
+  BodyScanTierPlanParams,
+  "introShort" | "introLong" | "includeEntry"
+> = {
+  introShort: true,
+  introLong: false,
+  includeEntry: true,
+};
+
 /**
  * Maps catalog cue id → composer `bodyScanDirection`.
- * Product naming: Body Scan **Down** = top→bottom (head→feet) = composer `"up"`.
- * Body Scan **Up** = bottom→top (feet→head) = composer `"down"`.
+ * Product: Down = head→feet → `"up"`; Up = feet→head → `"down"`.
  */
 function resolveBodyScanExpandDirection(cueId: string): "up" | "down" {
   if (cueId === "BS_FRAC_DOWN") return "up";
@@ -524,9 +537,7 @@ export function expandFractionalCues(
       plan = composeBodyScanTierPlan(resolvedClips, {
         durationSec: windowSec,
         bodyScanDirection: dir,
-        introShort: true,
-        introLong: false,
-        includeEntry: true,
+        ...DEFAULT_BODY_SCAN_EXPAND_PARAMS,
         voiceId,
         moduleId: cue.id,
       });

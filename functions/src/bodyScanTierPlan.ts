@@ -1,11 +1,16 @@
 /**
- * Body scan BS_FRAC: per-macro-zone tier (macro | regional | micro),
- * Equal silence between “parts”: body instructions and integration clips (outros) are scheduled
- * the same way—each part is followed by an equal share of the gap budget (including after the last part).
- * Outros are only chosen when the session can afford that full gap treatment (see minVariableSilenceBudget).
+ * @fileoverview Tier-based body scan composer for `body_scan_fractional.json` (module BS_FRAC / BS_FRAC_*).
  *
- * `bodyScanDirection` **composer** (not product labels): `"up"` = zones head→feet (top to bottom);
- * `"down"` = feet→head (bottom to top). Cue IDs: BS_FRAC_DOWN → `"up"`, BS_FRAC_UP → `"down"`.
+ * **Handoff:** Read `docs/body-scan-tier-composer.md` first (product vs composer direction, API, expansion).
+ *
+ * **Pipeline**
+ * 1. `chooseBodyScanPlan` — pick per-zone tiers (macro|regional|micro)³, integration count (0–2), and strip
+ *    the first scanned instruction when using an ENTRY clip (`stripEntryAnchorInstruction`).
+ * 2. `composeBodyScanTierPlan` — build timeline: intros → optional entry → body → integrations; bridges after
+ *    each intro/entry; equal silence after each instruction/integration (including after the last part).
+ *
+ * **Constants** — `ESTIMATED_CLIP_SEC` used when catalog omits `durationSec`; `BODY_GAP_MIN` for feasibility only
+ * (actual gaps use the full remaining budget via `distributeGapsEqual`).
  */
 
 import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
@@ -114,12 +119,11 @@ export function pickIntroClip(
   clips: FractionalClip[],
   style: IntroStyle
 ): FractionalClip {
-  const v = style === "short" ? "short" : "long";
   const found = clips.find(
-    (c) => c.role === "intro" && c.introVariant === v
+    (c) => c.role === "intro" && c.introVariant === style
   );
   if (!found) {
-    throw new Error(`Body scan catalog missing introVariant=${v}`);
+    throw new Error(`Body scan catalog missing introVariant=${style}`);
   }
   return found;
 }
@@ -164,8 +168,7 @@ export function distributeGapsEqual(total: number, n: number): number[] {
 }
 
 /**
- * Distribute `totalTarget` seconds across `slotCount` gaps, each in [minG, maxG].
- * If totalTarget exceeds slotCount*maxG, gaps are all maxG and remainder is returned for trailing silence.
+ * Bounded gap distribution (tests + potential reuse). The tier composer uses `distributeGapsEqual` only.
  */
 export function distributeGapsBetweenBounds(
   slotCount: number,
@@ -213,6 +216,37 @@ interface FeasibleChoice {
   minTotal: number;
   tierScore: number;
   nBody: number;
+}
+
+/** Entry clip for this triple/direction, or null if `includeEntry` is false. */
+function entryForTriple(
+  clips: FractionalClip[],
+  direction: BodyScanDirection,
+  triple: readonly [BodyTier, BodyTier, BodyTier],
+  includeEntry: boolean
+): FractionalClip | null {
+  if (!includeEntry) return null;
+  return pickEntryClip(
+    clips,
+    direction,
+    firstZoneTierForDirection(triple, direction)
+  );
+}
+
+/**
+ * When `entry` is set, remove the first instruction in the first scanned zone for that tier
+ * (catalog ENTRY_* replaces that anchor). Otherwise return `bodyFull` unchanged.
+ */
+function bodyInstructionsWithEntryApplied(
+  bodyFull: FractionalClip[],
+  triple: readonly [BodyTier, BodyTier, BodyTier],
+  direction: BodyScanDirection,
+  entry: FractionalClip | null
+): FractionalClip[] | null {
+  if (!entry) return bodyFull;
+  const stripped = stripEntryAnchorInstruction(bodyFull, triple, direction);
+  if (!stripped || stripped.length === 0) return null;
+  return stripped;
 }
 
 /** One bridge after each intro clip, plus one after entry when present. */
@@ -270,6 +304,7 @@ function computeMinTotal(
   return audio + b + vMin;
 }
 
+/** Feasible (duration, tiers, integration count); prefers more integrations then finer tiers. */
 export function chooseBodyScanPlan(
   clips: FractionalClip[],
   params: BodyScanTierPlanParams
@@ -298,30 +333,23 @@ export function chooseBodyScanPlan(
           triple,
           bodyScanDirection
         );
-        const firstTier = firstZoneTierForDirection(triple, bodyScanDirection);
-        const entry = includeEntry
-          ? pickEntryClip(clips, bodyScanDirection, firstTier)
-          : null;
+        const entry = entryForTriple(
+          clips,
+          bodyScanDirection,
+          triple,
+          includeEntry
+        );
         if (includeEntry && !entry) {
           continue;
         }
 
-        let bodyList: FractionalClip[];
-        if (includeEntry && entry) {
-          const stripped = stripEntryAnchorInstruction(
-            bodyFull,
-            triple,
-            bodyScanDirection
-          );
-          if (!stripped || stripped.length === 0) {
-            continue;
-          }
-          bodyList = stripped;
-        } else {
-          bodyList = bodyFull;
-        }
-
-        if (bodyList.length === 0) {
+        const bodyList = bodyInstructionsWithEntryApplied(
+          bodyFull,
+          triple,
+          bodyScanDirection,
+          entry
+        );
+        if (!bodyList || bodyList.length === 0) {
           continue;
         }
 
@@ -369,13 +397,12 @@ export function chooseBodyScanPlan(
   });
 
   const best = feasible[0];
-  const entryResolved = includeEntry
-    ? pickEntryClip(
-        clips,
-        bodyScanDirection,
-        firstZoneTierForDirection(best.triple, bodyScanDirection)
-      )
-    : null;
+  const entryResolved = entryForTriple(
+    clips,
+    bodyScanDirection,
+    best.triple,
+    includeEntry
+  );
   if (includeEntry && !entryResolved) {
     throw new Error("includeEntry true but no matching entry clip in catalog");
   }
@@ -396,6 +423,7 @@ function voiceUrl(clip: FractionalClip, voiceId: string): string {
   return clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
 }
 
+/** Build `FractionalPlan.items` from `chooseBodyScanPlan` + timeline rules (bridges + equal gaps). */
 export function composeBodyScanTierPlan(
   clips: FractionalClip[],
   params: BodyScanTierPlanParams
@@ -423,6 +451,7 @@ export function composeBodyScanTierPlan(
   const items: FractionalPlanItem[] = [];
   let t = 0;
   let gi = 0;
+  const gapBetweenPartsRole = new Set(["instruction", "integration"]);
 
   const takeGap = (): number => {
     if (gi >= varGaps.length) {
@@ -460,17 +489,8 @@ export function composeBodyScanTierPlan(
       t += BRIDGE_SEC;
       continue;
     }
-    if (clip.role === "instruction" && next.role === "instruction") {
+    if (gapBetweenPartsRole.has(clip.role) && gapBetweenPartsRole.has(next.role)) {
       t += takeGap();
-      continue;
-    }
-    if (clip.role === "instruction" && next.role === "integration") {
-      t += takeGap();
-      continue;
-    }
-    if (clip.role === "integration" && next.role === "integration") {
-      t += takeGap();
-      continue;
     }
   }
 

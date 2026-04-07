@@ -2,7 +2,8 @@
 //  FractionalModules+Screen.swift
 //  Dojo
 //
-//  Dev-only screen for testing fractional module playback.
+//  Dev-only: UI for `FractionalModules.ViewModel` (module, duration, body-scan toggles). All actions → VM.
+//  Body scan behavior: `docs/body-scan-tier-composer.md`.
 //
 
 import SwiftUI

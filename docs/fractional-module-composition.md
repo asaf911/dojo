@@ -3,6 +3,8 @@
 How fractional meditation modules are composed at runtime from atomic audio clips.
 This document serves as a reference for building new fractional modules.
 
+**Body scan (BS_FRAC)** uses a separate tier-based composer — see [`body-scan-tier-composer.md`](./body-scan-tier-composer.md).
+
 ## Overview
 
 A fractional module is defined by a **catalog JSON** containing a flat list of audio clips.

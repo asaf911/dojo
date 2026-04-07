@@ -2,6 +2,10 @@
 //  FractionalModules+ViewModel.swift
 //  Dojo
 //
+//  Dev/QA: composes fractional playback via POST /postFractionalPlan.
+//  Body scan (BS_FRAC): server doc `docs/body-scan-tier-composer.md` — picker “Up”/“Down” maps to composer
+//  direction (see `apiDirection`). State + `play()` only; no SwiftUI import (.cursorrules).
+//
 
 import Foundation
 

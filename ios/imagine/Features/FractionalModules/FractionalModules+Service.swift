@@ -2,10 +2,9 @@
 //  FractionalModules+Service.swift
 //  Dojo
 //
-//  POST /postFractionalPlan — fetches a second-precision playback timeline
-//  for a fractional module (e.g. Nostril Focus composed from atomic clips).
-//
-//  QA: Filter console logs by "[Fractional]" to trace the entire fractional flow.
+//  POST /postFractionalPlan — second-precision `Plan` JSON for NF_FRAC, IM_FRAC, BS_FRAC.
+//  BS_FRAC request fields: `bodyScanDirection`, `introShort`, `introLong`, `includeEntry` (see server doc
+//  `docs/body-scan-tier-composer.md`). Logs: filter "[Fractional]".
 //
 
 import Foundation

@@ -2,8 +2,7 @@
 //  FractionalModules+Mapping.swift
 //  Dojo
 //
-//  Converts a FractionalPlan to TimerSessionConfig so we can reuse
-//  the existing TimerMeditationSession and player infrastructure.
+//  Maps `Plan` JSON → `TimerSessionConfig` (second-based cue triggers for fractional playback).
 //
 
 import Foundation

@@ -1155,6 +1155,37 @@ export const postAIRequest = functions.runWith({
 // ---------------------------------------------------------------------------
 // 8. postFractionalPlan — Fractional module composition (second-precision timeline)
 // ---------------------------------------------------------------------------
+// Body scan tier composer: docs/body-scan-tier-composer.md
+
+const BODY_SCAN_MODULE_IDS = new Set([
+  "BS_FRAC",
+  "BS_FRAC_UP",
+  "BS_FRAC_DOWN",
+]);
+
+function isBodyScanModuleId(moduleId: string): boolean {
+  return BODY_SCAN_MODULE_IDS.has(moduleId);
+}
+
+/** Composer direction; module id overrides explicit body when UP/DOWN. */
+function resolveBodyScanComposerDirection(
+  moduleId: string | undefined,
+  requested: PostFractionalPlanRequest["bodyScanDirection"]
+): "up" | "down" {
+  if (moduleId === "BS_FRAC_UP") return "down";
+  if (moduleId === "BS_FRAC_DOWN") return "up";
+  return requested === "down" ? "down" : "up";
+}
+
+function fractionalIncludeEntry(
+  isBodyScanTier: boolean,
+  body: PostFractionalPlanRequest | undefined
+): boolean {
+  if (isBodyScanTier) {
+    return body?.includeEntry !== false;
+  }
+  return Boolean(body?.includeEntry);
+}
 
 interface FractionalCatalogFile {
   version: string;
@@ -1163,11 +1194,12 @@ interface FractionalCatalogFile {
   clips: FractionalClip[];
 }
 
+/** POST /postFractionalPlan JSON. Body-scan fields: docs/body-scan-tier-composer.md */
 interface PostFractionalPlanRequest {
   moduleId: string;
   durationSec: number;
   voiceId?: string;
-  /** BS_FRAC only */
+  /** BS_FRAC tier composer only; overridden by BS_FRAC_UP / BS_FRAC_DOWN moduleId. */
   bodyScanDirection?: "up" | "down";
   /** Legacy: ignored if `introShort` / `introLong` are sent */
   introStyle?: "short" | "long";
@@ -1238,14 +1270,10 @@ export const postFractionalPlan = functions.https.onRequest(
       const moduleId = body?.moduleId;
       const durationSec = body?.durationSec;
       const voiceId = body?.voiceId ?? "Asaf";
-      let bodyScanDirection: "up" | "down" =
-        body?.bodyScanDirection === "down" ? "down" : "up";
-      // BS_FRAC_DOWN = top→bottom → composer "up"; BS_FRAC_UP = bottom→top → composer "down"
-      if (moduleId === "BS_FRAC_UP") {
-        bodyScanDirection = "down";
-      } else if (moduleId === "BS_FRAC_DOWN") {
-        bodyScanDirection = "up";
-      }
+      const bodyScanDirection = resolveBodyScanComposerDirection(
+        moduleId,
+        body?.bodyScanDirection
+      );
       const { introShort, introLong } = resolveBodyScanIntroFlags(body);
 
       if (!moduleId || typeof moduleId !== "string") {
@@ -1277,11 +1305,7 @@ export const postFractionalPlan = functions.https.onRequest(
       let catalogSlug: string | undefined;
       let isBodyScanTier = false;
 
-      if (
-        moduleId === "BS_FRAC" ||
-        moduleId === "BS_FRAC_UP" ||
-        moduleId === "BS_FRAC_DOWN"
-      ) {
+      if (isBodyScanModuleId(moduleId)) {
         catalogSlug = "body_scan_fractional";
         isBodyScanTier = true;
       } else {
@@ -1298,9 +1322,7 @@ export const postFractionalPlan = functions.https.onRequest(
         return;
       }
 
-      const includeEntry = isBodyScanTier
-        ? body?.includeEntry !== false
-        : Boolean(body?.includeEntry);
+      const includeEntry = fractionalIncludeEntry(isBodyScanTier, body);
 
       functions.logger.info(
         `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} introShort=${introShort} introLong=${introLong} entry=${includeEntry}` : "n/a"} trigger=${trigger}`

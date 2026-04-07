@@ -1,3 +1,4 @@
+/** @see ../../docs/body-scan-tier-composer.md — run `npm test` from `functions/` */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { FractionalClip } from "./fractionalComposer";
