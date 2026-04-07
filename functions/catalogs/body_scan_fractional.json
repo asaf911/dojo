@@ -16,7 +16,7 @@
     {
       "clipId": "BS_SYS_010_INTRO_LONG_ASAF",
       "role": "intro",
-      "text": "We will now begin a body scan. As each part is named direct your attention there",
+      "text": "As I name each part of the body, bring your full attention to it. Feel it from within. Notice any tension or discomfort, and relax it as much as you can",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_010_INTRO_LONG_ASAF.mp3"
       },
@@ -48,7 +48,7 @@
     {
       "clipId": "BS_SYS_040_ENTRY_TOP_REGIONAL_ASAF",
       "role": "entry",
-      "text": "Head",
+      "text": "Relax your head",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_040_ENTRY_TOP_REGIONAL_ASAF.mp3"
       },
@@ -59,7 +59,7 @@
     {
       "clipId": "BS_SYS_050_ENTRY_BOTTOM_REGIONAL_ASAF",
       "role": "entry",
-      "text": "Feet",
+      "text": "Relax your feet",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_050_ENTRY_BOTTOM_REGIONAL_ASAF.mp3"
       },
@@ -70,7 +70,7 @@
     {
       "clipId": "BS_SYS_060_ENTRY_TOP_MICRO_ASAF",
       "role": "entry",
-      "text": "Top of your head",
+      "text": "Relax the top of your head",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_060_ENTRY_TOP_MICRO_ASAF.mp3"
       },
@@ -81,7 +81,7 @@
     {
       "clipId": "BS_SYS_070_ENTRY_BOTTOM_MICRO_ASAF",
       "role": "entry",
-      "text": "Toes",
+      "text": "Relax your toes",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_070_ENTRY_BOTTOM_MICRO_ASAF.mp3"
       },
@@ -92,7 +92,7 @@
     {
       "clipId": "BS_SYS_080_FULL_BODY_ASAF",
       "role": "integration",
-      "text": "Your whole body",
+      "text": "Now bring your awareness to your entire body",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_080_FULL_BODY_ASAF.mp3"
       },
@@ -102,7 +102,7 @@
     {
       "clipId": "BS_SYS_090_FULL_BODY_DEEPEN_ASAF",
       "role": "integration",
-      "text": "Your entire body",
+      "text": "Sense your whole body as one and let the relaxation deepen",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_SYS_090_FULL_BODY_DEEPEN_ASAF.mp3"
       },
@@ -112,7 +112,7 @@
     {
       "clipId": "BS_MAC_100_HEAD_FACE_NECK_ASAF",
       "role": "instruction",
-      "text": "Relax your head face and neck",
+      "text": "Head face and neck",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_100_HEAD_FACE_NECK_ASAF.mp3"
       },
@@ -125,7 +125,7 @@
     {
       "clipId": "BS_MAC_120_CHEST_BELLY_ASAF",
       "role": "instruction",
-      "text": "Relax your chest and belly",
+      "text": "Chest and belly",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_120_CHEST_BELLY_ASAF.mp3"
       },
@@ -138,7 +138,7 @@
     {
       "clipId": "BS_MAC_140_LEGS_FEET_ASAF",
       "role": "instruction",
-      "text": "Relax your legs and feet",
+      "text": "Legs and feet",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MAC_140_LEGS_FEET_ASAF.mp3"
       },
@@ -255,7 +255,7 @@
     {
       "clipId": "BS_MIC_350_FACE_EYE_MUSCLES_ASAF",
       "role": "instruction",
-      "text": "Eye muscles",
+      "text": "The muscles behind your eyes",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_350_FACE_EYE_MUSCLES_ASAF.mp3"
       },
@@ -346,7 +346,7 @@
     {
       "clipId": "BS_MIC_396_FACE_INNER_MOUTH_ASAF",
       "role": "instruction",
-      "text": "Inner mouth",
+      "text": "Inside of your mouth",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_396_FACE_INNER_MOUTH_ASAF.mp3"
       },
@@ -359,7 +359,7 @@
     {
       "clipId": "BS_MIC_398_FACE_JAW_ASAF",
       "role": "instruction",
-      "text": "Jaw",
+      "text": "Joints of the jaw",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_398_FACE_JAW_ASAF.mp3"
       },
@@ -385,7 +385,7 @@
     {
       "clipId": "BS_MIC_410_NECK_BACK_ASAF",
       "role": "instruction",
-      "text": "Back of your neck",
+      "text": "Neck",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_410_NECK_BACK_ASAF.mp3"
       },
@@ -398,7 +398,7 @@
     {
       "clipId": "BS_REG_240_CHEST_ASAF",
       "role": "instruction",
-      "text": "Chest",
+      "text": "Chest and heart",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_REG_240_CHEST_ASAF.mp3"
       },
@@ -424,7 +424,7 @@
     {
       "clipId": "BS_REG_260_PELVIC_LOWERBACK_ASAF",
       "role": "instruction",
-      "text": "Pelvic area and lower back",
+      "text": "Pelvic floor and lower back",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_REG_260_PELVIC_LOWERBACK_ASAF.mp3"
       },
@@ -437,7 +437,7 @@
     {
       "clipId": "BS_MIC_420_CHEST_HEART_ASAF",
       "role": "instruction",
-      "text": "Heart",
+      "text": "Chest and heart",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_420_CHEST_HEART_ASAF.mp3"
       },
@@ -476,7 +476,7 @@
     {
       "clipId": "BS_MIC_450_BELLY_ASAF",
       "role": "instruction",
-      "text": "Belly",
+      "text": "Belly, let it rise and fall with your breath",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_450_BELLY_ASAF.mp3"
       },
@@ -658,7 +658,7 @@
     {
       "clipId": "BS_MIC_570_FEET_TOES_ASAF",
       "role": "instruction",
-      "text": "Toes",
+      "text": "Each toe, one by one",
       "voices": {
         "Asaf": "modules/body_scan_fractional/asaf/BS_MIC_570_FEET_TOES_ASAF.mp3"
       },
