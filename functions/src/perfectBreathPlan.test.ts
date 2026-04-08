@@ -77,38 +77,51 @@ test("composePerfectBreathPlan single long session may include 322 before final 
   }
 });
 
-/** Integer second when a cue may fire; must match `voiceTriggerSec` in perfectBreathPlan.ts */
+/** Must match `voiceTriggerSec` in perfectBreathPlan.ts */
 function voiceTriggerSec(cursor: number): number {
   const eps = 1e-9;
   return Math.max(0, Math.ceil(cursor - eps));
 }
 
-test("composePerfectBreathPlan preparation inhale never overlaps next exhale (fractional durations)", () => {
-  const clips = mockCatalog().map((x) => {
-    if (x.clipId === "PBV_BREATH_100") return { ...x, durationSec: 7.967 };
-    if (x.clipId === "PBV_BREATH_110") return { ...x, durationSec: 4.989 };
-    if (x.clipId === "PBV_BREATH_120") return { ...x, durationSec: 5.799 };
-    if (x.clipId === "PBV_BREATH_130") return { ...x, durationSec: 2.064 };
-    return x;
-  });
-  const plan = composePerfectBreathPlan(clips, 600, "Asaf", "PB_FRAC");
-  const byId = new Map(clips.map((c) => [c.clipId, c.durationSec]));
-  const prepPairs: [string, string][] = [
-    ["PBV_BREATH_100", "PBV_BREATH_110"],
-    ["PBV_BREATH_120", "PBV_BREATH_130"],
-    ["PBV_BREATH_140", "PBV_BREATH_150"],
-    ["PBV_BREATH_160", "PBV_BREATH_170"],
-  ];
-  for (const [inhId, exhId] of prepPairs) {
+/** Must match preparation SFX cadence in perfectBreathPlan.ts */
+const PREP_INHALE_SFX_SEC = 5;
+const PREP_GAP_AFTER_INHALE_SEC = 2;
+const PREP_EXHALE_SFX_SEC = 5;
+const PREP_GAP_AFTER_EXHALE_SEC = 1;
+
+const PREP_PAIRS: [string, string][] = [
+  ["PBV_BREATH_100", "PBV_BREATH_110"],
+  ["PBV_BREATH_120", "PBV_BREATH_130"],
+  ["PBV_BREATH_140", "PBV_BREATH_150"],
+  ["PBV_BREATH_160", "PBV_BREATH_170"],
+];
+
+test("composePerfectBreathPlan prep phase follows SFX cadence (inhale 5s, gap 2s, exhale 5s, gap 1s)", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 600, "Asaf", "PB_FRAC");
+  for (const [inhId, exhId] of PREP_PAIRS) {
     const inh = plan.items.find((i) => i.clipId === inhId);
     const exh = plan.items.find((i) => i.clipId === exhId);
     assert.ok(inh && exh, `missing ${inhId} or ${exhId}`);
-    const dInh = byId.get(inhId);
-    assert.ok(typeof dInh === "number");
-    const earliestExh = voiceTriggerSec(inh!.atSec + dInh!);
+    const earliestExh = voiceTriggerSec(
+      inh!.atSec + PREP_INHALE_SFX_SEC + PREP_GAP_AFTER_INHALE_SEC
+    );
     assert.ok(
       exh!.atSec >= earliestExh,
-      `overlap: ${inhId}@${inh!.atSec}s + ${dInh}s ends after ${earliestExh - 1}s, but ${exhId}@${exh!.atSec}s`
+      `${exhId}@${exh!.atSec}s should be on or after inhale SFX block end ${earliestExh}s (${inhId}@${inh!.atSec}s)`
+    );
+  }
+  for (let i = 0; i < PREP_PAIRS.length - 1; i++) {
+    const exhId = PREP_PAIRS[i]![1];
+    const nextInhId = PREP_PAIRS[i + 1]![0];
+    const exh = plan.items.find((x) => x.clipId === exhId);
+    const nextInh = plan.items.find((x) => x.clipId === nextInhId);
+    assert.ok(exh && nextInh);
+    const earliestNextInh = voiceTriggerSec(
+      exh!.atSec + PREP_EXHALE_SFX_SEC + PREP_GAP_AFTER_EXHALE_SEC
+    );
+    assert.ok(
+      nextInh!.atSec >= earliestNextInh,
+      `${nextInhId}@${nextInh!.atSec}s should follow exhale block from ${exhId}@${exh!.atSec}s (earliest ${earliestNextInh}s)`
     );
   }
 });

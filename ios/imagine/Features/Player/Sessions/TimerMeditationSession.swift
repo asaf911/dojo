@@ -43,6 +43,30 @@ struct TimerSessionConfig {
     }
 }
 
+extension TimerSessionConfig {
+    /// Background, binaural (when selected), every cue voice URL, and every `parallelSfx` URL — deduplicated.
+    /// Used for offline checks and pre-start downloads so Perfect Breath (and similar) cache `PBS_IN` / `PBS_OUT`.
+    func allTimerAssetRemoteURLStrings() -> [String] {
+        var urls: [String] = []
+        if !backgroundSound.url.isEmpty, backgroundSound.id != "None" {
+            urls.append(backgroundSound.url)
+        }
+        if !binauralBeat.url.isEmpty, binauralBeat.id != "None" {
+            urls.append(binauralBeat.url)
+        }
+        for setting in cueSettings {
+            let c = setting.cue
+            if !c.url.isEmpty {
+                urls.append(c.url)
+            }
+            if let ps = c.parallelSfx, !ps.url.isEmpty {
+                urls.append(ps.url)
+            }
+        }
+        return Array(Set(urls))
+    }
+}
+
 /// Timer meditation session that wraps MeditationSessionTimer and audio layers
 class TimerMeditationSession: ObservableObject, PlayableSession {
     
@@ -334,25 +358,22 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         )
         AppAudioLifecycleController.shared.meditationDidStart()
         
-        // Preload all cue audio files for accurate durations (enables precise seeking)
+        // Preload all cue + parallel SFX into memory before starting the clock so prep cues never race
+        // (parallel breath SFX must be cached or voice+SFX scheduling can be skipped when generation changes).
         let allCues = config.cueSettings.map { $0.cue }
         CuePlaybackManager.shared.preloadCues(allCues) { [weak self] in
-            // Start cues are played after preload completes
-            self?.playStartCues()
+            guard let self = self else { return }
+            self.timerManager.start()
+            if self.hasBackgroundSound {
+                self.backgroundSoundManager.play(sound: self.config.backgroundSound, withFadeInDuration: 3.0)
+            }
+            if self.hasBinauralBeat {
+                self.binauralBeatManager.play(beat: self.config.binauralBeat, withFadeInDuration: 3.0)
+            }
+            self.playStartCues()
         }
         
-        // Start the timer and audio layers immediately (don't wait for preload)
-        timerManager.start()
-        
-        // Start audio layers
-        if hasBackgroundSound {
-            backgroundSoundManager.play(sound: config.backgroundSound, withFadeInDuration: 3.0)
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.play(beat: config.binauralBeat, withFadeInDuration: 3.0)
-        }
-        
-        // Register with lock screen service
+        // Register with lock screen service (metadata only until playback begins after preload)
         LockScreenMediaService.shared.registerSession(self)
         
         // Note: HR lifecycle is managed by PlayerView (unified for all session types)
@@ -416,41 +437,32 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             AppAudioLifecycleController.shared.meditationDidStart()
         }
         
-        // Preload cues for accurate durations
         let allCues = config.cueSettings.map { $0.cue }
         CuePlaybackManager.shared.preloadCues(allCues) { [weak self] in
             guard let self = self else { return }
-            // Check if we're inside a start cue window and should play it
-            self.checkAndPlayCueAtPosition(newElapsed: TimeInterval(elapsed), startPaused: false)
-        }
-        
-        // Start the timer
-        timerManager.start()
-        
-        // Start audio layers and seek to current position
-        if hasBackgroundSound {
-            // Start playing first, then seek to position
-            backgroundSoundManager.play(sound: config.backgroundSound, withFadeInDuration: 0.5)
-            // Give it a moment to load, then seek
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                guard let self = self else { return }
-                let currentElapsed = TimeInterval(self.totalSeconds - self.remainingSeconds)
-                self.backgroundSoundManager.seekToSessionTime(currentElapsed, withFadeIn: false)
+            let elapsedNow = TimeInterval(self.totalSeconds - self.remainingSeconds)
+            self.timerManager.start()
+            if self.hasBackgroundSound {
+                self.backgroundSoundManager.play(sound: self.config.backgroundSound, withFadeInDuration: 0.5)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    guard let self = self else { return }
+                    let t = TimeInterval(self.totalSeconds - self.remainingSeconds)
+                    self.backgroundSoundManager.seekToSessionTime(t, withFadeIn: false)
+                }
             }
-        }
-        if hasBinauralBeat {
-            binauralBeatManager.play(beat: config.binauralBeat, withFadeInDuration: 0.5)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                guard let self = self else { return }
-                let currentElapsed = TimeInterval(self.totalSeconds - self.remainingSeconds)
-                self.binauralBeatManager.seekToSessionTime(currentElapsed, withFadeIn: false)
+            if self.hasBinauralBeat {
+                self.binauralBeatManager.play(beat: self.config.binauralBeat, withFadeInDuration: 0.5)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    guard let self = self else { return }
+                    let t = TimeInterval(self.totalSeconds - self.remainingSeconds)
+                    self.binauralBeatManager.seekToSessionTime(t, withFadeIn: false)
+                }
             }
+            self.checkAndPlayCueAtPosition(newElapsed: elapsedNow, startPaused: false)
+            print("🧠 AI_DEBUG [SESSION] startFromCurrentPosition() complete (after cue preload)")
         }
         
-        // Register with lock screen service
         LockScreenMediaService.shared.registerSession(self)
-        
-        print("🧠 AI_DEBUG [SESSION] startFromCurrentPosition() complete")
     }
     
     func stop() {

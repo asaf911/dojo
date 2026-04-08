@@ -14,12 +14,27 @@ import type {
 const TAG = "[PerfectBreathPlan]";
 
 const INTRO_SILENCE_SEC = 2;
-const BETWEEN_CYCLES_SILENCE_SEC = 2;
+/** Silence after `322` before the next cycle’s prep (`100`). Minimum 10 s. */
+const BETWEEN_CYCLES_SILENCE_SEC = 10;
 const RECOVERY_TOP_HOLD_SEC = 5;
 /** Silence after retention inhale ends, before 230 (early in top hold). */
 const SILENCE_BEFORE_230_SEC = 2;
 /** Silence after 230 ends, before release line. */
 const SILENCE_AFTER_230_SEC = 2;
+
+/**
+ * Preparation phase timeline is driven by breath SFX (not narration length).
+ * Narration starts with the matching SFX; next cue is scheduled after SFX + gap.
+ */
+const PREP_INHALE_SFX_SEC = 5;
+const PREP_GAP_AFTER_INHALE_SEC = 2;
+const PREP_EXHALE_SFX_SEC = 5;
+const PREP_GAP_AFTER_EXHALE_SEC = 1;
+
+const PREP_ADVANCE_AFTER_INHALE_SEC =
+  PREP_INHALE_SFX_SEC + PREP_GAP_AFTER_INHALE_SEC;
+const PREP_ADVANCE_AFTER_EXHALE_SEC =
+  PREP_EXHALE_SFX_SEC + PREP_GAP_AFTER_EXHALE_SEC;
 
 const PREP_PAIRS: [string, string][] = [
   ["PBV_BREATH_100", "PBV_BREATH_110"],
@@ -90,6 +105,18 @@ function afterScheduledVoiceCue(
   return atSec + clipSec(map, voiceClipId);
 }
 
+/** Cursor after one prep inhale block (SFX window + post-inhale gap). */
+function afterPrepInhaleBlock(cursor: number): number {
+  const atSec = voiceTriggerSec(cursor);
+  return atSec + PREP_ADVANCE_AFTER_INHALE_SEC;
+}
+
+/** Cursor after one prep exhale block (SFX window + post-exhale gap). */
+function afterPrepExhaleBlock(cursor: number): number {
+  const atSec = voiceTriggerSec(cursor);
+  return atSec + PREP_ADVANCE_AFTER_EXHALE_SEC;
+}
+
 function parallelSfx(
   map: Map<string, FractionalClip>,
   voiceId: string,
@@ -129,9 +156,8 @@ function estimateOneCycleSec(
 ): number {
   let t = 0;
   for (let p = 0; p < prepPairs; p++) {
-    const [inhId, exhId] = PREP_PAIRS[p];
-    t = afterScheduledVoiceCue(t, map, inhId);
-    t = afterScheduledVoiceCue(t, map, exhId);
+    t = afterPrepInhaleBlock(t);
+    t = afterPrepExhaleBlock(t);
   }
   t = afterScheduledVoiceCue(t, map, ID_200);
   t += SILENCE_BEFORE_230_SEC;
@@ -191,7 +217,9 @@ function pushVoice(
   voiceId: string,
   voiceClipId: string,
   role: string,
-  parallel?: FractionalParallelClip
+  parallel?: FractionalParallelClip,
+  /** When set, cursor advances by this (e.g. SFX cadence) instead of voice `durationSec`. */
+  advanceCursorBySec?: number
 ): number {
   const clip = map.get(voiceClipId);
   if (!clip) {
@@ -206,7 +234,13 @@ function pushVoice(
     url: pickUrl(clip, voiceId),
     parallel,
   });
-  return atSec + clipSec(map, voiceClipId);
+  const advance =
+    typeof advanceCursorBySec === "number" &&
+    Number.isFinite(advanceCursorBySec) &&
+    advanceCursorBySec >= 0
+      ? advanceCursorBySec
+      : clipSec(map, voiceClipId);
+  return atSec + advance;
 }
 
 /**
@@ -260,7 +294,8 @@ export function composePerfectBreathPlan(
         voiceId,
         inhId,
         "instruction",
-        parallelSfx(map, voiceId, ID_SFX_IN)
+        parallelSfx(map, voiceId, ID_SFX_IN),
+        PREP_ADVANCE_AFTER_INHALE_SEC
       );
       cursor = pushVoice(
         items,
@@ -269,7 +304,8 @@ export function composePerfectBreathPlan(
         voiceId,
         exhId,
         "instruction",
-        parallelSfx(map, voiceId, ID_SFX_OUT)
+        parallelSfx(map, voiceId, ID_SFX_OUT),
+        PREP_ADVANCE_AFTER_EXHALE_SEC
       );
     }
 

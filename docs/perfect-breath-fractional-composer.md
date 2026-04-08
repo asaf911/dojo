@@ -48,7 +48,24 @@ iOS maps this to `Cue.parallelSfx` and mixes on a second `AVAudioPlayerNode`. `p
 
 ## Cue timing (no overlap)
 
-The app triggers fractional cues on **whole-second** `elapsed` times. The composer schedules each voice clip at `ceil(cursor)` seconds (after an optional epsilon), then advances the internal cursor by **`atSec + durationSec`** from the catalog—not by the pre-round float—so the next cue’s second is never before `previousStart + previousDuration`. Without that, `round(floatCursor)` could place the next cue **too early** (e.g. exhale at 15s while inhale still plays until ~16s). Re-scan `durationSec` after any asset change so it matches real decode length (same source iOS uses after preload).
+The app triggers fractional cues on **whole-second** `elapsed` times. The composer schedules each voice clip at `ceil(cursor)` seconds (after an optional epsilon), then advances the internal cursor so the next cue does not start too early.
+
+### Preparation (`PBV_BREATH_100`–`170`)
+
+**Breath SFX (`PBS_IN` / `PBS_OUT`) sets the cadence**, not narration length. Each prep inhale item includes parallel `PBS_IN`; each prep exhale includes `PBS_OUT`. Both start on the same `atSec`.
+
+| Segment | Duration |
+|---------|----------|
+| Inhale SFX window | 5 s |
+| Gap (silence) | 2 s |
+| Exhale SFX window | 5 s |
+| Gap (silence) | 1 s |
+
+Then the next prep inhale (or `200` after the last exhale). One inhale+exhale pair = **13 s** of timeline. Narration clips can be shorter than 5 s; if they run long, the next scheduled cue still starts on time (player moves on). **`PBS_IN` / `PBS_OUT` files should be mastered close to 5 s** so the sound matches the grid.
+
+### Rest of the plan
+
+After preparation, the cursor advances by **`atSec + durationSec`** from the catalog for each voice cue (same as before). Re-scan `durationSec` after any asset change.
 
 ## Constants
 
@@ -58,7 +75,7 @@ The app triggers fractional cues on **whole-second** `elapsed` times. The compos
 | Before `PBV_BREATH_230` | 2 | Early in top hold |
 | After `230` | 2 | Before release line |
 | Recovery top hold after `280` | 5 | No extra voice |
-| Between cycles (after `322`) | 2 | Next cycle starts at `100` |
+| Between cycles (after `322`) | 10 | Next cycle starts at `100` |
 
 ## Selection
 

@@ -278,27 +278,7 @@ struct PlayerScreenView: View {
     
     /// Downloads and caches all audio assets needed for the timer session
     private func prepareTimerAssets(for config: TimerSessionConfig) async {
-        var urls: [String] = []
-        
-        // Collect background sound URL
-        if !config.backgroundSound.url.isEmpty {
-            urls.append(config.backgroundSound.url)
-        }
-        
-        // Collect binaural beat URL
-        if !config.binauralBeat.url.isEmpty {
-            urls.append(config.binauralBeat.url)
-        }
-        
-        // Collect all cue URLs
-        for setting in config.cueSettings {
-            if !setting.cue.url.isEmpty {
-                urls.append(setting.cue.url)
-            }
-        }
-        
-        // Deduplicate URLs
-        let uniqueURLs = Array(Set(urls))
+        let uniqueURLs = config.allTimerAssetRemoteURLStrings()
         guard !uniqueURLs.isEmpty else {
             logger.eventMessage("PlayerScreenView: No timer assets to prepare")
             return

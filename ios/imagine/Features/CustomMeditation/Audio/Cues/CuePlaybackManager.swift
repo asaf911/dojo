@@ -398,7 +398,19 @@ class CuePlaybackManager {
                 } else if let sfxRemote = URL(string: ps.url) {
                     FileManagerHelper.shared.ensureLocalFile(for: sfxRemote, setDownloading: { _ in }, completion: { [weak self] sfxLocal in
                         guard let self = self else { return }
-                        guard self.playbackGeneration == generation, let sfxLocal = sfxLocal else { return }
+                        guard self.playbackGeneration == generation else { return }
+                        guard let sfxLocal = sfxLocal else {
+                            print("🧠 AI_DEBUG [CUE] Parallel SFX missing for \(cue.id); playing voice only")
+                            try? self.scheduleVoiceOnlyAndStart(
+                                audioFile: audioFile,
+                                cue: cue,
+                                sessionElapsedTime: sessionElapsedTime,
+                                startPaused: startPaused,
+                                voiceDuration: voiceDuration,
+                                generation: generation
+                            )
+                            return
+                        }
                         if let sfxFile = try? AVAudioFile(forReading: sfxLocal) {
                             let d = Double(sfxFile.length) / sfxFile.processingFormat.sampleRate
                             self.preloadedCues[sfxKey] = (localURL: sfxLocal, duration: d)
