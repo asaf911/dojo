@@ -13,6 +13,9 @@ import type {
 
 const TAG = "[PerfectBreathPlan]";
 
+/** ≤60s: no intro clip; one prep pair; 10s release — fits a 1-minute fractional block. */
+const ONE_MINUTE_PB_MAX_SEC = 60;
+
 const INTRO_SILENCE_SEC = 2;
 /** Silence after `322` before the next cycle’s prep (`100`). Minimum 10 s. */
 const BETWEEN_CYCLES_SILENCE_SEC = 10;
@@ -44,6 +47,16 @@ const ID_OPEN = "PBV_OPEN_000_INTRO_ASAF";
 const ID_200 = "PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF";
 const ID_230 = "PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF";
 const ID_250 = "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF";
+
+/** Mid-hold “thoughts escape” reminder — skipped for 10s bottom hold (too short). */
+function includeMidHoldThoughtsReminder(release: { holdSec: number }): boolean {
+  return release.holdSec > 10;
+}
+
+/** ~⅓ into the bottom hold (≈30%): 15s→5s, 30s→10s from hold start. */
+function midHoldReminderOffsetSec(bottomHoldSec: number): number {
+  return Math.max(1, Math.round(bottomHoldSec / 3));
+}
 const ID_280 = "PBV_BREATH_280_INHALE_RECOVERY_ASAF";
 const ID_320 = "PBV_BREATH_320_FINAL_EXHALE_ASAF";
 const ID_322 = "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF";
@@ -132,7 +145,8 @@ function parallelSfx(
 }
 
 function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: number } {
-  /** ~2 min PB window: use 20s bottom hold instead of 10s to fill silence after final exhale. */
+  if (durationSec <= ONE_MINUTE_PB_MAX_SEC) return RELEASE_ORDER[0];
+  /** ~2 min PB window: 20s bottom hold (not used at ≤60s). */
   if (durationSec <= 120) return RELEASE_ORDER[2];
   if (durationSec <= 240) return RELEASE_ORDER[0];
   if (durationSec <= 360) return RELEASE_ORDER[1];
@@ -144,8 +158,9 @@ function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: 
 function pickPrepPairCount(durationSec: number): number {
   if (durationSec >= 540) return 4;
   if (durationSec >= 300) return 3;
-  /** 2–5 min: third prep pair (140/150 + 160/170 rhythm) for the ~2m variation among others. */
+  /** 2–5 min: third prep pair (140/150 …). */
   if (durationSec >= 120) return 3;
+  if (durationSec <= ONE_MINUTE_PB_MAX_SEC) return 1;
   return 2;
 }
 
@@ -168,9 +183,13 @@ function estimateOneCycleSec(
   t = afterScheduledVoiceCue(t, map, release.clipId);
   const afterRel = t;
   const bottomHold = release.holdSec;
-  const hold250At = afterRel + bottomHold / 2;
-  const at250 = Math.round(hold250At);
-  t = Math.max(afterRel + bottomHold, at250 + clipSec(map, ID_250));
+  if (includeMidHoldThoughtsReminder(release)) {
+    const hold250At = afterRel + midHoldReminderOffsetSec(bottomHold);
+    const at250 = Math.round(hold250At);
+    t = Math.max(afterRel + bottomHold, at250 + clipSec(map, ID_250));
+  } else {
+    t = afterRel + bottomHold;
+  }
   t = afterScheduledVoiceCue(t, map, ID_280);
   t += RECOVERY_TOP_HOLD_SEC;
   t = afterScheduledVoiceCue(t, map, closingClipId);
@@ -184,8 +203,11 @@ function estimateSessionSec(
   release: { clipId: string; holdSec: number },
   numCycles: number
 ): number {
-  let t = afterScheduledVoiceCue(0, map, ID_OPEN);
-  t += INTRO_SILENCE_SEC;
+  let t = 0;
+  if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
+    t = afterScheduledVoiceCue(0, map, ID_OPEN);
+    t += INTRO_SILENCE_SEC;
+  }
   for (let i = 0; i < numCycles; i++) {
     const isLast = i === numCycles - 1;
     const closing = isLast ? ID_320 : ID_322;
@@ -266,11 +288,11 @@ export function composePerfectBreathPlan(
     const idx = RELEASE_ORDER.findIndex((r) => r.clipId === release.clipId);
     if (idx > 0) {
       release = RELEASE_ORDER[idx - 1];
-    } else if (prepPairs > 2) {
+    } else if (prepPairs > 1) {
       prepPairs -= 1;
     } else {
       functions.logger.warn(
-        `${TAG} session ${durationSec}s may exceed plan length; using minimal release + 2 prep pairs`
+        `${TAG} session ${durationSec}s may exceed plan length; using minimal release + prep pairs`
       );
       break;
     }
@@ -280,9 +302,10 @@ export function composePerfectBreathPlan(
   const items: FractionalPlanItem[] = [];
   let cursor = 0;
 
-  cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");
-
-  cursor += INTRO_SILENCE_SEC;
+  if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
+    cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");
+    cursor += INTRO_SILENCE_SEC;
+  }
 
   for (let cycle = 0; cycle < numCycles; cycle++) {
     const isLast = cycle === numCycles - 1;
@@ -342,20 +365,24 @@ export function composePerfectBreathPlan(
 
     const afterRelease = cursor;
     const bottomHold = release.holdSec;
-    const hold250At = afterRelease + bottomHold / 2;
-    const at250 = Math.round(hold250At);
-    const clip250 = map.get(ID_250);
-    if (!clip250) {
-      throw new Error(`${TAG} missing catalog clip ${ID_250}`);
+    if (includeMidHoldThoughtsReminder(release)) {
+      const hold250At = afterRelease + midHoldReminderOffsetSec(bottomHold);
+      const at250 = Math.round(hold250At);
+      const clip250 = map.get(ID_250);
+      if (!clip250) {
+        throw new Error(`${TAG} missing catalog clip ${ID_250}`);
+      }
+      items.push({
+        atSec: at250,
+        clipId: ID_250,
+        role: "instruction",
+        text: clip250.text,
+        url: pickUrl(clip250, voiceId),
+      });
+      cursor = Math.max(afterRelease + bottomHold, at250 + clipSec(map, ID_250));
+    } else {
+      cursor = afterRelease + bottomHold;
     }
-    items.push({
-      atSec: at250,
-      clipId: ID_250,
-      role: "instruction",
-      text: clip250.text,
-      url: pickUrl(clip250, voiceId),
-    });
-    cursor = Math.max(afterRelease + bottomHold, at250 + clipSec(map, ID_250));
 
     cursor = pushVoice(
       items,

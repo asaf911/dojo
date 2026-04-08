@@ -80,10 +80,11 @@ After preparation, the cursor advances by **`atSec + durationSec`** from the cat
 
 ## Selection
 
-- **Prep pairs**: **2** (&lt;120s), **3** (120s–539s), **4** (≥540s) — the ~2 min variation adds a third prep pair (`140`/`150`).
-- **Release / bottom hold**: tier chosen from total `durationSec`; composer may step down if the plan would exceed `durationSec`. **Special case:** at **≤120s** (≈2 min PB window) the default release is **`244` (20s hold)** instead of `240` (10s), to use time that was otherwise dead air after the final exhale in mixed sessions.
+- **Intro (`PBV_OPEN_000`)**: omitted for **≤60s** (1-minute block); first plan item is **`100`** at `atSec` 0 (start trigger on clients).
+- **Prep pairs**: **1** (≤60s), **2** (61s–119s), **3** (120s–539s), **4** (≥540s).
+- **Release / bottom hold**: tier from `durationSec`; composer may step down if the plan would exceed `durationSec`. **≤60s:** `240` (10s). **61s–120s:** `244` (20s) for the ~2 min window. **121s–240s:** `240` (10s), then the usual ladder upward.
 - **Cycles**: As many full cycles as fit; the **last** cycle always ends with `PBV_BREATH_320_FINAL_EXHALE_ASAF` (never `322`).
-- **Mid-bottom-hold**: `PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF` at ~50% of the bottom-hold window; timeline advances by `max(hold, midpoint + clip250Duration)` so overlap is handled.
+- **Mid-bottom-hold**: `PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF` about **⅓ of the way** into the bottom hold (≈30%: e.g. **5s** into **15s**, **10s** into **30s**), when **hold &gt; 10s**; **omitted** for the **10s** release (`240`). Timeline still runs the full hold before `280`.
 
 ## Durations
 

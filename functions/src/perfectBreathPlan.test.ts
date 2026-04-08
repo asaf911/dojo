@@ -75,6 +75,37 @@ test("composePerfectBreathPlan 120s uses 20s bottom hold and three prep pairs", 
   assert.equal(plan.items[plan.items.length - 1]!.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
 });
 
+test("composePerfectBreathPlan 60s skips intro, one prep pair, 10s release, fits budget", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 60, "Asaf", "PB_FRAC");
+  assert.ok(!plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
+  assert.equal(plan.items[0]?.clipId, "PBV_BREATH_100");
+  assert.ok(!plan.items.some((i) => i.clipId === "PBV_BREATH_120"));
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_240_RELEASE_HOLD_10S_ASAF"));
+  assert.ok(
+    !plan.items.some((i) => i.clipId === "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF"),
+    "10s bottom hold: no mid-hold reminder"
+  );
+  assert.equal(plan.items[plan.items.length - 1]!.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
+  const last = plan.items[plan.items.length - 1]!;
+  const d = mockCatalog().find((c) => c.clipId === last.clipId)?.durationSec;
+  assert.ok(typeof d === "number" && last.atSec + d <= 60.5);
+});
+
+test("composePerfectBreathPlan includes mid-hold reminder when bottom hold > 10s", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 120, "Asaf", "PB_FRAC");
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF"));
+});
+
+test("composePerfectBreathPlan places mid-hold reminder at ~1/3 of bottom hold", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 360, "Asaf", "PB_FRAC");
+  const rel = plan.items.find((i) => i.clipId === "PBV_BREATH_242_RELEASE_HOLD_15S_ASAF");
+  const h = plan.items.find((i) => i.clipId === "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF");
+  assert.ok(rel && h, "expected 15s release and 250 in 360s plan");
+  const afterRel = rel!.atSec + D;
+  const offset = Math.round(15 / 3);
+  assert.equal(h!.atSec, Math.round(afterRel + offset));
+});
+
 test("composePerfectBreathPlan single long session may include 322 before final 320", () => {
   const plan = composePerfectBreathPlan(mockCatalog(), 1200, "Asaf", "PB_FRAC");
   const has322 = plan.items.some((i) => i.clipId === "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF");
