@@ -72,17 +72,20 @@ After preparation, the cursor advances by **`atSec + durationSec`** from the cat
 | Constant | Seconds | Notes |
 |----------|---------|--------|
 | First prep pair extra gap | +1 each | Added to post-inhale and post-exhale gaps for `100`/`110` only, every cycle |
-| After intro (`PBV_OPEN_000`) | 2 | Silence before first prep inhale |
+| After intro (`PBV_OPEN_000`) | 4 | Silence before first prep inhale |
+| After intro (~3 min band **165–200s**) | 3 | Slightly shorter than default so two cycles + ≥10s tail still fit ~180s |
 | Before `PBV_BREATH_230` | 2 | Early in top hold |
 | After `230` | 2 | Before release line |
 | Recovery top hold after `280` | 5 | No extra voice |
 | Between cycles (after `322`) | 10 | Next cycle starts at `100` |
+| Between cycles (~3 min band **165–200s**) | 3 | Tighter so **two** full cycles fit ~180s with real clip lengths |
+| After final `320` (~3 min only) | 10 | No cue — **minimum** quiet to session end; fills the timer with two cycles |
 
 ## Selection
 
 - **Intro (`PBV_OPEN_000`)**: omitted for **≤60s** (1-minute block); first plan item is **`100`** at `atSec` 0 (start trigger on clients).
-- **Prep pairs**: **1** (≤60s), **2** (61s–119s), **3** (120s–539s), **4** (≥540s).
-- **Release / bottom hold**: tier from `durationSec`; composer may step down if the plan would exceed `durationSec`. **≤60s:** `240` (10s). **61s–120s:** `244` (20s) for the ~2 min window. **121s–240s:** `240` (10s), then the usual ladder upward.
+- **Prep pairs**: **1** (≤60s), **2** (61s–119s and **~3 min ≈165–200s**), **3** (120s–164s, 201s–539s), **4** (≥540s).
+- **Release / bottom hold**: tier from `durationSec`; composer may step down if the plan would exceed `durationSec`. **≤60s:** `240` (10s). **61s–120s:** `244` (20s) for the ~2 min window. **~3 min (165–200s):** `244` (20s) with only two prep pairs. **Other 121s–240s:** `240` (10s), then the usual ladder upward.
 - **Cycles**: As many full cycles as fit; the **last** cycle always ends with `PBV_BREATH_320_FINAL_EXHALE_ASAF` (never `322`).
 - **Mid-bottom-hold**: `PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF` about **⅓ of the way** into the bottom hold (≈30%: e.g. **5s** into **15s**, **10s** into **30s**), when **hold &gt; 10s**; **omitted** for the **10s** release (`240`). Timeline still runs the full hold before `280`.
 

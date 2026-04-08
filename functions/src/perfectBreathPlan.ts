@@ -16,9 +16,44 @@ const TAG = "[PerfectBreathPlan]";
 /** ≤60s: no intro clip; one prep pair; 10s release — fits a 1-minute fractional block. */
 const ONE_MINUTE_PB_MAX_SEC = 60;
 
-const INTRO_SILENCE_SEC = 2;
-/** Silence after `322` before the next cycle’s prep (`100`). Minimum 10 s. */
+/**
+ * ~3 min fractional PB block (±~15s). Fewer prep rounds, longer down hold, extra quiet after final 320.
+ */
+const THREE_MIN_PB_MIN_SEC = 165;
+const THREE_MIN_PB_MAX_SEC = 200;
+
+/**
+ * Quiet after final `320` ends (~3 min band only). At least 10 s to session end (timer keeps running).
+ * Kept at the minimum so a second cycle can fit real clip lengths in a 180 s window.
+ */
+const THREE_MIN_TRAILING_AFTER_FINAL_320_SEC = 10;
+
+function isApproxThreeMinutePB(durationSec: number): boolean {
+  return durationSec >= THREE_MIN_PB_MIN_SEC && durationSec <= THREE_MIN_PB_MAX_SEC;
+}
+
+function trailingAfterFinal320Sec(durationSec: number): number {
+  return isApproxThreeMinutePB(durationSec) ? THREE_MIN_TRAILING_AFTER_FINAL_320_SEC : 0;
+}
+
+/** Silence after intro voice (`OPEN`) before first prep inhale (`100`). */
+const INTRO_SILENCE_SEC = 4;
+
+/**
+ * ~3 min band uses a slightly shorter intro pause than the default so two cycles still fit ~180 s
+ * with ≥10 s tail after final `320` (see `betweenCyclesSilenceSec`).
+ */
+function introSilenceSec(durationSec: number): number {
+  return isApproxThreeMinutePB(durationSec) ? 3 : INTRO_SILENCE_SEC;
+}
+
+/** Default silence after `322` before the next cycle’s prep (`100`). */
 const BETWEEN_CYCLES_SILENCE_SEC = 10;
+
+/** Tighter gap in the ~3 min band so two full cycles fit ~180 s with real narration durations. */
+function betweenCyclesSilenceSec(durationSec: number): number {
+  return isApproxThreeMinutePB(durationSec) ? 3 : BETWEEN_CYCLES_SILENCE_SEC;
+}
 const RECOVERY_TOP_HOLD_SEC = 5;
 /** Silence after retention inhale ends, before 230 (early in top hold). */
 const SILENCE_BEFORE_230_SEC = 2;
@@ -148,6 +183,8 @@ function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: 
   if (durationSec <= ONE_MINUTE_PB_MAX_SEC) return RELEASE_ORDER[0];
   /** ~2 min PB window: 20s bottom hold (not used at ≤60s). */
   if (durationSec <= 120) return RELEASE_ORDER[2];
+  /** ~3 min PB: 20s down hold (vs 10s for other 121–240s sessions). */
+  if (isApproxThreeMinutePB(durationSec)) return RELEASE_ORDER[2];
   if (durationSec <= 240) return RELEASE_ORDER[0];
   if (durationSec <= 360) return RELEASE_ORDER[1];
   if (durationSec <= 480) return RELEASE_ORDER[2];
@@ -158,7 +195,9 @@ function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: 
 function pickPrepPairCount(durationSec: number): number {
   if (durationSec >= 540) return 4;
   if (durationSec >= 300) return 3;
-  /** 2–5 min: third prep pair (140/150 …). */
+  /** ~3 min: two prep pairs only (100–130), then 200. */
+  if (isApproxThreeMinutePB(durationSec)) return 2;
+  /** 2–5 min (except ~3 min above): third prep pair (140/150 …). */
   if (durationSec >= 120) return 3;
   if (durationSec <= ONE_MINUTE_PB_MAX_SEC) return 1;
   return 2;
@@ -206,16 +245,17 @@ function estimateSessionSec(
   let t = 0;
   if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
     t = afterScheduledVoiceCue(0, map, ID_OPEN);
-    t += INTRO_SILENCE_SEC;
+    t += introSilenceSec(durationSec);
   }
   for (let i = 0; i < numCycles; i++) {
     const isLast = i === numCycles - 1;
     const closing = isLast ? ID_320 : ID_322;
     t += estimateOneCycleSec(map, prepPairs, release, closing);
     if (!isLast) {
-      t += BETWEEN_CYCLES_SILENCE_SEC;
+      t += betweenCyclesSilenceSec(durationSec);
     }
   }
+  t += trailingAfterFinal320Sec(durationSec);
   return t;
 }
 
@@ -304,7 +344,7 @@ export function composePerfectBreathPlan(
 
   if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
     cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");
-    cursor += INTRO_SILENCE_SEC;
+    cursor += introSilenceSec(durationSec);
   }
 
   for (let cycle = 0; cycle < numCycles; cycle++) {
@@ -408,7 +448,9 @@ export function composePerfectBreathPlan(
     );
 
     if (!isLast) {
-      cursor += BETWEEN_CYCLES_SILENCE_SEC;
+      cursor += betweenCyclesSilenceSec(durationSec);
+    } else {
+      cursor += trailingAfterFinal320Sec(durationSec);
     }
   }
 

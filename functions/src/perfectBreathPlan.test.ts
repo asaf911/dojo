@@ -75,6 +75,27 @@ test("composePerfectBreathPlan 120s uses 20s bottom hold and three prep pairs", 
   assert.equal(plan.items[plan.items.length - 1]!.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
 });
 
+test("composePerfectBreathPlan ~3min uses two prep pairs, 20s hold, no third prep", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 180, "Asaf", "PB_FRAC");
+  assert.ok(!plan.items.some((i) => i.clipId === "PBV_BREATH_140"));
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_120"));
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_244_RELEASE_HOLD_20S_ASAF"));
+  assert.equal(plan.items[plan.items.length - 1]!.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
+});
+
+test("composePerfectBreathPlan ~3min 180s runs two breath cycles and leaves ≥10s after final 320", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 180, "Asaf", "PB_FRAC");
+  const n322 = plan.items.filter((i) => i.clipId.includes("322")).length;
+  assert.equal(n322, 1, "one next-cycle exhale before the final 320");
+  const last = plan.items[plan.items.length - 1]!;
+  assert.equal(last.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
+  const end320 = last.atSec + D;
+  assert.ok(
+    end320 <= 180 - 10 + 1e-6,
+    `final 320 should end by 170s (10s tail), got end=${end320}`
+  );
+});
+
 test("composePerfectBreathPlan 60s skips intro, one prep pair, 10s release, fits budget", () => {
   const plan = composePerfectBreathPlan(mockCatalog(), 60, "Asaf", "PB_FRAC");
   assert.ok(!plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
