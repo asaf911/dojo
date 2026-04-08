@@ -17,6 +17,7 @@ import {
   composeBodyScanTierPlan,
   type BodyScanTierPlanParams,
 } from "./bodyScanTierPlan";
+import { composePerfectBreathPlan } from "./perfectBreathPlan";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,12 +51,20 @@ export interface FractionalClip {
   integrationOrder?: number;
 }
 
+/** Optional SFX (or second voice) played in parallel with the primary clip at the same session second. */
+export interface FractionalParallelClip {
+  clipId: string;
+  url: string;
+  text?: string;
+}
+
 export interface FractionalPlanItem {
   atSec: number;
   clipId: string;
   role: string;
   text: string;
   url: string;
+  parallel?: FractionalParallelClip;
 }
 
 export interface FractionalPlan {
@@ -397,6 +406,7 @@ const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   BS_FRAC: "body_scan_fractional",
   BS_FRAC_UP: "body_scan_fractional",
   BS_FRAC_DOWN: "body_scan_fractional",
+  PB_FRAC: "perfect_breath_fractional",
 };
 
 /** Inline expansion defaults for BS_FRAC* (see `docs/body-scan-tier-composer.md`). */
@@ -453,12 +463,20 @@ function triggerToSeconds(trigger: string | number): number | null {
   return null;
 }
 
+/** Optional breath SFX (or second layer) played in parallel with the primary cue at the same session second. */
+export type ResolvedParallelSfx = {
+  id: string;
+  name: string;
+  url: string;
+};
+
 export type ResolvedCue = {
   id: string;
   name: string;
   url: string;
   trigger: string | number;
   durationMinutes?: number | null;
+  parallelSfx?: ResolvedParallelSfx;
 };
 
 /**
@@ -550,6 +568,8 @@ export function expandFractionalCues(
         voiceId,
         moduleId: cue.id,
       });
+    } else if (cue.id === "PB_FRAC") {
+      plan = composePerfectBreathPlan(resolvedClips, windowSec, voiceId, cue.id);
     } else {
       plan = composeFractionalPlan(resolvedClips, windowSec, voiceId, cue.id);
     }
@@ -560,12 +580,20 @@ export function expandFractionalCues(
 
     for (const item of plan.items) {
       const absoluteSec = startSec + item.atSec;
-      result.push({
+      const base: ResolvedCue = {
         id: item.clipId,
         name: item.text,
         url: item.url,
         trigger: absoluteSec === 0 ? "start" : `s${absoluteSec}`,
-      });
+      };
+      if (item.parallel?.clipId && item.parallel.url) {
+        base.parallelSfx = {
+          id: item.parallel.clipId,
+          name: item.parallel.text ?? item.parallel.clipId,
+          url: item.parallel.url,
+        };
+      }
+      result.push(base);
     }
   }
 

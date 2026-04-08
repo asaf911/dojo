@@ -1,0 +1,357 @@
+/**
+ * Deterministic Perfect Breath (PB_FRAC) timeline composer.
+ * See docs/perfect-breath-fractional-composer.md.
+ */
+
+import * as functions from "firebase-functions";
+import type {
+  FractionalClip,
+  FractionalParallelClip,
+  FractionalPlan,
+  FractionalPlanItem,
+} from "./fractionalComposer"; // type-only: no runtime cycle with fractionalComposer importing this module
+
+const TAG = "[PerfectBreathPlan]";
+
+const INTRO_SILENCE_SEC = 2;
+const BETWEEN_CYCLES_SILENCE_SEC = 2;
+const RECOVERY_TOP_HOLD_SEC = 5;
+/** Silence after retention inhale ends, before 230 (early in top hold). */
+const SILENCE_BEFORE_230_SEC = 2;
+/** Silence after 230 ends, before release line. */
+const SILENCE_AFTER_230_SEC = 2;
+
+const PREP_PAIRS: [string, string][] = [
+  ["PBV_BREATH_100", "PBV_BREATH_110"],
+  ["PBV_BREATH_120", "PBV_BREATH_130"],
+  ["PBV_BREATH_140", "PBV_BREATH_150"],
+  ["PBV_BREATH_160", "PBV_BREATH_170"],
+];
+
+const ID_OPEN = "PBV_OPEN_000_INTRO_ASAF";
+const ID_200 = "PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF";
+const ID_230 = "PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF";
+const ID_250 = "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF";
+const ID_280 = "PBV_BREATH_280_INHALE_RECOVERY_ASAF";
+const ID_320 = "PBV_BREATH_320_FINAL_EXHALE_ASAF";
+const ID_322 = "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF";
+const ID_SFX_IN = "PBS_IN";
+const ID_SFX_OUT = "PBS_OUT";
+
+const RELEASE_ORDER: { clipId: string; holdSec: number }[] = [
+  { clipId: "PBV_BREATH_240_RELEASE_HOLD_10S_ASAF", holdSec: 10 },
+  { clipId: "PBV_BREATH_242_RELEASE_HOLD_15S_ASAF", holdSec: 15 },
+  { clipId: "PBV_BREATH_244_RELEASE_HOLD_20S_ASAF", holdSec: 20 },
+  { clipId: "PBV_BREATH_246_RELEASE_HOLD_25S_ASAF", holdSec: 25 },
+  { clipId: "PBV_BREATH_248_RELEASE_HOLD_30S_ASAF", holdSec: 30 },
+];
+
+function clipMapFromList(clips: FractionalClip[]): Map<string, FractionalClip> {
+  const m = new Map<string, FractionalClip>();
+  for (const c of clips) {
+    m.set(c.clipId, c);
+  }
+  return m;
+}
+
+function pickUrl(clip: FractionalClip, voiceId: string): string {
+  return clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
+}
+
+function clipSec(map: Map<string, FractionalClip>, id: string): number {
+  const c = map.get(id);
+  const d = c?.durationSec;
+  if (typeof d === "number" && Number.isFinite(d) && d > 0) {
+    return d;
+  }
+  functions.logger.warn(`${TAG} missing durationSec for ${id}, using 5s`);
+  return 5;
+}
+
+/**
+ * Integer session second when a voice cue may start, given ideal cursor time.
+ * Uses `ceil` so the next cue never shares a second with the tail of the previous clip
+ * (timer uses whole-second `elapsed`; `round` could schedule too early vs catalog duration).
+ */
+function voiceTriggerSec(cursor: number): number {
+  const eps = 1e-9;
+  return Math.max(0, Math.ceil(cursor - eps));
+}
+
+/**
+ * Next timeline cursor after a voice cue: scheduled start + catalog duration.
+ */
+function afterScheduledVoiceCue(
+  cursor: number,
+  map: Map<string, FractionalClip>,
+  voiceClipId: string
+): number {
+  const atSec = voiceTriggerSec(cursor);
+  return atSec + clipSec(map, voiceClipId);
+}
+
+function parallelSfx(
+  map: Map<string, FractionalClip>,
+  voiceId: string,
+  sfxId: string
+): FractionalParallelClip {
+  const sfx = map.get(sfxId);
+  if (!sfx) {
+    functions.logger.error(`${TAG} missing SFX clip ${sfxId}`);
+    return { clipId: sfxId, url: "", text: "" };
+  }
+  return {
+    clipId: sfxId,
+    url: pickUrl(sfx, voiceId),
+    text: sfx.text,
+  };
+}
+
+function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: number } {
+  if (durationSec <= 240) return RELEASE_ORDER[0];
+  if (durationSec <= 360) return RELEASE_ORDER[1];
+  if (durationSec <= 480) return RELEASE_ORDER[2];
+  if (durationSec <= 720) return RELEASE_ORDER[3];
+  return RELEASE_ORDER[4];
+}
+
+function pickPrepPairCount(durationSec: number): number {
+  if (durationSec >= 540) return 4;
+  if (durationSec >= 300) return 3;
+  return 2;
+}
+
+function estimateOneCycleSec(
+  map: Map<string, FractionalClip>,
+  prepPairs: number,
+  release: { clipId: string; holdSec: number },
+  closingClipId: string
+): number {
+  let t = 0;
+  for (let p = 0; p < prepPairs; p++) {
+    const [inhId, exhId] = PREP_PAIRS[p];
+    t = afterScheduledVoiceCue(t, map, inhId);
+    t = afterScheduledVoiceCue(t, map, exhId);
+  }
+  t = afterScheduledVoiceCue(t, map, ID_200);
+  t += SILENCE_BEFORE_230_SEC;
+  t = afterScheduledVoiceCue(t, map, ID_230);
+  t += SILENCE_AFTER_230_SEC;
+  t = afterScheduledVoiceCue(t, map, release.clipId);
+  const afterRel = t;
+  const bottomHold = release.holdSec;
+  const hold250At = afterRel + bottomHold / 2;
+  const at250 = Math.round(hold250At);
+  t = Math.max(afterRel + bottomHold, at250 + clipSec(map, ID_250));
+  t = afterScheduledVoiceCue(t, map, ID_280);
+  t += RECOVERY_TOP_HOLD_SEC;
+  t = afterScheduledVoiceCue(t, map, closingClipId);
+  return t;
+}
+
+function estimateSessionSec(
+  map: Map<string, FractionalClip>,
+  durationSec: number,
+  prepPairs: number,
+  release: { clipId: string; holdSec: number },
+  numCycles: number
+): number {
+  let t = afterScheduledVoiceCue(0, map, ID_OPEN);
+  t += INTRO_SILENCE_SEC;
+  for (let i = 0; i < numCycles; i++) {
+    const isLast = i === numCycles - 1;
+    const closing = isLast ? ID_320 : ID_322;
+    t += estimateOneCycleSec(map, prepPairs, release, closing);
+    if (!isLast) {
+      t += BETWEEN_CYCLES_SILENCE_SEC;
+    }
+  }
+  return t;
+}
+
+function maxCyclesThatFit(
+  map: Map<string, FractionalClip>,
+  durationSec: number,
+  prepPairs: number,
+  release: { clipId: string; holdSec: number }
+): number {
+  for (let k = 20; k >= 1; k--) {
+    const est = estimateSessionSec(map, durationSec, prepPairs, release, k);
+    if (est <= durationSec + 0.5) {
+      return k;
+    }
+  }
+  return 1;
+}
+
+function pushVoice(
+  items: FractionalPlanItem[],
+  cursor: number,
+  map: Map<string, FractionalClip>,
+  voiceId: string,
+  voiceClipId: string,
+  role: string,
+  parallel?: FractionalParallelClip
+): number {
+  const clip = map.get(voiceClipId);
+  if (!clip) {
+    throw new Error(`${TAG} missing catalog clip ${voiceClipId}`);
+  }
+  const atSec = voiceTriggerSec(cursor);
+  items.push({
+    atSec,
+    clipId: voiceClipId,
+    role,
+    text: clip.text,
+    url: pickUrl(clip, voiceId),
+    parallel,
+  });
+  return atSec + clipSec(map, voiceClipId);
+}
+
+/**
+ * Builds a second-precision plan for Perfect Breath.
+ */
+export function composePerfectBreathPlan(
+  clips: FractionalClip[],
+  durationSec: number,
+  voiceId: string,
+  moduleId: string
+): FractionalPlan {
+  const map = clipMapFromList(clips);
+  let release = pickReleaseForSession(durationSec);
+  let prepPairs = pickPrepPairCount(durationSec);
+  let numCycles = maxCyclesThatFit(map, durationSec, prepPairs, release);
+
+  while (
+    estimateSessionSec(map, durationSec, prepPairs, release, numCycles) >
+    durationSec + 0.5
+  ) {
+    const idx = RELEASE_ORDER.findIndex((r) => r.clipId === release.clipId);
+    if (idx > 0) {
+      release = RELEASE_ORDER[idx - 1];
+    } else if (prepPairs > 2) {
+      prepPairs -= 1;
+    } else {
+      functions.logger.warn(
+        `${TAG} session ${durationSec}s may exceed plan length; using minimal release + 2 prep pairs`
+      );
+      break;
+    }
+    numCycles = maxCyclesThatFit(map, durationSec, prepPairs, release);
+  }
+
+  const items: FractionalPlanItem[] = [];
+  let cursor = 0;
+
+  cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");
+
+  cursor += INTRO_SILENCE_SEC;
+
+  for (let cycle = 0; cycle < numCycles; cycle++) {
+    const isLast = cycle === numCycles - 1;
+
+    for (let p = 0; p < prepPairs; p++) {
+      const [inhId, exhId] = PREP_PAIRS[p];
+      cursor = pushVoice(
+        items,
+        cursor,
+        map,
+        voiceId,
+        inhId,
+        "instruction",
+        parallelSfx(map, voiceId, ID_SFX_IN)
+      );
+      cursor = pushVoice(
+        items,
+        cursor,
+        map,
+        voiceId,
+        exhId,
+        "instruction",
+        parallelSfx(map, voiceId, ID_SFX_OUT)
+      );
+    }
+
+    cursor = pushVoice(
+      items,
+      cursor,
+      map,
+      voiceId,
+      ID_200,
+      "instruction",
+      parallelSfx(map, voiceId, ID_SFX_IN)
+    );
+
+    cursor += SILENCE_BEFORE_230_SEC;
+    cursor = pushVoice(items, cursor, map, voiceId, ID_230, "instruction");
+    cursor += SILENCE_AFTER_230_SEC;
+
+    cursor = pushVoice(
+      items,
+      cursor,
+      map,
+      voiceId,
+      release.clipId,
+      "instruction",
+      parallelSfx(map, voiceId, ID_SFX_OUT)
+    );
+
+    const afterRelease = cursor;
+    const bottomHold = release.holdSec;
+    const hold250At = afterRelease + bottomHold / 2;
+    const at250 = Math.round(hold250At);
+    const clip250 = map.get(ID_250);
+    if (!clip250) {
+      throw new Error(`${TAG} missing catalog clip ${ID_250}`);
+    }
+    items.push({
+      atSec: at250,
+      clipId: ID_250,
+      role: "instruction",
+      text: clip250.text,
+      url: pickUrl(clip250, voiceId),
+    });
+    cursor = Math.max(afterRelease + bottomHold, at250 + clipSec(map, ID_250));
+
+    cursor = pushVoice(
+      items,
+      cursor,
+      map,
+      voiceId,
+      ID_280,
+      "instruction",
+      parallelSfx(map, voiceId, ID_SFX_IN)
+    );
+
+    cursor += RECOVERY_TOP_HOLD_SEC;
+
+    const closingId = isLast ? ID_320 : ID_322;
+    cursor = pushVoice(
+      items,
+      cursor,
+      map,
+      voiceId,
+      closingId,
+      "outro",
+      parallelSfx(map, voiceId, ID_SFX_OUT)
+    );
+
+    if (!isLast) {
+      cursor += BETWEEN_CYCLES_SILENCE_SEC;
+    }
+  }
+
+  const planId = `${moduleId.toLowerCase()}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
+  functions.logger.info(
+    `${TAG} plan=${planId} cycles=${numCycles} prepPairs=${prepPairs} release=${release.clipId} items=${items.length}`
+  );
+
+  return {
+    planId,
+    moduleId,
+    durationSec,
+    voiceId,
+    items,
+  };
+}

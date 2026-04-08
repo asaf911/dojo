@@ -27,7 +27,7 @@ extension MeditationPackage {
             binauralBeat = nil
         }
         let cueSettings = cues.map { mc -> CueSetting in
-            let cue = Cue(id: mc.id, name: mc.name, url: mc.url)
+            let cue = Cue(id: mc.id, name: mc.name, url: mc.url, parallelSfx: mc.parallelSfx)
             switch mc.trigger {
             case .start:
                 return CueSetting(triggerType: .start, minute: nil, cue: cue)

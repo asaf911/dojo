@@ -8,7 +8,7 @@
  * Usage (from functions/):
  *   node scripts/scanBodyScanDurations.mjs
  *   node scripts/scanBodyScanDurations.mjs --dry-run
- *   node scripts/scanBodyScanDurations.mjs body_scan_fractional.json
+ *   node scripts/scanBodyScanDurations.mjs body_scan_fractional.json perfect_breath_fractional.json
  */
 
 import { parseStream } from "music-metadata";
@@ -53,7 +53,11 @@ async function httpAudioDuration(relativePath) {
   }
   const stream = Readable.fromWeb(res.body);
   try {
-    const meta = await parseStream(stream, { mimeType: "audio/mpeg" });
+    const meta = await parseStream(
+      stream,
+      { mimeType: "audio/mpeg" },
+      { duration: true }
+    );
     return durationFromMetadata(meta);
   } finally {
     stream.destroy();

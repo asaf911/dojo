@@ -10,6 +10,7 @@ import {
   type FractionalClip,
 } from "./fractionalComposer";
 import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
+import { composePerfectBreathPlan } from "./perfectBreathPlan";
 
 admin.initializeApp();
 
@@ -544,6 +545,7 @@ interface VoiceItem {
 const DEPRECATED_CUE_IDS = new Set([
   "MA",
   "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
+  "PB1", "PB2", "PB3", "PB4", "PB5",
 ]);
 
 function resolveStorageUrl(relativePath: string): string {
@@ -1300,10 +1302,12 @@ export const postFractionalPlan = functions.https.onRequest(
       const moduleSlugMap: Record<string, string> = {
         NF_FRAC: "nostril_focus_fractional",
         IM_FRAC: "i_am_mantra_fractional",
+        PB_FRAC: "perfect_breath_fractional",
       };
 
       let catalogSlug: string | undefined;
       let isBodyScanTier = false;
+      const isPerfectBreath = moduleId === "PB_FRAC";
 
       if (isBodyScanModuleId(moduleId)) {
         catalogSlug = "body_scan_fractional";
@@ -1358,6 +1362,8 @@ export const postFractionalPlan = functions.https.onRequest(
           voiceId,
           moduleId,
         });
+      } else if (isPerfectBreath) {
+        plan = composePerfectBreathPlan(resolvedClips, durationSec, voiceId, moduleId);
       } else {
         plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
       }

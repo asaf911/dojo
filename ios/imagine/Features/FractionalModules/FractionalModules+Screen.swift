@@ -14,12 +14,14 @@ extension FractionalModules {
         case nostrilFocus = "NF_FRAC"
         case iAmMantra = "IM_FRAC"
         case bodyScan = "BS_FRAC"
+        case perfectBreath = "PB_FRAC"
 
         var displayName: String {
             switch self {
             case .nostrilFocus: "Nostril Focus"
             case .iAmMantra: "I AM Mantra"
             case .bodyScan: "Body Scan"
+            case .perfectBreath: "Perfect Breath"
             }
         }
     }
@@ -51,7 +53,7 @@ extension FractionalModules {
                             Text(module.displayName).tag(module)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
                     .padding(.horizontal, 16)
                     .onChange(of: selectedModule) { _, newValue in
                         viewModel.moduleId = newValue.rawValue
@@ -70,6 +72,14 @@ extension FractionalModules {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal, 16)
+                }
+
+                if selectedModule == .perfectBreath {
+                    Text("Uses measured clip durations from the Perfect Breath fractional catalog.")
+                        .nunitoFont(size: 13, style: .regular)
+                        .foregroundColor(.foregroundLightGray.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
                 }
 
                 if selectedModule == .bodyScan {
