@@ -165,7 +165,6 @@
 		A5A7DF632DB046B000A6469C /* ActivityViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF622DB046B000A6469C /* ActivityViewController.swift */; };
 		A5A7DF652DB1771E00A6469C /* GreetingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF642DB1771800A6469C /* GreetingManager.swift */; };
 		A5A7DF672DB1A48100A6469C /* CueIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */; };
-		F1D2A00100000001FRAC0001 /* FractionalDurationStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */; };
 		A5AFDDF52CBEEDF1002DD33B /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A5AFDDF42CBEEDF1002DD33B /* FirebaseCrashlytics */; };
 		A5B0059C2C1CB18800945750 /* GoogleAppMeasurement in Frameworks */ = {isa = PBXBuildFile; productRef = A5B0059B2C1CB18800945750 /* GoogleAppMeasurement */; };
 		A5B0059E2C1CC64500945750 /* AnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5B0059D2C1CC64500945750 /* AnalyticsManager.swift */; };
@@ -294,6 +293,7 @@
 		EE7A4FC08A826D0B84EBD3F7 /* MeditationContentProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECEC4CFD44B00C933E1F1BD6 /* MeditationContentProtocol.swift */; };
 		EFBEA0CF7A2FAB6503A7CA36 /* ProductJourneyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B36CFA61BDB83691B4FA7C13 /* ProductJourneyManager.swift */; };
 		F0B1C2D42F70000100123456 /* BinauralBeatSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0B1C2D32F70000100123456 /* BinauralBeatSelector.swift */; };
+		F1D2A00100000001FRAC0001 /* FractionalDurationStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */; };
 		F24D6AC02EAB6E46CE4B93B9 /* OnboardingProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3554C7CEAC5125FD45737F26 /* OnboardingProgressBar.swift */; };
 		F3C4A10B2B2ECB85AE6EC2DD /* CustomMeditationConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B871E6F4A29154CE6B4179D9 /* CustomMeditationConfig.swift */; };
 		F46AD85BF88DB9742CA1BED6 /* SenseiThinkingAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDBB9B2083FD4C12C7B31F /* SenseiThinkingAnimationView.swift */; };
@@ -570,7 +570,6 @@
 		A5A7DF622DB046B000A6469C /* ActivityViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewController.swift; sourceTree = "<group>"; };
 		A5A7DF642DB1771800A6469C /* GreetingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GreetingManager.swift; sourceTree = "<group>"; };
 		A5A7DF662DB1A46D00A6469C /* CueIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueIndicatorView.swift; sourceTree = "<group>"; };
-		F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDurationStepper.swift; sourceTree = "<group>"; };
 		A5AEC8552D763FAA006419F9 /* OnboardingContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingContainerView.swift; sourceTree = "<group>"; };
 		A5AEC85F2EAF1234006419F9 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A5B0059D2C1CC64500945750 /* AnalyticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsManager.swift; sourceTree = "<group>"; };
@@ -685,6 +684,7 @@
 		ECEC4CFD44B00C933E1F1BD6 /* MeditationContentProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MeditationContentProtocol.swift; sourceTree = "<group>"; };
 		F0A942D36C80124329C61829 /* OnboardingFlowContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFlowContainer.swift; sourceTree = "<group>"; };
 		F0B1C2D32F70000100123456 /* BinauralBeatSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BinauralBeatSelector.swift; sourceTree = "<group>"; };
+		F1D2A00100000001FRAC0002 /* FractionalDurationStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDurationStepper.swift; sourceTree = "<group>"; };
 		F351BA67A07580DCF1DA8072 /* FractionalModules+Screen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Screen.swift"; sourceTree = "<group>"; };
 		F8899A05558BF7661F607AFC /* OnboardingSelectableCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSelectableCard.swift; sourceTree = "<group>"; };
 		F8FF34BDF8DF4BD382D84297 /* FractionalModules+Service.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "FractionalModules+Service.swift"; sourceTree = "<group>"; };
@@ -741,22 +741,16 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A56B89662D41B7EE002BEAD2 /* ImagineWatch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "ImagineWatch Watch App";
 			sourceTree = "<group>";
 		};
 		A56B89772D41B7EF002BEAD2 /* ImagineWatch Watch AppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "ImagineWatch Watch AppTests";
 			sourceTree = "<group>";
 		};
 		A56B89812D41B7EF002BEAD2 /* ImagineWatch Watch AppUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "ImagineWatch Watch AppUITests";
 			sourceTree = "<group>";
 		};
@@ -770,15 +764,11 @@
 		};
 		CD40ABE22CBF453F00FA5F44 /* Constants */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = Constants;
 			sourceTree = "<group>";
 		};
 		CD943B682CC6E4B80004D67C /* User Storage */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "User Storage";
 			sourceTree = "<group>";
 		};
@@ -1298,8 +1288,7 @@
 				F351BA67A07580DCF1DA8072 /* FractionalModules+Screen.swift */,
 				FE14250F5C4F64494750664D /* FractionalModules+ViewModel.swift */,
 			);
-		name = FractionalModules;
-		path = FractionalModules;
+			path = FractionalModules;
 			sourceTree = "<group>";
 		};
 		A551D1E22B219C5A00A50EBA /* Frameworks */ = {
@@ -2849,7 +2838,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 237;
+				CURRENT_PROJECT_VERSION = 238;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -2893,7 +2882,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 237;
+				CURRENT_PROJECT_VERSION = 238;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
