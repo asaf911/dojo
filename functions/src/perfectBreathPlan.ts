@@ -30,11 +30,8 @@ const PREP_INHALE_SFX_SEC = 5;
 const PREP_GAP_AFTER_INHALE_SEC = 2;
 const PREP_EXHALE_SFX_SEC = 5;
 const PREP_GAP_AFTER_EXHALE_SEC = 1;
-
-const PREP_ADVANCE_AFTER_INHALE_SEC =
-  PREP_INHALE_SFX_SEC + PREP_GAP_AFTER_INHALE_SEC;
-const PREP_ADVANCE_AFTER_EXHALE_SEC =
-  PREP_EXHALE_SFX_SEC + PREP_GAP_AFTER_EXHALE_SEC;
+/** Added to both post-inhale and post-exhale gaps for the first prep pair only, each cycle (`100`/`110`). */
+const FIRST_PREP_PAIR_EXTRA_GAP_SEC = 1;
 
 const PREP_PAIRS: [string, string][] = [
   ["PBV_BREATH_100", "PBV_BREATH_110"],
@@ -106,15 +103,15 @@ function afterScheduledVoiceCue(
 }
 
 /** Cursor after one prep inhale block (SFX window + post-inhale gap). */
-function afterPrepInhaleBlock(cursor: number): number {
+function afterPrepInhaleBlock(cursor: number, gapAfterInhaleSec: number): number {
   const atSec = voiceTriggerSec(cursor);
-  return atSec + PREP_ADVANCE_AFTER_INHALE_SEC;
+  return atSec + PREP_INHALE_SFX_SEC + gapAfterInhaleSec;
 }
 
 /** Cursor after one prep exhale block (SFX window + post-exhale gap). */
-function afterPrepExhaleBlock(cursor: number): number {
+function afterPrepExhaleBlock(cursor: number, gapAfterExhaleSec: number): number {
   const atSec = voiceTriggerSec(cursor);
-  return atSec + PREP_ADVANCE_AFTER_EXHALE_SEC;
+  return atSec + PREP_EXHALE_SFX_SEC + gapAfterExhaleSec;
 }
 
 function parallelSfx(
@@ -135,6 +132,8 @@ function parallelSfx(
 }
 
 function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: number } {
+  /** ~2 min PB window: use 20s bottom hold instead of 10s to fill silence after final exhale. */
+  if (durationSec <= 120) return RELEASE_ORDER[2];
   if (durationSec <= 240) return RELEASE_ORDER[0];
   if (durationSec <= 360) return RELEASE_ORDER[1];
   if (durationSec <= 480) return RELEASE_ORDER[2];
@@ -145,6 +144,8 @@ function pickReleaseForSession(durationSec: number): { clipId: string; holdSec: 
 function pickPrepPairCount(durationSec: number): number {
   if (durationSec >= 540) return 4;
   if (durationSec >= 300) return 3;
+  /** 2–5 min: third prep pair (140/150 + 160/170 rhythm) for the ~2m variation among others. */
+  if (durationSec >= 120) return 3;
   return 2;
 }
 
@@ -156,8 +157,9 @@ function estimateOneCycleSec(
 ): number {
   let t = 0;
   for (let p = 0; p < prepPairs; p++) {
-    t = afterPrepInhaleBlock(t);
-    t = afterPrepExhaleBlock(t);
+    const extra = p === 0 ? FIRST_PREP_PAIR_EXTRA_GAP_SEC : 0;
+    t = afterPrepInhaleBlock(t, PREP_GAP_AFTER_INHALE_SEC + extra);
+    t = afterPrepExhaleBlock(t, PREP_GAP_AFTER_EXHALE_SEC + extra);
   }
   t = afterScheduledVoiceCue(t, map, ID_200);
   t += SILENCE_BEFORE_230_SEC;
@@ -287,6 +289,11 @@ export function composePerfectBreathPlan(
 
     for (let p = 0; p < prepPairs; p++) {
       const [inhId, exhId] = PREP_PAIRS[p];
+      const extra = p === 0 ? FIRST_PREP_PAIR_EXTRA_GAP_SEC : 0;
+      const advanceAfterInhale =
+        PREP_INHALE_SFX_SEC + PREP_GAP_AFTER_INHALE_SEC + extra;
+      const advanceAfterExhale =
+        PREP_EXHALE_SFX_SEC + PREP_GAP_AFTER_EXHALE_SEC + extra;
       cursor = pushVoice(
         items,
         cursor,
@@ -295,7 +302,7 @@ export function composePerfectBreathPlan(
         inhId,
         "instruction",
         parallelSfx(map, voiceId, ID_SFX_IN),
-        PREP_ADVANCE_AFTER_INHALE_SEC
+        advanceAfterInhale
       );
       cursor = pushVoice(
         items,
@@ -305,7 +312,7 @@ export function composePerfectBreathPlan(
         exhId,
         "instruction",
         parallelSfx(map, voiceId, ID_SFX_OUT),
-        PREP_ADVANCE_AFTER_EXHALE_SEC
+        advanceAfterExhale
       );
     }
 

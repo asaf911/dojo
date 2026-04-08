@@ -67,6 +67,14 @@ test("composePerfectBreathPlan adds parallel PBS_IN on preparation inhale", () =
   assert.equal(inh!.parallel?.clipId, "PBS_IN");
 });
 
+test("composePerfectBreathPlan 120s uses 20s bottom hold and three prep pairs", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 120, "Asaf", "PB_FRAC");
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_140"));
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_150"));
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_BREATH_244_RELEASE_HOLD_20S_ASAF"));
+  assert.equal(plan.items[plan.items.length - 1]!.clipId, "PBV_BREATH_320_FINAL_EXHALE_ASAF");
+});
+
 test("composePerfectBreathPlan single long session may include 322 before final 320", () => {
   const plan = composePerfectBreathPlan(mockCatalog(), 1200, "Asaf", "PB_FRAC");
   const has322 = plan.items.some((i) => i.clipId === "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF");
@@ -88,6 +96,7 @@ const PREP_INHALE_SFX_SEC = 5;
 const PREP_GAP_AFTER_INHALE_SEC = 2;
 const PREP_EXHALE_SFX_SEC = 5;
 const PREP_GAP_AFTER_EXHALE_SEC = 1;
+const FIRST_PREP_PAIR_EXTRA_GAP_SEC = 1;
 
 const PREP_PAIRS: [string, string][] = [
   ["PBV_BREATH_100", "PBV_BREATH_110"],
@@ -96,9 +105,32 @@ const PREP_PAIRS: [string, string][] = [
   ["PBV_BREATH_160", "PBV_BREATH_170"],
 ];
 
-test("composePerfectBreathPlan prep phase follows SFX cadence (inhale 5s, gap 2s, exhale 5s, gap 1s)", () => {
+test("composePerfectBreathPlan prep phase follows SFX cadence (+1s gaps on first pair each cycle)", () => {
   const plan = composePerfectBreathPlan(mockCatalog(), 600, "Asaf", "PB_FRAC");
-  for (const [inhId, exhId] of PREP_PAIRS) {
+  const cycles = plan.items.filter((i) => i.clipId === "PBV_BREATH_100").length;
+  assert.ok(cycles >= 1);
+  for (let c = 0; c < cycles; c++) {
+    const inh100 = plan.items.filter((i) => i.clipId === "PBV_BREATH_100")[c];
+    const exh110 = plan.items.filter((i) => i.clipId === "PBV_BREATH_110")[c];
+    assert.ok(inh100 && exh110);
+    const gapInh =
+      PREP_GAP_AFTER_INHALE_SEC + FIRST_PREP_PAIR_EXTRA_GAP_SEC;
+    const earliest110 = voiceTriggerSec(inh100.atSec + PREP_INHALE_SFX_SEC + gapInh);
+    assert.ok(
+      exh110.atSec >= earliest110,
+      `cycle ${c}: 110@${exh110.atSec}s vs earliest ${earliest110}s after 100`
+    );
+    const gapExh =
+      PREP_GAP_AFTER_EXHALE_SEC + FIRST_PREP_PAIR_EXTRA_GAP_SEC;
+    const inh120 = plan.items.filter((i) => i.clipId === "PBV_BREATH_120")[c];
+    assert.ok(inh120);
+    const earliest120 = voiceTriggerSec(exh110.atSec + PREP_EXHALE_SFX_SEC + gapExh);
+    assert.ok(
+      inh120.atSec >= earliest120,
+      `cycle ${c}: 120@${inh120.atSec}s vs earliest ${earliest120}s after 110`
+    );
+  }
+  for (const [inhId, exhId] of PREP_PAIRS.slice(1)) {
     const inh = plan.items.find((i) => i.clipId === inhId);
     const exh = plan.items.find((i) => i.clipId === exhId);
     assert.ok(inh && exh, `missing ${inhId} or ${exhId}`);
@@ -110,7 +142,7 @@ test("composePerfectBreathPlan prep phase follows SFX cadence (inhale 5s, gap 2s
       `${exhId}@${exh!.atSec}s should be on or after inhale SFX block end ${earliestExh}s (${inhId}@${inh!.atSec}s)`
     );
   }
-  for (let i = 0; i < PREP_PAIRS.length - 1; i++) {
+  for (let i = 1; i < PREP_PAIRS.length - 1; i++) {
     const exhId = PREP_PAIRS[i]![1];
     const nextInhId = PREP_PAIRS[i + 1]![0];
     const exh = plan.items.find((x) => x.clipId === exhId);

@@ -57,11 +57,11 @@ The app triggers fractional cues on **whole-second** `elapsed` times. The compos
 | Segment | Duration |
 |---------|----------|
 | Inhale SFX window | 5 s |
-| Gap (silence) | 2 s |
+| Gap after inhale | 2 s (3 s for **first** pair `100`/`110` each cycle only) |
 | Exhale SFX window | 5 s |
-| Gap (silence) | 1 s |
+| Gap after exhale | 1 s (2 s for **first** pair each cycle only) |
 
-Then the next prep inhale (or `200` after the last exhale). One inhale+exhale pair = **13 s** of timeline. Narration clips can be shorter than 5 s; if they run long, the next scheduled cue still starts on time (player moves on). **`PBS_IN` / `PBS_OUT` files should be mastered close to 5 s** so the sound matches the grid.
+Then the next prep inhale (or `200` after the last exhale). One full inhale+exhale pair = **13 s** of timeline, except the **first** pair per cycle = **15 s** (extra 1 s after the first inhale and 1 s after the first exhale). Narration clips can be shorter than 5 s; if they run long, the next scheduled cue still starts on time (player moves on). **`PBS_IN` / `PBS_OUT` files should be mastered close to 5 s** so the sound matches the grid.
 
 ### Rest of the plan
 
@@ -71,6 +71,7 @@ After preparation, the cursor advances by **`atSec + durationSec`** from the cat
 
 | Constant | Seconds | Notes |
 |----------|---------|--------|
+| First prep pair extra gap | +1 each | Added to post-inhale and post-exhale gaps for `100`/`110` only, every cycle |
 | After intro (`PBV_OPEN_000`) | 2 | Silence before first prep inhale |
 | Before `PBV_BREATH_230` | 2 | Early in top hold |
 | After `230` | 2 | Before release line |
@@ -79,8 +80,8 @@ After preparation, the cursor advances by **`atSec + durationSec`** from the cat
 
 ## Selection
 
-- **Prep pairs**: 2 (short sessions), 3 (≥300s), 4 (≥540s).
-- **Release / bottom hold**: one of `240`–`248` tiers (10–30s hold), chosen from total `durationSec`; composer may step down if the plan would exceed `durationSec`.
+- **Prep pairs**: **2** (&lt;120s), **3** (120s–539s), **4** (≥540s) — the ~2 min variation adds a third prep pair (`140`/`150`).
+- **Release / bottom hold**: tier chosen from total `durationSec`; composer may step down if the plan would exceed `durationSec`. **Special case:** at **≤120s** (≈2 min PB window) the default release is **`244` (20s hold)** instead of `240` (10s), to use time that was otherwise dead air after the final exhale in mixed sessions.
 - **Cycles**: As many full cycles as fit; the **last** cycle always ends with `PBV_BREATH_320_FINAL_EXHALE_ASAF` (never `322`).
 - **Mid-bottom-hold**: `PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF` at ~50% of the bottom-hold window; timeline advances by `max(hold, midpoint + clip250Duration)` so overlap is handled.
 
