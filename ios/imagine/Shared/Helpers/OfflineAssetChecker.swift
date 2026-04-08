@@ -65,30 +65,9 @@ enum OfflineAssetChecker {
     /// - Returns: AssetAvailability indicating which assets are cached
     static func checkTimerMeditation(_ config: TimerSessionConfig) -> AssetAvailability {
         var missingAssets: [String] = []
-        
-        // Check background sound
-        if !config.backgroundSound.url.isEmpty && config.backgroundSound.id != "None" {
-            if !isFileCached(urlString: config.backgroundSound.url) {
-                missingAssets.append(config.backgroundSound.url)
-            }
+        for url in config.allTimerAssetRemoteURLStrings() where !isFileCached(urlString: url) {
+            missingAssets.append(url)
         }
-        
-        // Check binaural beat
-        if !config.binauralBeat.url.isEmpty && config.binauralBeat.id != "None" {
-            if !isFileCached(urlString: config.binauralBeat.url) {
-                missingAssets.append(config.binauralBeat.url)
-            }
-        }
-        
-        // Check all cues
-        for setting in config.cueSettings {
-            if !setting.cue.url.isEmpty {
-                if !isFileCached(urlString: setting.cue.url) {
-                    missingAssets.append(setting.cue.url)
-                }
-            }
-        }
-        
         return AssetAvailability(
             allAvailable: missingAssets.isEmpty,
             missingAssets: missingAssets

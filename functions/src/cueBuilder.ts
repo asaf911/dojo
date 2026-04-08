@@ -20,6 +20,7 @@ export interface BuildCuesFromAllocationOptions {
   bodyScanDirection?: "up" | "down";
 }
 
+/** Legacy monolithic PB1–PB5 are deprecated; breath phase uses fractional PB_FRAC. */
 const PB_CAP = 5;
 const BS_CAP = 10;
 const IM_CAP = 10;
@@ -45,7 +46,11 @@ export function buildCuesFromAllocation(
   const insight = Math.min(10, Math.max(0, allocation.insight));
 
   if (breath > 0) {
-    cues.push({ id: `PB${breath}`, trigger: String(currentMinute) });
+    cues.push({
+      id: "PB_FRAC",
+      trigger: String(currentMinute),
+      durationMinutes: breath,
+    });
     currentMinute += breath;
   }
 

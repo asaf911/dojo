@@ -25,6 +25,7 @@ struct CueSetting: Identifiable, Codable, Equatable {
     var fractionalDuration: Int?
 
     var isFractional: Bool {
+        if cue.id == "PB_FRAC" { return true }
         if cue.id.hasSuffix("_FRAC") { return true }
         return cue.id.hasPrefix("BS_FRAC_")
     }
@@ -93,8 +94,9 @@ extension Array where Element == CueSetting {
         return result
     }
 
-    /// Extracts the module prefix from a fractional clip ID (e.g. "NF" from "NF_C001").
+    /// Extracts the module prefix from a fractional clip ID (e.g. "NF" from "NF_C001", "PB" from "PBV_…").
     private static func fractionalClipPrefix(of cueId: String) -> String? {
+        if cueId.hasPrefix("PBV_") || cueId.hasPrefix("PBS_") { return "PB" }
         guard let range = cueId.range(of: #"_C\d+$"#, options: .regularExpression) else { return nil }
         let prefix = String(cueId[cueId.startIndex..<range.lowerBound])
         return prefix.isEmpty ? nil : prefix

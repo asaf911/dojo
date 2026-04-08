@@ -15,6 +15,7 @@ extension FractionalModules.Plan {
         "BS_FRAC": "Body Scan",
         "BS_FRAC_UP": "Body Scan Up",
         "BS_FRAC_DOWN": "Body Scan Down",
+        "PB_FRAC": "Perfect Breath",
     ]
 
     func toTimerSessionConfig(
@@ -25,7 +26,10 @@ extension FractionalModules.Plan {
         print("\(tag) toTimerSessionConfig: planId=\(planId) durationSec=\(durationSec) items=\(items.count)")
 
         let cueSettings = items.map { item in
-            let cue = Cue(id: item.clipId, name: item.text, url: item.url)
+            let parallelSfx: ParallelSfxCue? = item.parallel.map {
+                ParallelSfxCue(id: $0.clipId, name: $0.text ?? $0.clipId, url: $0.url)
+            }
+            let cue = Cue(id: item.clipId, name: item.text, url: item.url, parallelSfx: parallelSfx)
             if item.atSec == 0 {
                 print("\(tag)   cue \(item.clipId) -> .start (atSec=0) role=\(item.role)")
                 return CueSetting(triggerType: .start, minute: nil, cue: cue)

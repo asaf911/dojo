@@ -164,18 +164,23 @@ final class CatalogsManager: ObservableObject {
             .appendingPathComponent("catalogs_cache.json")
     }
 
-    /// Drops legacy `BS_FRAC`, ensures fractional body scan up/down cues exist with stable display names (stale server/cache safe).
+    /// Drops legacy `BS_FRAC`, strips deprecated monolithic `PB1`–`PB5`, ensures one fractional Perfect Breath cue (`PB_FRAC`)
+    /// and body scan up/down cues exist (stale server/cache safe).
     private static func normalizedCatalogCues(_ cues: [Cue]) -> [Cue] {
         let upId = "BS_FRAC_UP"
         let downId = "BS_FRAC_DOWN"
         let legacyId = "BS_FRAC"
+        let deprecatedMonolithicPerfectBreath: Set<String> = ["PB1", "PB2", "PB3", "PB4", "PB5"]
+        let pbFracId = "PB_FRAC"
         let legacy = cues.first { $0.id == legacyId }
         let placeholderPath = "modules/body_scan_fractional/asaf/BS_SYS_000_INTRO_SHORT_ASAF.mp3"
         let fallbackUrl = Config.contentStoragePath + placeholderPath
+        let perfectBreathPlaceholderPath = "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3"
+        let perfectBreathFallbackUrl = Config.contentStoragePath + perfectBreathPlaceholderPath
 
         var out: [Cue] = []
-        out.reserveCapacity(cues.count + 2)
-        for c in cues where c.id != legacyId {
+        out.reserveCapacity(cues.count + 4)
+        for c in cues where c.id != legacyId && !deprecatedMonolithicPerfectBreath.contains(c.id) {
             if c.id == upId {
                 out.append(Cue(id: c.id, name: "Body Scan Up", url: c.url, urlsByVoice: c.urlsByVoice))
             } else if c.id == downId {
@@ -197,6 +202,22 @@ final class CatalogsManager: ObservableObject {
         if !out.contains(where: { $0.id == downId }) {
             out.append(Cue(id: downId, name: "Body Scan Down", url: templateUrl, urlsByVoice: templateVoices))
         }
+
+        if let existing = out.first(where: { $0.id == pbFracId }) {
+            if existing.name != "Perfect Breath" {
+                if let idx = out.firstIndex(where: { $0.id == pbFracId }) {
+                    out[idx] = Cue(
+                        id: pbFracId,
+                        name: "Perfect Breath",
+                        url: existing.url.isEmpty ? perfectBreathFallbackUrl : existing.url,
+                        urlsByVoice: existing.urlsByVoice
+                    )
+                }
+            }
+        } else {
+            out.append(Cue(id: pbFracId, name: "Perfect Breath", url: perfectBreathFallbackUrl))
+        }
+
         return out
     }
 

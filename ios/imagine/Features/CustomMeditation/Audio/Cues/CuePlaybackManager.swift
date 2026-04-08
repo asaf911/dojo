@@ -15,7 +15,9 @@ class CuePlaybackManager {
     
     private let engine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
+    private let sfxPlayerNode = AVAudioPlayerNode()
     private var currentAudioFile: AVAudioFile?
+    private var currentSfxAudioFile: AVAudioFile?
     private var currentBoostGain: Float = 1.0
     private var playbackFinished = true
     
@@ -90,15 +92,25 @@ class CuePlaybackManager {
     /// When the current cue started playing (session elapsed time in seconds)
     private(set) var cueStartSessionTime: TimeInterval = 0
     
-    /// Whether a cue is currently playing
+    /// Whether a cue is currently playing (voice and/or parallel SFX).
     var isPlaying: Bool {
-        playerNode.isPlaying && !playbackFinished
+        !playbackFinished && (playerNode.isPlaying || sfxPlayerNode.isPlaying)
     }
     
-    /// Duration of the currently loaded cue audio
+    /// Duration of the currently loaded primary cue audio (voice track).
     var cueDuration: TimeInterval {
         guard let audioFile = currentAudioFile else { return 0 }
         return Double(audioFile.length) / audioFile.processingFormat.sampleRate
+    }
+    
+    /// Effective window for skip/seek: max of voice and parallel SFX when present.
+    private func effectiveLoadedDuration() -> TimeInterval {
+        let v = cueDuration
+        if let sfx = currentSfxAudioFile {
+            let s = Double(sfx.length) / sfx.processingFormat.sampleRate
+            return max(v, s)
+        }
+        return v
     }
     
     /// Current playback position within the cue
@@ -120,12 +132,18 @@ class CuePlaybackManager {
     private func preloadCacheKey(for cue: Cue) -> String {
         "\(cue.id)|\(cue.url)"
     }
+
+    private func preloadCacheKey(parallelSfx: ParallelSfxCue) -> String {
+        "\(parallelSfx.id)|\(parallelSfx.url)"
+    }
     
     // MARK: - Init
     
     private init() {
         engine.attach(playerNode)
+        engine.attach(sfxPlayerNode)
         engine.connect(playerNode, to: engine.mainMixerNode, format: nil)
+        engine.connect(sfxPlayerNode, to: engine.mainMixerNode, format: nil)
     }
     
     // MARK: - Volume
@@ -180,9 +198,46 @@ class CuePlaybackManager {
                 let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
                 self.preloadedCues[self.preloadCacheKey(for: cue)] = (localURL: localURL, duration: duration)
                 print("🧠 AI_DEBUG [CUE] Preloaded \(cue.id): duration=\(String(format: "%.1f", duration))s")
-                completion(duration)
+                if let ps = cue.parallelSfx, !ps.url.isEmpty {
+                    self.preloadParallelSfxOnly(ps) { sfxDuration in
+                        let combined: TimeInterval? = {
+                            guard let s = sfxDuration else { return duration }
+                            return max(duration, s)
+                        }()
+                        completion(combined)
+                    }
+                } else {
+                    completion(duration)
+                }
             } catch {
                 print("🧠 AI_DEBUG [CUE] Error preloading cue \(cue.id): \(error.localizedDescription)")
+                completion(nil)
+            }
+        })
+    }
+
+    private func preloadParallelSfxOnly(_ ps: ParallelSfxCue, completion: @escaping (TimeInterval?) -> Void) {
+        let key = preloadCacheKey(parallelSfx: ps)
+        if let cached = preloadedCues[key] {
+            completion(cached.duration)
+            return
+        }
+        guard let remoteURL = URL(string: ps.url) else {
+            completion(nil)
+            return
+        }
+        FileManagerHelper.shared.ensureLocalFile(for: remoteURL, setDownloading: { _ in }, completion: { [weak self] localURL in
+            guard let self = self, let localURL = localURL else {
+                completion(nil)
+                return
+            }
+            do {
+                let audioFile = try AVAudioFile(forReading: localURL)
+                let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+                self.preloadedCues[key] = (localURL: localURL, duration: duration)
+                print("🧠 AI_DEBUG [CUE] Preloaded parallel SFX \(ps.id): duration=\(String(format: "%.1f", duration))s")
+                completion(duration)
+            } catch {
                 completion(nil)
             }
         })
@@ -195,7 +250,14 @@ class CuePlaybackManager {
     func preloadCues(_ cues: [Cue], completion: @escaping () -> Void) {
         // Filter out "None" cues and duplicates (by id+url so same cue with different voice is separate)
         let validCues = cues.filter { $0.id != "None" && $0.name != "None" && !$0.url.isEmpty }
-        let uniqueCues = Array(Set(validCues.map { preloadCacheKey(for: $0) })).compactMap { key in validCues.first { preloadCacheKey(for: $0) == key } }
+        var expanded: [Cue] = []
+        for cue in validCues {
+            expanded.append(cue)
+            if let ps = cue.parallelSfx, !ps.url.isEmpty {
+                expanded.append(Cue(id: ps.id, name: ps.name, url: ps.url))
+            }
+        }
+        let uniqueCues = Array(Set(expanded.map { preloadCacheKey(for: $0) })).compactMap { key in expanded.first { preloadCacheKey(for: $0) == key } }
         
         guard !uniqueCues.isEmpty else {
             completion()
@@ -219,8 +281,17 @@ class CuePlaybackManager {
     
     /// Gets the preloaded duration for a cue if available.
     /// Uses cue.id and cue.url so different voices are looked up correctly.
+    /// With `parallelSfx`, returns the max of voice and SFX durations for timeline windows.
     func getPreloadedDuration(for cue: Cue) -> TimeInterval? {
-        preloadedCues[preloadCacheKey(for: cue)]?.duration
+        let v = preloadedCues[preloadCacheKey(for: cue)]?.duration
+        guard let ps = cue.parallelSfx, !ps.url.isEmpty else { return v }
+        let s = preloadedCues[preloadCacheKey(parallelSfx: ps)]?.duration
+        switch (v, s) {
+        case (let a?, let b?): return max(a, b)
+        case (let a?, nil): return a
+        case (nil, let b?): return b
+        case (nil, nil): return nil
+        }
     }
     
     // MARK: - Playback Methods
@@ -277,20 +348,19 @@ class CuePlaybackManager {
     /// Internal method to play from a local URL using AVAudioEngine.
     private func playFromLocalURL(_ localURL: URL, cue: Cue, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
         do {
-            // Stop any current playback
             playerNode.stop()
-            
+            sfxPlayerNode.stop()
+            currentSfxAudioFile = nil
+
             let audioFile = try AVAudioFile(forReading: localURL)
             currentAudioFile = audioFile
-            
-            // Reconnect with this file's format to handle varying sample rates/channels
+
             engine.disconnectNodeOutput(playerNode)
             engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
-            
-            // Calculate and apply volume boost (legacy modules first, then Asaf voice for new content)
+
             currentBoostGain = Self.boostGain(for: cue)
             updateEngineVolume()
-            
+
             if currentBoostGain > 1.0 {
                 let tableDB = Self.moduleVolumeBoostDB.first { cue.id.hasPrefix($0.key) }?.value
                 let legacyDB: Float? = {
@@ -300,41 +370,152 @@ class CuePlaybackManager {
                 let source = legacyDB.map { "legacy +\(Int($0))dB" } ?? "Asaf voice +\(Int(Self.asafVoiceBoostDB))dB"
                 print("🧠 AI_DEBUG [CUE] Volume boost for \(cue.id): \(source) (x\(String(format: "%.2f", currentBoostGain)))")
             }
-            
-            // Start engine if needed
+
             if !engine.isRunning {
                 try engine.start()
             }
-            
-            // Track cue state
+
             currentCueId = cue.id
             cueStartSessionTime = sessionElapsedTime
             playbackFinished = false
             playbackGeneration += 1
             let generation = playbackGeneration
-            
-            let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-            
-            // Schedule the audio file and mark playback finished on completion.
-            // Only apply if we're still on this generation (prevents stale completion from
-            // previous cue when playerNode.stop() triggered its handler during cue switch).
-            playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
-                DispatchQueue.main.async {
-                    guard let self = self, self.playbackGeneration == generation else { return }
-                    self.playbackFinished = true
+
+            let voiceDuration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+
+            if let ps = cue.parallelSfx, !ps.url.isEmpty {
+                let sfxKey = preloadCacheKey(parallelSfx: ps)
+                if let preloaded = preloadedCues[sfxKey] {
+                    try scheduleVoiceAndParallelAndStart(
+                        audioFile: audioFile,
+                        cue: cue,
+                        sessionElapsedTime: sessionElapsedTime,
+                        startPaused: startPaused,
+                        voiceDuration: voiceDuration,
+                        generation: generation,
+                        sfxLocalURL: preloaded.localURL
+                    )
+                } else if let sfxRemote = URL(string: ps.url) {
+                    FileManagerHelper.shared.ensureLocalFile(for: sfxRemote, setDownloading: { _ in }, completion: { [weak self] sfxLocal in
+                        guard let self = self else { return }
+                        guard self.playbackGeneration == generation else { return }
+                        guard let sfxLocal = sfxLocal else {
+                            print("🧠 AI_DEBUG [CUE] Parallel SFX missing for \(cue.id); playing voice only")
+                            try? self.scheduleVoiceOnlyAndStart(
+                                audioFile: audioFile,
+                                cue: cue,
+                                sessionElapsedTime: sessionElapsedTime,
+                                startPaused: startPaused,
+                                voiceDuration: voiceDuration,
+                                generation: generation
+                            )
+                            return
+                        }
+                        if let sfxFile = try? AVAudioFile(forReading: sfxLocal) {
+                            let d = Double(sfxFile.length) / sfxFile.processingFormat.sampleRate
+                            self.preloadedCues[sfxKey] = (localURL: sfxLocal, duration: d)
+                        }
+                        do {
+                            try self.scheduleVoiceAndParallelAndStart(
+                                audioFile: audioFile,
+                                cue: cue,
+                                sessionElapsedTime: sessionElapsedTime,
+                                startPaused: startPaused,
+                                voiceDuration: voiceDuration,
+                                generation: generation,
+                                sfxLocalURL: sfxLocal
+                            )
+                        } catch {
+                            try? self.scheduleVoiceOnlyAndStart(
+                                audioFile: audioFile,
+                                cue: cue,
+                                sessionElapsedTime: sessionElapsedTime,
+                                startPaused: startPaused,
+                                voiceDuration: voiceDuration,
+                                generation: generation
+                            )
+                        }
+                    })
+                } else {
+                    try scheduleVoiceOnlyAndStart(
+                        audioFile: audioFile,
+                        cue: cue,
+                        sessionElapsedTime: sessionElapsedTime,
+                        startPaused: startPaused,
+                        voiceDuration: voiceDuration,
+                        generation: generation
+                    )
                 }
-            }
-            
-            if startPaused {
-                // Don't start playing - just load and prepare (ready for resume)
-                print("🧠 AI_DEBUG [CUE] Loaded \(cue.id) (\(cue.name)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
             } else {
-                playerNode.play()
-                print("🧠 AI_DEBUG [CUE] Playing \(cue.id) (\(cue.name)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", duration))s")
+                try scheduleVoiceOnlyAndStart(
+                    audioFile: audioFile,
+                    cue: cue,
+                    sessionElapsedTime: sessionElapsedTime,
+                    startPaused: startPaused,
+                    voiceDuration: voiceDuration,
+                    generation: generation
+                )
             }
         } catch {
             print("🧠 AI_DEBUG [CUE] Error playing cue: \(error.localizedDescription)")
             clearCueState()
+        }
+    }
+
+    private func scheduleVoiceOnlyAndStart(
+        audioFile: AVAudioFile,
+        cue: Cue,
+        sessionElapsedTime: TimeInterval,
+        startPaused: Bool,
+        voiceDuration: TimeInterval,
+        generation: Int
+    ) throws {
+        let group = DispatchGroup()
+        group.enter()
+        playerNode.scheduleFile(audioFile, at: nil) { DispatchQueue.main.async { group.leave() } }
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, self.playbackGeneration == generation else { return }
+            self.playbackFinished = true
+        }
+        if startPaused {
+            print("🧠 AI_DEBUG [CUE] Loaded \(cue.id) (\(cue.name)) PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", voiceDuration))s")
+        } else {
+            playerNode.play()
+            print("🧠 AI_DEBUG [CUE] Playing \(cue.id) (\(cue.name)) at session time \(String(format: "%.1f", sessionElapsedTime))s, duration=\(String(format: "%.1f", voiceDuration))s")
+        }
+    }
+
+    private func scheduleVoiceAndParallelAndStart(
+        audioFile: AVAudioFile,
+        cue: Cue,
+        sessionElapsedTime: TimeInterval,
+        startPaused: Bool,
+        voiceDuration: TimeInterval,
+        generation: Int,
+        sfxLocalURL: URL
+    ) throws {
+        let group = DispatchGroup()
+        group.enter()
+        playerNode.scheduleFile(audioFile, at: nil) { DispatchQueue.main.async { group.leave() } }
+
+        group.enter()
+        let sfxFile = try AVAudioFile(forReading: sfxLocalURL)
+        currentSfxAudioFile = sfxFile
+        engine.disconnectNodeOutput(sfxPlayerNode)
+        engine.connect(sfxPlayerNode, to: engine.mainMixerNode, format: sfxFile.processingFormat)
+        sfxPlayerNode.scheduleFile(sfxFile, at: nil) { DispatchQueue.main.async { group.leave() } }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, self.playbackGeneration == generation else { return }
+            self.playbackFinished = true
+        }
+
+        if startPaused {
+            print("🧠 AI_DEBUG [CUE] Loaded \(cue.id) (\(cue.name))+SFX PAUSED at session time \(String(format: "%.1f", sessionElapsedTime))s")
+        } else {
+            playerNode.play()
+            sfxPlayerNode.play()
+            print("🧠 AI_DEBUG [CUE] Playing \(cue.id) (\(cue.name))+parallel SFX at session time \(String(format: "%.1f", sessionElapsedTime))s, voice=\(String(format: "%.1f", voiceDuration))s")
         }
     }
     
@@ -347,34 +528,54 @@ class CuePlaybackManager {
             print("🧠 AI_DEBUG [CUE] Cannot seek - no cue loaded")
             return
         }
-        
-        let sampleRate = audioFile.processingFormat.sampleRate
-        let totalFrames = audioFile.length
-        let targetFrame = AVAudioFramePosition(time * sampleRate)
-        let clampedFrame = max(0, min(targetFrame, totalFrames))
-        let remainingFrames = AVAudioFrameCount(totalFrames - clampedFrame)
-        
-        let wasPlaying = playerNode.isPlaying && !playbackFinished
+
+        let effDuration = effectiveLoadedDuration()
+        let clampedSeek = max(0, min(time, effDuration))
+
+        let wasPlaying = isPlaying
         playerNode.stop()
+        sfxPlayerNode.stop()
         playbackFinished = false
         playbackGeneration += 1
         let generation = playbackGeneration
-        
-        // Reschedule from the target frame offset
-        playerNode.scheduleSegment(audioFile, startingFrame: clampedFrame, frameCount: remainingFrames, at: nil) { [weak self] in
-            DispatchQueue.main.async {
-                guard let self = self, self.playbackGeneration == generation else { return }
-                self.playbackFinished = true
+
+        let group = DispatchGroup()
+
+        let vRate = audioFile.processingFormat.sampleRate
+        let vTotal = audioFile.length
+        let vTarget = AVAudioFramePosition(clampedSeek * vRate)
+        let vClamped = max(0, min(vTarget, vTotal))
+        let vRemaining = AVAudioFrameCount(vTotal - vClamped)
+        group.enter()
+        playerNode.scheduleSegment(audioFile, startingFrame: vClamped, frameCount: vRemaining, at: nil) { [weak self] in
+            DispatchQueue.main.async { group.leave() }
+        }
+
+        if let sfxFile = currentSfxAudioFile {
+            let sRate = sfxFile.processingFormat.sampleRate
+            let sTotal = sfxFile.length
+            let sTarget = AVAudioFramePosition(clampedSeek * sRate)
+            let sClamped = max(0, min(sTarget, sTotal))
+            let sRemaining = AVAudioFrameCount(sTotal - sClamped)
+            group.enter()
+            sfxPlayerNode.scheduleSegment(sfxFile, startingFrame: sClamped, frameCount: sRemaining, at: nil) { [weak self] in
+                DispatchQueue.main.async { group.leave() }
             }
         }
-        
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, self.playbackGeneration == generation else { return }
+            self.playbackFinished = true
+        }
+
         if wasPlaying {
             playerNode.play()
+            if currentSfxAudioFile != nil {
+                sfxPlayerNode.play()
+            }
         }
-        
-        let clampedTime = Double(clampedFrame) / sampleRate
-        let totalDuration = Double(totalFrames) / sampleRate
-        print("🧠 AI_DEBUG [CUE] Seeked to \(String(format: "%.2f", clampedTime))s / \(String(format: "%.2f", totalDuration))s")
+
+        print("🧠 AI_DEBUG [CUE] Seeked combined cue to \(String(format: "%.2f", clampedSeek))s / \(String(format: "%.2f", effDuration))s")
     }
     
     /// Stops the current cue and clears tracking state.
@@ -382,7 +583,9 @@ class CuePlaybackManager {
         let wasPlaying = currentCueId
         playbackGeneration += 1
         playerNode.stop()
+        sfxPlayerNode.stop()
         currentAudioFile = nil
+        currentSfxAudioFile = nil
         playbackFinished = true
         clearCueState()
         print("🧠 AI_DEBUG [CUE] Stopped cue \(wasPlaying ?? "none")")
@@ -391,11 +594,10 @@ class CuePlaybackManager {
     /// Gets info about the currently playing cue.
     /// - Returns: Tuple with cue ID, start time, and duration, or nil if no cue is playing.
     func getCurrentCueInfo() -> (id: String, startTime: TimeInterval, duration: TimeInterval)? {
-        guard let cueId = currentCueId, let audioFile = currentAudioFile else {
+        guard let cueId = currentCueId, currentAudioFile != nil else {
             return nil
         }
-        let duration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
-        return (id: cueId, startTime: cueStartSessionTime, duration: duration)
+        return (id: cueId, startTime: cueStartSessionTime, duration: effectiveLoadedDuration())
     }
     
     /// Clears the cue state tracking.
@@ -418,6 +620,8 @@ class CuePlaybackManager {
             guard let self = self else { timer.invalidate(); return }
             if currentStep >= fadeSteps {
                 self.playerNode.stop()
+                self.sfxPlayerNode.stop()
+                self.currentSfxAudioFile = nil
                 self.playbackFinished = true
                 self.clearCueState()
                 self.updateEngineVolume() // Restore proper volume for next cue
@@ -437,6 +641,7 @@ class CuePlaybackManager {
         print("🧠 AI_DEBUG [CUE] pause() called - cueId=\(currentCueId ?? "none"), playbackFinished=\(playbackFinished), playerNode.isPlaying=\(playerNode.isPlaying) -> \(shouldPause ? "PAUSING" : "skipped (no active cue)")")
         if shouldPause {
             playerNode.pause()
+            sfxPlayerNode.pause()
             print("🧠 AI_DEBUG [CUE] Paused \(currentCueId ?? "unknown") at \(String(format: "%.1f", currentPosition))s")
         }
     }
@@ -449,6 +654,9 @@ class CuePlaybackManager {
                 try? engine.start()
             }
             playerNode.play()
+            if currentSfxAudioFile != nil {
+                sfxPlayerNode.play()
+            }
             print("🧠 AI_DEBUG [CUE] Resumed \(currentCueId ?? "unknown") from \(String(format: "%.1f", currentPosition))s")
         } else {
             print("🧠 AI_DEBUG [CUE] Cannot resume - no audio file loaded")

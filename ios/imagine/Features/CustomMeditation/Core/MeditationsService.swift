@@ -29,12 +29,49 @@ struct MeditationAsset: Codable {
     let description: String?
 }
 
-/// Cue with trigger (start | end | minute)
+/// Cue with trigger (start | end | minute | second via server string)
 struct MeditationCue: Codable {
     let id: String
     let name: String
     let url: String
     let trigger: CueTrigger
+    let parallelSfx: ParallelSfxCue?
+
+    init(
+        id: String,
+        name: String,
+        url: String,
+        trigger: CueTrigger,
+        parallelSfx: ParallelSfxCue? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.url = url
+        self.trigger = trigger
+        self.parallelSfx = parallelSfx
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, url, trigger, parallelSfx
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        url = try container.decode(String.self, forKey: .url)
+        trigger = try container.decode(CueTrigger.self, forKey: .trigger)
+        parallelSfx = try container.decodeIfPresent(ParallelSfxCue.self, forKey: .parallelSfx)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(url, forKey: .url)
+        try container.encode(trigger, forKey: .trigger)
+        try container.encodeIfPresent(parallelSfx, forKey: .parallelSfx)
+    }
 }
 
 /// Server returns trigger as "start" | "end" | number | "s{seconds}"
@@ -105,7 +142,7 @@ extension MeditationPackage {
             binauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
         }
         let cueSettings = cues.map { mc -> CueSetting in
-            let cue = Cue(id: mc.id, name: mc.name, url: mc.url)
+            let cue = Cue(id: mc.id, name: mc.name, url: mc.url, parallelSfx: mc.parallelSfx)
             switch mc.trigger {
             case .start:
                 return CueSetting(triggerType: .start, minute: nil, cue: cue)
@@ -348,7 +385,7 @@ extension MeditationsService {
                 binauralBeat: MeditationAsset(id: "BB10", name: "Preview Beat", url: "gs://preview", description: nil),
                 cues: [
                     MeditationCue(id: "INT_GEN_1", name: "General Introduction", url: "gs://preview", trigger: .start),
-                    MeditationCue(id: "PB1", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1)),
+                    MeditationCue(id: "PB_FRAC", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1), parallelSfx: nil),
                     MeditationCue(id: "BS_FRAC_UP", name: "Body Scan Up", url: "gs://preview", trigger: .minute(2)),
                     MeditationCue(id: "IM_FRAC", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
                     MeditationCue(id: "GB", name: "Gentle Bell", url: "gs://preview", trigger: .end),

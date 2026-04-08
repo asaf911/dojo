@@ -1,0 +1,227 @@
+{
+  "version": "1.0",
+  "moduleId": "PB_FRAC",
+  "title": "Perfect Breath",
+  "clips": [
+    {
+      "clipId": "PBV_OPEN_000_INTRO_ASAF",
+      "role": "intro",
+      "order": 0,
+      "text": "Perfect Breath introduction",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3"
+      },
+      "durationSec": 5.799
+    },
+    {
+      "clipId": "PBV_BREATH_100",
+      "role": "instruction",
+      "order": 10,
+      "text": "Preparation inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_100_INHALE_EXPAND_FULL_ASAF.mp3"
+      },
+      "durationSec": 7.967
+    },
+    {
+      "clipId": "PBV_BREATH_110",
+      "role": "instruction",
+      "order": 11,
+      "text": "Preparation exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_110_EXHALE_RELAX_FULL_ASAF.mp3"
+      },
+      "durationSec": 4.989
+    },
+    {
+      "clipId": "PBV_BREATH_120",
+      "role": "instruction",
+      "order": 12,
+      "text": "Preparation inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_120_INHALE_EXPAND_MEDIUM_ASAF.mp3"
+      },
+      "durationSec": 5.799
+    },
+    {
+      "clipId": "PBV_BREATH_130",
+      "role": "instruction",
+      "order": 13,
+      "text": "Preparation exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_130_EXHALE_RELAX_MEDIUM_ASAF.mp3"
+      },
+      "durationSec": 2.064
+    },
+    {
+      "clipId": "PBV_BREATH_140",
+      "role": "instruction",
+      "order": 14,
+      "text": "Preparation inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_140_INHALE_EXPAND_SHORT_ASAF.mp3"
+      },
+      "durationSec": 1.306
+    },
+    {
+      "clipId": "PBV_BREATH_150",
+      "role": "instruction",
+      "order": 15,
+      "text": "Preparation exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_150_EXHALE_RELAX_SHORT_ASAF.mp3"
+      },
+      "durationSec": 1.672
+    },
+    {
+      "clipId": "PBV_BREATH_160",
+      "role": "instruction",
+      "order": 16,
+      "text": "Preparation inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_160_INHALE_EXPAND_MINIMAL_ASAF.mp3"
+      },
+      "durationSec": 0.967
+    },
+    {
+      "clipId": "PBV_BREATH_170",
+      "role": "instruction",
+      "order": 17,
+      "text": "Preparation exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_170_EXHALE_RELAX_MINIMAL_ASAF.mp3"
+      },
+      "durationSec": 0.914
+    },
+    {
+      "clipId": "PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF",
+      "role": "instruction",
+      "order": 20,
+      "text": "Deep inhale and hold at the top",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF.mp3"
+      },
+      "durationSec": 3.344
+    },
+    {
+      "clipId": "PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF",
+      "role": "instruction",
+      "order": 23,
+      "text": "Squeeze air at top of belly and lower lungs",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF.mp3"
+      },
+      "durationSec": 4.624
+    },
+    {
+      "clipId": "PBV_BREATH_240_RELEASE_HOLD_10S_ASAF",
+      "role": "instruction",
+      "order": 240,
+      "text": "Release into ten second hold",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_240_RELEASE_HOLD_10S_ASAF.mp3"
+      },
+      "durationSec": 4.493
+    },
+    {
+      "clipId": "PBV_BREATH_242_RELEASE_HOLD_15S_ASAF",
+      "role": "instruction",
+      "order": 242,
+      "text": "Release into fifteen second hold",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_242_RELEASE_HOLD_15S_ASAF.mp3"
+      },
+      "durationSec": 4.545
+    },
+    {
+      "clipId": "PBV_BREATH_244_RELEASE_HOLD_20S_ASAF",
+      "role": "instruction",
+      "order": 244,
+      "text": "Release into twenty second hold",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_244_RELEASE_HOLD_20S_ASAF.mp3"
+      },
+      "durationSec": 4.545
+    },
+    {
+      "clipId": "PBV_BREATH_246_RELEASE_HOLD_25S_ASAF",
+      "role": "instruction",
+      "order": 246,
+      "text": "Release into twenty-five second hold",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_246_RELEASE_HOLD_25S_ASAF.mp3"
+      },
+      "durationSec": 4.833
+    },
+    {
+      "clipId": "PBV_BREATH_248_RELEASE_HOLD_30S_ASAF",
+      "role": "instruction",
+      "order": 248,
+      "text": "Release into thirty second hold",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_248_RELEASE_HOLD_30S_ASAF.mp3"
+      },
+      "durationSec": 4.728
+    },
+    {
+      "clipId": "PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF",
+      "role": "instruction",
+      "order": 250,
+      "text": "Let thoughts escape",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF.mp3"
+      },
+      "durationSec": 2.247
+    },
+    {
+      "clipId": "PBV_BREATH_280_INHALE_RECOVERY_ASAF",
+      "role": "instruction",
+      "order": 280,
+      "text": "Recovery inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_280_INHALE_RECOVERY_ASAF.mp3"
+      },
+      "durationSec": 2.717
+    },
+    {
+      "clipId": "PBV_BREATH_320_FINAL_EXHALE_ASAF",
+      "role": "outro",
+      "order": 320,
+      "text": "Final exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_320_FINAL_EXHALE_END_ASAF.mp3"
+      },
+      "durationSec": 5.042
+    },
+    {
+      "clipId": "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF",
+      "role": "outro",
+      "order": 322,
+      "text": "Exhale before next cycle",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF.mp3"
+      },
+      "durationSec": 3.474
+    },
+    {
+      "clipId": "PBS_IN",
+      "role": "instruction",
+      "order": 900,
+      "text": "Breath SFX inhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_IN.mp3"
+      },
+      "durationSec": 4.963
+    },
+    {
+      "clipId": "PBS_OUT",
+      "role": "instruction",
+      "order": 901,
+      "text": "Breath SFX exhale",
+      "voices": {
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_OUT.mp3"
+      },
+      "durationSec": 5.146
+    }
+  ]
+}
