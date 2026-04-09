@@ -16,6 +16,7 @@ extension FractionalModules.Plan {
         "BS_FRAC_UP": "Body Scan Up",
         "BS_FRAC_DOWN": "Body Scan Down",
         "PB_FRAC": "Perfect Breath",
+        "INT_FRAC": "Intro",
     ]
 
     func toTimerSessionConfig(

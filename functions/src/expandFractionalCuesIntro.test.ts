@@ -2,6 +2,26 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { expandFractionalCues } from "./fractionalComposer";
+import { INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC } from "./introFractionalPlan";
+
+test("expandFractionalCues: INT_FRAC first atomic cue at 7s", () => {
+  const out = expandFractionalCues(
+    [
+      {
+        id: "INT_FRAC",
+        name: "Intro",
+        url: "",
+        trigger: "start",
+        durationMinutes: 2,
+      },
+    ],
+    10,
+    "Asaf"
+  );
+  const first = out.find((c) => c.id.startsWith("INT_"));
+  assert.ok(first);
+  assert.equal(first!.trigger, `s${INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC}`);
+});
 
 test("expandFractionalCues: second fractional row skips PB OPEN for 2m block (even if trigger is start)", () => {
   const out = expandFractionalCues(

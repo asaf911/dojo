@@ -135,6 +135,12 @@ extension FractionalModules.Service {
                     FractionalModules.PlanItem(atSec: 10, clipId: "IM_C003", role: "instruction", text: "I AM, I AM, I AM", url: "gs://preview/IM_C003.mp3"),
                     FractionalModules.PlanItem(atSec: 22, clipId: "IM_C006", role: "reminder", text: "Keep repeating the mantra.", url: "gs://preview/IM_C006.mp3"),
                 ]
+            case "INT_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 7, clipId: "INT_GRT_106", role: "instruction", text: "Welcome", url: "gs://preview/INT_GRT_106.mp3"),
+                    FractionalModules.PlanItem(atSec: 14, clipId: "INT_ARR_122", role: "instruction", text: "Get comfortable", url: "gs://preview/INT_ARR_122.mp3"),
+                    FractionalModules.PlanItem(atSec: 23, clipId: "INT_ORI_140", role: "instruction", text: "Observe the breath", url: "gs://preview/INT_ORI_140.mp3"),
+                ]
             case "PB_FRAC":
                 let pbOpen = durationSec > 60 && framingIntroAllowed
                 if pbOpen {

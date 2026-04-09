@@ -11,6 +11,11 @@ import {
 } from "./fractionalComposer";
 import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
+import { composeIntroFractionalPlan } from "./introFractionalPlan";
+import {
+  INT_FRAC_PLAN_MAX_DURATION_SEC,
+  INT_FRAC_PLAN_MIN_DURATION_SEC,
+} from "./fractionalSessionConstants";
 
 admin.initializeApp();
 
@@ -1294,7 +1299,30 @@ export const postFractionalPlan = functions.https.onRequest(
         return;
       }
 
-      if (typeof durationSec !== "number" || durationSec < 60 || durationSec > 1200) {
+      const isIntroFrac = moduleId === "INT_FRAC";
+      if (typeof durationSec !== "number") {
+        functions.logger.warn(
+          `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec_type trigger=${trigger}`
+        );
+        res.status(400).send(JSON.stringify({ error: "durationSec is required" }));
+        return;
+      }
+      if (isIntroFrac) {
+        if (
+          durationSec < INT_FRAC_PLAN_MIN_DURATION_SEC ||
+          durationSec > INT_FRAC_PLAN_MAX_DURATION_SEC
+        ) {
+          functions.logger.warn(
+            `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec_INT_FRAC value=${durationSec} trigger=${trigger}`
+          );
+          res.status(400).send(
+            JSON.stringify({
+              error: `durationSec for INT_FRAC must be ${INT_FRAC_PLAN_MIN_DURATION_SEC}-${INT_FRAC_PLAN_MAX_DURATION_SEC}`,
+            })
+          );
+          return;
+        }
+      } else if (durationSec < 60 || durationSec > 1200) {
         functions.logger.warn(
           `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec value=${durationSec} trigger=${trigger}`
         );
@@ -1309,6 +1337,7 @@ export const postFractionalPlan = functions.https.onRequest(
         NF_FRAC: "nostril_focus_fractional",
         IM_FRAC: "i_am_mantra_fractional",
         PB_FRAC: "perfect_breath_fractional",
+        INT_FRAC: "intro_fractional",
       };
 
       let catalogSlug: string | undefined;
@@ -1377,6 +1406,13 @@ export const postFractionalPlan = functions.https.onRequest(
           voiceId,
           moduleId,
           atTimelineStart
+        );
+      } else if (isIntroFrac) {
+        plan = composeIntroFractionalPlan(
+          resolvedClips,
+          durationSec,
+          voiceId,
+          moduleId
         );
       } else {
         plan = composeFractionalPlan(

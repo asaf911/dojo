@@ -19,6 +19,7 @@ import {
   type BodyScanTierPlanParams,
 } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
+import { composeIntroFractionalPlan } from "./introFractionalPlan";
 import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
 import {
   nfImSelectionFits,
@@ -57,6 +58,8 @@ export interface FractionalClip {
   entryScanEnd?: "top" | "bottom";
   entryTier?: "macro" | "regional" | "micro";
   integrationOrder?: number;
+  /** INT_FRAC: greeting | arrival | orientation layer (see introFractionalPlan.ts). */
+  layer?: "greeting" | "arrival" | "orientation";
 }
 
 /** Optional SFX (or second voice) played in parallel with the primary clip at the same session second. */
@@ -268,6 +271,7 @@ const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   BS_FRAC_UP: "body_scan_fractional",
   BS_FRAC_DOWN: "body_scan_fractional",
   PB_FRAC: "perfect_breath_fractional",
+  INT_FRAC: "intro_fractional",
 };
 
 /** Inline expansion defaults for BS_FRAC* (see `docs/body-scan-tier-composer.md`). */
@@ -447,6 +451,13 @@ export function expandFractionalCues(
         voiceId,
         cue.id,
         atFractModuleTimelineStart
+      );
+    } else if (cue.id === "INT_FRAC") {
+      plan = composeIntroFractionalPlan(
+        resolvedClips,
+        windowSec,
+        voiceId,
+        cue.id
       );
     } else {
       plan = composeFractionalPlan(

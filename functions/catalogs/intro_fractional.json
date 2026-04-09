@@ -1,0 +1,139 @@
+{
+  "version": "1.0",
+  "moduleId": "INT_FRAC",
+  "title": "Intro",
+  "clips": [
+    {
+      "clipId": "INT_GRT_100",
+      "role": "instruction",
+      "order": 100,
+      "layer": "greeting",
+      "text": "Good morning",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_GRT_100_GOOD_MORNING_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_GRT_100_GOOD_MORNING_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_GRT_104",
+      "role": "instruction",
+      "order": 104,
+      "layer": "greeting",
+      "text": "Good evening",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_GRT_104_GOOD_EVENING_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_GRT_104_GOOD_EVENING_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_GRT_106",
+      "role": "instruction",
+      "order": 106,
+      "layer": "greeting",
+      "text": "Welcome",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_GRT_106_WELCOME_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_GRT_106_WELCOME_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_GRT_108",
+      "role": "instruction",
+      "order": 108,
+      "layer": "greeting",
+      "text": "Welcome back",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_GRT_108_WELCOME_BACK_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_GRT_108_WELCOME_BACK_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_120",
+      "role": "instruction",
+      "order": 120,
+      "layer": "arrival",
+      "text": "Take a comfortable position with your spine straight",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_120_COMFORTABLE_POSITION_SPINE_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_120_COMFORTABLE_POSITION_SPINE_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_122",
+      "role": "instruction",
+      "order": 122,
+      "layer": "arrival",
+      "text": "Get comfortable, either sitting or lying down",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_122_COMFORTABLE_POSITION_FREE_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_122_COMFORTABLE_POSITION_FREE_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_124",
+      "role": "instruction",
+      "order": 124,
+      "layer": "arrival",
+      "text": "Take a few more moments to settle in",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_124_TAKE_MOMENT_TO_SETTLE_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_124_TAKE_MOMENT_TO_SETTLE_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_126",
+      "role": "instruction",
+      "order": 126,
+      "layer": "arrival",
+      "text": "Let your body become still",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_126_LET_BODY_BECOME_STILL_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_126_LET_BODY_BECOME_STILL_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_128",
+      "role": "instruction",
+      "order": 128,
+      "layer": "arrival",
+      "text": "Close your eyes",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_128_CLOSE_EYES_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_128_CLOSE_EYES_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_130",
+      "role": "instruction",
+      "order": 130,
+      "layer": "arrival",
+      "text": "Relax your face and shoulders",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_130_RELAX_FACE_SHOULDERS_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_130_RELAX_FACE_SHOULDERS_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ARR_132",
+      "role": "instruction",
+      "order": 132,
+      "layer": "arrival",
+      "text": "Soften your chest and belly",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ARR_132_SOFTEN_CHEST_BELLY_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ARR_132_SOFTEN_CHEST_BELLY_DAN.mp3"
+      }
+    },
+    {
+      "clipId": "INT_ORI_140",
+      "role": "instruction",
+      "order": 140,
+      "layer": "orientation",
+      "text": "Observe the natural rhythm of your breath",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_ORI_140_NOTICE_NATURAL_BREATH_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_ORI_140_NOTICE_NATURAL_BREATH_DAN.mp3"
+      }
+    }
+  ]
+}

@@ -27,6 +27,17 @@
       "duration_minutes": 1,
       "session_types": ["morning"],
       "keywords": ["morning", "wake up", "start day", "energize", "sunrise"]
+    },
+    {
+      "id": "INT_FRAC",
+      "name": "Intro (layered)",
+      "path": "modules/intro_fractional/asaf/INT_GRT_106_WELCOME_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/intro_fractional/asaf/INT_GRT_106_WELCOME_ASAF.mp3",
+        "Dan": "modules/intro_fractional/dan/INT_GRT_106_WELCOME_DAN.mp3"
+      },
+      "duration_minutes": 1,
+      "fractional": true
     }
   ]
 }

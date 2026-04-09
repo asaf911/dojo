@@ -2,6 +2,8 @@
 
 **Scope:** Every **fractional** meditation module in this repo — `NF_FRAC`, `IM_FRAC`, `PB_FRAC`, `BS_FRAC` / `BS_FRAC_UP` / `BS_FRAC_DOWN`.
 
+**Exception — `INT_FRAC`:** The layered **Intro** module is **not** an NF/IM-style “framing intro” clip. It **is** the composed opening (greeting / arrival / orientation). See [`intro-fractional-composer.md`](./intro-fractional-composer.md). Do not confuse with **`INT_GEN_*`** monolithic intro cues.
+
 **Not in scope:** Session-level cues such as **`INT_GEN_*`** (general meditation opening). Those are composed outside fractional composers (`postMeditations`, `postAIRequest`, etc.).
 
 ---
@@ -24,6 +26,7 @@
 | NF / IM | Catalog clips with `role: "intro"` (e.g. “we will now begin a focus exercise”) |
 | Body scan | Short and/or long `intro` clips (“we will now begin a body scan” family), per API flags |
 | Perfect Breath | `PBV_OPEN_000_INTRO` (`PBV_OPEN_000` in catalog) |
+| Intro (`INT_FRAC`) | *N/A* — entire module is layered intro audio (not a separate framing line) |
 
 ---
 
@@ -45,13 +48,15 @@ Constant: **`FRACTIONAL_INTRO_MIN_DURATION_SEC`** (`300`) in [`functions/src/fra
 | NF / IM | [`functions/src/fractionalComposer.ts`](../functions/src/fractionalComposer.ts) | `composeFractionalPlan(..., atTimelineStart)` → `selectClips` |
 | Body scan | [`functions/src/bodyScanTierPlan.ts`](../functions/src/bodyScanTierPlan.ts) | `BodyScanTierPlanParams.atTimelineStart` → `chooseBodyScanPlan` |
 | Perfect Breath | [`functions/src/perfectBreathPlan.ts`](../functions/src/perfectBreathPlan.ts) | `includePerfectBreathOpenVoice` + `composePerfectBreathPlan(..., atTimelineStart)` |
-| HTTP entry | [`functions/src/index.ts`](../functions/src/index.ts) | `postFractionalPlan` parses `atTimelineStart`, passes into all composers |
+| Intro | [`functions/src/introFractionalPlan.ts`](../functions/src/introFractionalPlan.ts) | `composeIntroFractionalPlan` — **ignores** NF/IM framing intro rule |
+| HTTP entry | [`functions/src/index.ts`](../functions/src/index.ts) | `postFractionalPlan` parses `atTimelineStart`, passes into composers (not used by `INT_FRAC`) |
 | iOS (dev / standalone) | [`ios/imagine/Features/FractionalModules/FractionalModules+Service.swift`](../ios/imagine/Features/FractionalModules/FractionalModules+Service.swift) | Sends `atTimelineStart: true` from the Fractional Modules flow |
 
 ---
 
 ## Related docs
 
+- Layered Intro (`INT_FRAC`): [`intro-fractional-composer.md`](./intro-fractional-composer.md)
 - Generic NF/IM composition: [`fractional-module-composition.md`](./fractional-module-composition.md)
 - Body scan tier composer: [`body-scan-tier-composer.md`](./body-scan-tier-composer.md)
 - Perfect Breath timeline: [`perfect-breath-fractional-composer.md`](./perfect-breath-fractional-composer.md)

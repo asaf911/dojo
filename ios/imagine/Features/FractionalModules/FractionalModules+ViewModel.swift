@@ -29,6 +29,8 @@ extension FractionalModules {
     final class ViewModel {
         nonisolated(unsafe) var moduleId: String
         var selectedMinutes: Int = 3
+        /// Used when `moduleId == "INT_FRAC"` (POST /postFractionalPlan allows 17–120s).
+        var introDurationSec: Int = 60
         var bodyScanDirection: BodyScanDirection = .up
         var includeIntroShort: Bool = true
         var includeIntroLong: Bool = false
@@ -51,7 +53,10 @@ extension FractionalModules {
             errorMessage = nil
 
             let tag = "🧠 AI_DEBUG [Fractional][ViewModel]"
-            print("\(tag) play tapped moduleId=\(moduleId) duration=\(selectedMinutes)m")
+            let durationSecForLog = moduleId == "INT_FRAC"
+                ? introDurationSec
+                : selectedMinutes * 60
+            print("\(tag) play tapped moduleId=\(moduleId) durationSec=\(durationSecForLog)")
 
             Task {
                 do {
@@ -60,7 +65,10 @@ extension FractionalModules {
                         as: String.self,
                         defaultValue: "Asaf"
                     )
-                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(selectedMinutes * 60) voiceId=\(voiceId)")
+                    let durationSec = moduleId == "INT_FRAC"
+                        ? introDurationSec
+                        : selectedMinutes * 60
+                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId)")
 
                     let bodyScan: (
                         direction: String,
@@ -80,7 +88,7 @@ extension FractionalModules {
                     }()
                     let plan = try await dependencies.service.fetchPlan(
                         moduleId,
-                        selectedMinutes * 60,
+                        durationSec,
                         voiceId,
                         bodyScan,
                         true,

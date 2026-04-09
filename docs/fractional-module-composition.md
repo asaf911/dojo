@@ -5,6 +5,8 @@ This document serves as a reference for building new fractional modules.
 
 **Body scan (BS_FRAC)** uses a separate tier-based composer — see [`body-scan-tier-composer.md`](./body-scan-tier-composer.md).
 
+**Intro (`INT_FRAC`)** uses a dedicated layered composer (7s lead-in before first speech) — see [`intro-fractional-composer.md`](./intro-fractional-composer.md).
+
 ## Module intro (1–4 min vs first on timeline)
 
 Every fractional module shares one **framing intro** policy: **no module intro for under 5 minutes** unless the block is **at meditation start (t=0)** **and** **first fractional row** **and** **no regular cue precedes it** (or standalone `postFractionalPlan` with `atTimelineStart`). Authoritative spec: [**`fractional-module-intro-rule.md`**](./fractional-module-intro-rule.md).

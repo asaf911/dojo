@@ -49,7 +49,7 @@
       "description": "Full-duration guided audio. The audio file IS the exercise.",
       "time_allocation": "exact duration of the module",
       "behavior": "Occupies its full duration in the session timeline. No additional quiet time needed.",
-      "modules": ["INT_GEN_1", "INT_MORN_1", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB_FRAC", "IM_FRAC", "NF_FRAC"]
+      "modules": ["INT_GEN_1", "INT_MORN_1", "INT_FRAC", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB_FRAC", "IM_FRAC", "NF_FRAC"]
     },
     "trigger_cue": {
       "description": "Short audio trigger that instructs user to BEGIN a practice. User continues in silence.",
