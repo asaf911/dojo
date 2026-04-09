@@ -9,6 +9,7 @@
  *   node scripts/scanBodyScanDurations.mjs
  *   node scripts/scanBodyScanDurations.mjs --dry-run
  *   node scripts/scanBodyScanDurations.mjs body_scan_fractional.json perfect_breath_fractional.json
+ *   node scripts/scanBodyScanDurations.mjs nostril_focus_fractional.json i_am_mantra_fractional.json
  */
 
 import { parseStream } from "music-metadata";

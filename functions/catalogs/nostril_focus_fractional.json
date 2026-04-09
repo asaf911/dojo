@@ -11,7 +11,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C001_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C001_DAN.mp3"
-      }
+      },
+      "durationSec": 2.377
     },
     {
       "clipId": "NF_C002",
@@ -22,7 +23,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C002_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C002_DAN.mp3"
-      }
+      },
+      "durationSec": 3.396
     },
     {
       "clipId": "NF_C003",
@@ -33,7 +35,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C003_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C003_DAN.mp3"
-      }
+      },
+      "durationSec": 3.788
     },
     {
       "clipId": "NF_C004",
@@ -44,7 +47,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C004_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C004_DAN.mp3"
-      }
+      },
+      "durationSec": 2.351
     },
     {
       "clipId": "NF_C005",
@@ -55,7 +59,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C005_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C005_DAN.mp3"
-      }
+      },
+      "durationSec": 5.878
     },
     {
       "clipId": "NF_C006",
@@ -66,7 +71,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C006_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C006_DAN.mp3"
-      }
+      },
+      "durationSec": 4.937
     },
     {
       "clipId": "NF_C007",
@@ -76,7 +82,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C007_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C007_DAN.mp3"
-      }
+      },
+      "durationSec": 2.769
     },
     {
       "clipId": "NF_C008",
@@ -86,7 +93,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C008_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C008_DAN.mp3"
-      }
+      },
+      "durationSec": 3.37
     },
     {
       "clipId": "NF_C009",
@@ -96,7 +104,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C009_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C009_DAN.mp3"
-      }
+      },
+      "durationSec": 4.754
     },
     {
       "clipId": "NF_C010",
@@ -106,7 +115,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C010_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C010_DAN.mp3"
-      }
+      },
+      "durationSec": 3.918
     },
     {
       "clipId": "NF_C011",
@@ -116,7 +126,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C011_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C011_DAN.mp3"
-      }
+      },
+      "durationSec": 2.534
     },
     {
       "clipId": "NF_C012",
@@ -126,7 +137,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C012_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C012_DAN.mp3"
-      }
+      },
+      "durationSec": 2.612
     },
     {
       "clipId": "NF_C013",
@@ -136,7 +148,8 @@
       "voices": {
         "Asaf": "modules/nostril_focus_fractional/asaf/NF_C013_ASAF.mp3",
         "Dan": "modules/nostril_focus_fractional/dan/NF_C013_DAN.mp3"
-      }
+      },
+      "durationSec": 3.03
     }
   ]
 }

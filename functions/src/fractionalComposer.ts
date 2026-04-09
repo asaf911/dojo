@@ -3,8 +3,8 @@
  * from atomic audio clips using priority-based selection and dynamic gap scaling.
  *
  * Two-phase approach:
- *   Phase 1 — select which clips to include (priority + randomisation)
- *   Phase 2 — place them on the timeline with growing gaps
+ *   Phase 1 — select which clips to include (priority + randomisation; feasibility via nfImSelectionFits)
+ *   Phase 2 — NF/IM placement in fractionalTimeline.ts (scheduleNfImPlan)
  *
  * See docs/fractional-module-composition.md for the full design reference.
  * Module framing intros (all fractional types): docs/fractional-module-intro-rule.md
@@ -20,6 +20,12 @@ import {
 } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
 import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
+import {
+  nfImSelectionFits,
+  scheduleNfImPlan,
+} from "./fractionalTimeline";
+
+export { FRACTIONAL_INSTRUCTION_PAIR_GAPS } from "./fractionalTimeline";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,29 +87,8 @@ export interface FractionalPlan {
 // Constants
 // ---------------------------------------------------------------------------
 
-const ESTIMATED_CLIP_SEC = 5;
-const TRAILING_BUFFER_FACTOR = 1.1;
 const REMINDER_THRESHOLD_SEC = 120;
 const OUTRO_THRESHOLD_SEC = 120;
-
-interface GapTier {
-  maxDurationSec: number;
-  initialGap: number;
-  targetGap: number;
-  capGap: number;
-}
-
-const GAP_TIERS: GapTier[] = [
-  { maxDurationSec: 180,  initialGap: 12, targetGap: 35,  capGap: 40  },
-  { maxDurationSec: 360,  initialGap: 5,  targetGap: 38,  capGap: 45  },
-  { maxDurationSec: 480,  initialGap: 7,  targetGap: 55,  capGap: 60  },
-  { maxDurationSec: 600,  initialGap: 8,  targetGap: 82,  capGap: 90  },
-  { maxDurationSec: Infinity, initialGap: 10, targetGap: 105, capGap: 120 },
-];
-
-function gapTierForDuration(durationSec: number): GapTier {
-  return GAP_TIERS.find((t) => durationSec <= t.maxDurationSec) ?? GAP_TIERS[GAP_TIERS.length - 1];
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,48 +107,6 @@ function pickRandom<T>(pool: T[], count: number): T[] {
   return shuffle(pool).slice(0, count);
 }
 
-/**
- * Compute the gap for a given step using linear interpolation.
- * Step 0 returns initialGap, last step returns targetGap, capped at capGap.
- */
-function linearGap(
-  initialGap: number,
-  targetGap: number,
-  step: number,
-  totalGaps: number,
-  capGap: number
-): number {
-  if (totalGaps <= 1) return Math.min(initialGap, capGap);
-  const raw = initialGap + (targetGap - initialGap) * step / (totalGaps - 1);
-  return Math.min(raw, capGap);
-}
-
-/**
- * Estimate total seconds consumed by `clipCount` clips placed with
- * linearly interpolated gaps from `initialGap` to `targetGap`.
- * Includes a trailing buffer after the last clip.
- */
-function estimateTimeline(
-  clipCount: number,
-  initialGap: number,
-  targetGap: number,
-  capGap: number
-): number {
-  let total = 0;
-  const totalGaps = clipCount - 1;
-  for (let i = 0; i < clipCount; i++) {
-    if (i > 0) {
-      total += linearGap(initialGap, targetGap, i - 1, totalGaps, capGap);
-    }
-    total += ESTIMATED_CLIP_SEC;
-  }
-  if (totalGaps > 0) {
-    const lastGap = linearGap(initialGap, targetGap, totalGaps - 1, totalGaps, capGap);
-    total += lastGap * TRAILING_BUFFER_FACTOR;
-  }
-  return total;
-}
-
 // ---------------------------------------------------------------------------
 // Phase 1: Select clips
 // ---------------------------------------------------------------------------
@@ -178,7 +121,8 @@ const NF_IM_CLIP_ROLES: ReadonlySet<FractionalClipRole> = new Set([
 function selectClips(
   clips: FractionalClip[],
   durationSec: number,
-  atTimelineStart: boolean
+  atTimelineStart: boolean,
+  moduleId: string
 ): FractionalClip[] {
   const sorted = [...clips]
     .filter((c) => NF_IM_CLIP_ROLES.has(c.role))
@@ -192,8 +136,6 @@ function selectClips(
   const p0 = instructions.filter((c) => c.priority === "p0");
   const p1 = instructions.filter((c) => c.priority === "p1");
   const p2 = instructions.filter((c) => c.priority === "p2");
-
-  const tier = gapTierForDuration(durationSec);
 
   const selected: FractionalClip[] = [];
 
@@ -211,9 +153,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Trim instructions that don't fit (never remove P0 or intro)
-  let timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
-
-  while (timeline > durationSec && selected.length > 1) {
+  while (!nfImSelectionFits(selected, durationSec, moduleId) && selected.length > 1) {
     let removeIdx = -1;
     for (let i = selected.length - 1; i >= 0; i--) {
       if (selected[i].priority === "p2") { removeIdx = i; break; }
@@ -225,17 +165,17 @@ function selectClips(
     }
     if (removeIdx === -1) break;
     selected.splice(removeIdx, 1);
-    timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
   }
 
   // Determine how many reminders fit alongside the selected instructions
   let reminderCount = 0;
   if (durationSec >= REMINDER_THRESHOLD_SEC && reminders.length > 0) {
-    const instrCount = selected.length;
     for (let r = 1; r <= reminders.length; r++) {
-      const total = instrCount + r;
-      const est = estimateTimeline(total, tier.initialGap, tier.targetGap, tier.capGap);
-      if (est > durationSec) break;
+      const trial = [...selected, ...pickRandom(reminders, r)];
+      trial.sort((a, b) => a.order - b.order);
+      if (!nfImSelectionFits(trial, durationSec, moduleId)) {
+        break;
+      }
       reminderCount = r;
     }
     reminderCount = Math.max(1, reminderCount);
@@ -245,9 +185,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Safety-net trim in case the combined list still exceeds the budget
-  timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
-
-  while (timeline > durationSec && selected.length > 1) {
+  while (!nfImSelectionFits(selected, durationSec, moduleId) && selected.length > 1) {
     let removeIdx = -1;
     for (let i = selected.length - 1; i >= 0; i--) {
       if (selected[i].role === "reminder") { removeIdx = i; break; }
@@ -264,105 +202,16 @@ function selectClips(
     }
     if (removeIdx === -1) break;
     selected.splice(removeIdx, 1);
-    timeline = estimateTimeline(selected.length, tier.initialGap, tier.targetGap, tier.capGap);
   }
 
   if (durationSec >= OUTRO_THRESHOLD_SEC && outros.length > 0) {
     selected.push(outros[0]);
+    if (!nfImSelectionFits(selected, durationSec, moduleId)) {
+      selected.pop();
+    }
   }
 
   return selected;
-}
-
-// ---------------------------------------------------------------------------
-// Phase 2: Place clips on timeline
-// ---------------------------------------------------------------------------
-
-function placeOnTimeline(
-  selected: FractionalClip[],
-  durationSec: number,
-  voiceId: string,
-  moduleId: string
-): FractionalPlanItem[] {
-  if (selected.length === 0) return [];
-
-  const instrClips = selected.filter(c => c.role === "intro" || c.role === "instruction");
-  const reminderClips = selected.filter(c => c.role === "reminder");
-  const outroClips = selected.filter(c => c.role === "outro");
-
-  // --- Instruction gaps: tight, with doubling increments ---
-  // gap[step] = base + 2^step - 1, capped at 30s
-  // base scales modestly from 6s (≤10 min) to 8s (≥20 min)
-  const dFactor = Math.min(1, Math.max(0, (durationSec - 600) / 600));
-  const instrBase = 6 + 2 * dFactor;
-  const INSTR_CAP = 30;
-
-  function instrGapAt(step: number): number {
-    return Math.min(instrBase + Math.pow(2, step) - 1, INSTR_CAP);
-  }
-
-  const items: FractionalPlanItem[] = [];
-  let cursor = 0;
-
-  for (let i = 0; i < instrClips.length; i++) {
-    const clip = instrClips[i];
-    const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
-    if (i === 0) {
-      items.push({ atSec: 0, clipId: clip.clipId, role: clip.role, text: clip.text, url });
-      cursor = ESTIMATED_CLIP_SEC;
-    } else {
-      let gap = instrGapAt(i - 1);
-      // I AM mantra: keep a short, fixed pause between setup (IM_C002) and the mantra line (IM_C003).
-      if (
-        moduleId === "IM_FRAC" &&
-        instrClips[i - 1].clipId === "IM_C002" &&
-        instrClips[i].clipId === "IM_C003"
-      ) {
-        gap = 5;
-      }
-      const atSec = cursor + gap;
-      items.push({ atSec: Math.round(atSec), clipId: clip.clipId, role: clip.role, text: clip.text, url });
-      cursor = atSec + ESTIMATED_CLIP_SEC;
-    }
-  }
-
-  // --- Reminder gaps: stretch to fill the remaining window ---
-  if (reminderClips.length > 0) {
-    const n = reminderClips.length;
-    const remainingTime = durationSec - cursor;
-    const availForGaps = remainingTime - n * ESTIMATED_CLIP_SEC;
-
-    const lastInstrStep = Math.max(0, instrClips.length - 2);
-    const remInitial = Math.max(instrGapAt(lastInstrStep), 15);
-
-    let remTarget = remInitial;
-    if (n > 1) {
-      const denom = n / 2 + TRAILING_BUFFER_FACTOR;
-      remTarget = (availForGaps - n * remInitial / 2) / denom;
-      remTarget = Math.max(remTarget, remInitial);
-    } else {
-      remTarget = availForGaps / (1 + TRAILING_BUFFER_FACTOR);
-      remTarget = Math.max(remTarget, remInitial);
-    }
-
-    for (let i = 0; i < n; i++) {
-      const clip = reminderClips[i];
-      const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
-      const gap = n <= 1 ? remTarget : remInitial + (remTarget - remInitial) * (i / (n - 1));
-      const atSec = cursor + gap;
-      items.push({ atSec: Math.round(atSec), clipId: clip.clipId, role: clip.role, text: clip.text, url });
-      cursor = atSec + ESTIMATED_CLIP_SEC;
-    }
-  }
-
-  if (outroClips.length > 0) {
-    const clip = outroClips[0];
-    const url = clip.voices[voiceId] ?? Object.values(clip.voices)[0] ?? "";
-    const outroAt = Math.max(cursor + ESTIMATED_CLIP_SEC, durationSec - ESTIMATED_CLIP_SEC * 2);
-    items.push({ atSec: Math.round(outroAt), clipId: clip.clipId, role: clip.role, text: clip.text, url });
-  }
-
-  return items;
 }
 
 // ---------------------------------------------------------------------------
@@ -378,8 +227,14 @@ export function composeFractionalPlan(
 ): FractionalPlan {
   const TAG = "[FractionalComposer]";
 
-  const selected = selectClips(clips, durationSec, atTimelineStart);
-  const items = placeOnTimeline(selected, durationSec, voiceId, moduleId);
+  const selected = selectClips(clips, durationSec, atTimelineStart, moduleId);
+  const scheduled = scheduleNfImPlan(selected, durationSec, voiceId, moduleId);
+  const items: FractionalPlanItem[] = scheduled.items.map((it) => ({ ...it }));
+  if (!scheduled.fits) {
+    functions.logger.warn(
+      `${TAG} schedule reported fits=false moduleId=${moduleId} duration=${durationSec}s — check fractionalTimeline`
+    );
+  }
 
   const planId = `${moduleId.toLowerCase()}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
 

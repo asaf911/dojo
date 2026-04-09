@@ -11,7 +11,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C001_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C001_DAN.mp3"
-      }
+      },
+      "durationSec": 2.56
     },
     {
       "clipId": "IM_C002",
@@ -22,7 +23,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C002_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C002_DAN.mp3"
-      }
+      },
+      "durationSec": 2.952
     },
     {
       "clipId": "IM_C003",
@@ -33,7 +35,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C003_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C003_DAN.mp3"
-      }
+      },
+      "durationSec": 5.172
     },
     {
       "clipId": "IM_C004",
@@ -44,7 +47,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C004_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C004_DAN.mp3"
-      }
+      },
+      "durationSec": 3.971
     },
     {
       "clipId": "IM_C005",
@@ -55,7 +59,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C005_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C005_DAN.mp3"
-      }
+      },
+      "durationSec": 2.534
     },
     {
       "clipId": "IM_C006",
@@ -65,7 +70,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C006_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C006_DAN.mp3"
-      }
+      },
+      "durationSec": 1.724
     },
     {
       "clipId": "IM_C007",
@@ -75,7 +81,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C007_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C007_DAN.mp3"
-      }
+      },
+      "durationSec": 2.9
     },
     {
       "clipId": "IM_C008",
@@ -85,7 +92,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C008_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C008_DAN.mp3"
-      }
+      },
+      "durationSec": 3.396
     },
     {
       "clipId": "IM_C009",
@@ -95,7 +103,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C009_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C009_DAN.mp3"
-      }
+      },
+      "durationSec": 4.807
     },
     {
       "clipId": "IM_C010",
@@ -105,7 +114,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C010_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C010_DAN.mp3"
-      }
+      },
+      "durationSec": 2.011
     },
     {
       "clipId": "IM_C011",
@@ -115,7 +125,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C011_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C011_DAN.mp3"
-      }
+      },
+      "durationSec": 1.463
     },
     {
       "clipId": "IM_C012",
@@ -125,7 +136,8 @@
       "voices": {
         "Asaf": "modules/i_am_mantra_fractional/asaf/IM_C012_ASAF.mp3",
         "Dan": "modules/i_am_mantra_fractional/dan/IM_C012_DAN.mp3"
-      }
+      },
+      "durationSec": 2.612
     }
   ]
 }

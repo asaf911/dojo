@@ -93,8 +93,9 @@ Same rule as all fractional modules: see [**`fractional-module-intro-rule.md`**]
 2. **P1** clips are shuffled and added as candidates.
 3. **P2** clips are shuffled and added as candidates.
 4. Candidates are sorted by catalog `order`.
-5. If the estimated timeline exceeds the duration, the lowest-priority clips
+5. If the **unified schedule** would exceed the duration, the lowest-priority clips
    are removed from the tail: P2 first, then P1. P0 clips are never removed.
+   Feasibility uses the same placement rules as the final plan (`nfImSelectionFits` → `scheduleNfImPlan`).
 
 ### Reminder count
 
@@ -105,46 +106,39 @@ Same rule as all fractional modules: see [**`fractional-module-intro-rule.md`**]
 | Any duration | Capped at the number of unique reminder clips (no repeats) |
 
 The budget check iteratively tries adding 1, 2, 3… reminders and stops when the
-estimated total timeline would exceed the duration. Reminders are picked randomly
+next set would no longer fit. Reminders are picked randomly
 from the pool with no repeats, providing a varied experience across sessions.
 
 ---
 
-## Phase 2: Timeline Placement
+## Phase 2: Timeline placement (NF_FRAC / IM_FRAC)
 
-Selected clips are placed in `order` sequence with **growing gaps**.
+Implementation: [`functions/src/fractionalTimeline.ts`](../functions/src/fractionalTimeline.ts) (`scheduleNfImPlan`).  
+Spec tests: [`functions/src/fractionalNfImTimeline.test.ts`](../functions/src/fractionalNfImTimeline.test.ts).
 
-### Gap progression
+Selected clips are ordered by catalog `order`, then scheduled on a **float** timeline; cue `atSec` values are **rounded to whole seconds** for triggers. Clip lengths use optional per-clip **`durationSec`** in the catalog (populate via `npm run scan:fractional-nf-im-durations` in `functions/`, which wraps the shared Firebase MP3 scanner); if missing, a **5 s** fallback is used.
 
-Gaps between clips grow linearly from `initialGap` to `targetGap`:
+### Instruction segment (intro + instructions)
 
-```
-gap[step] = initialGap + (targetGap - initialGap) * step / (totalGaps - 1)
-```
+- Silence after each clip is based on an exponential **instruction gap** (same family as the previous composer: base scales slightly with session length, capped at 30 s), except optional **pair overrides**: `FRACTIONAL_INSTRUCTION_PAIR_GAPS` in `fractionalTimeline.ts` (e.g. IM `IM_C002` → `IM_C003` = 5 s).
+- The internal cursor advances by **float** end times so gap proportions stay stable; rounding applies only when emitting `atSec`.
 
-This ensures the absolute increment between consecutive gaps stays constant,
-producing a balanced, predictable progression at any duration. Each gap is
-capped at `capGap` to prevent absurdly long silences.
+### Reminder segment
 
-### Gap tiers by duration
+- After the last instruction, remaining time (minus an explicit **tail** slice and, for IM, space before **outro**) is split into **pre-reminder gaps**.
+- Gaps form a **linear ramp** from a floor (at least the instruction gap floor, 15 s minimum) toward a last gap (capped), then **scaled** so the sum matches the gap budget exactly (monotonic non-decreasing in float space).
 
-| Duration       | Initial gap | Target gap | Cap   |
-|----------------|-------------|------------|-------|
-| 1–3 min        | 5 s         | 18 s       | 20 s  |
-| 4–6 min        | 5 s         | 38 s       | 45 s  |
-| 7–8 min        | 7 s         | 55 s       | 60 s  |
-| 9–10 min       | 8 s         | 82 s       | 90 s  |
-| 10+ min        | 10 s        | 105 s      | 120 s |
+### Outro (IM_FRAC only when duration allows)
 
-### Trailing buffer
+- Placed near `durationSec - outroDuration - padding`, with at least **8 s** after the last reminder ends.
 
-After the last clip, a trailing silence of **1.1× the last gap used** is
-factored into the timeline estimate. This ensures the module doesn't end
-abruptly — there's always breathing room before the next module or session end.
+### Tail
+
+- A fraction of the post-instruction **span** (default ~15%, clamped) is reserved as tail before the hard end (or before outro), so the block does not end immediately after the last reminder.
 
 ---
 
-## Example Timelines
+## Example Timelines (illustrative — exact times depend on `durationSec` and voice)
 
 ### 1 minute (60 s)
 
@@ -222,22 +216,19 @@ All 13 clips. Gaps grow from 13 s to ~73 s. ~3+ min trailing silence.
 ### What's generic (reuse as-is)
 
 - The two-phase select-then-place architecture
-- Gap tier table and growth factor computation
+- `scheduleNfImPlan` for NF/IM-style catalogs (instruction ramp + reminder ramp + tail)
 - Priority system (P0 / P1 / P2) for instructions
 - Random reminder selection with no repeats
-- Intro threshold (>= 4 min)
+- Shared framing intro rule ([`fractional-module-intro-rule.md`](./fractional-module-intro-rule.md))
 - Reminder threshold (>= 2 min)
-- Trailing buffer (1.1× last gap)
-- Timeline estimation and trim loop
+- Selection trim loop using the same scheduler as placement
 
 ### What's module-specific (customize per module)
 
 - **Clip catalog**: different clips, roles, texts, voices
 - **Priority assignments**: which clips are P0/P1/P2 depends on the teaching content
-- **Intro threshold**: some modules may always need an intro, or never
-- **Reminder threshold**: could be adjusted per module
-- **Gap tiers**: meditative modules may want wider gaps; active exercises may want tighter ones
-- **Clip duration estimate**: currently a flat 5 s; modules with longer clips should adjust
+- **`durationSec` per clip** (recommended): run the scanner so schedules match real audio
+- **Pair gaps**: extend `FRACTIONAL_INSTRUCTION_PAIR_GAPS` for fixed pauses between named instruction clips
 
 ### Adding a new module
 
@@ -250,5 +241,4 @@ All 13 clips. Gaps grow from 13 s to ~73 s. ~3+ min trailing silence.
    };
    ```
 3. Add a catalog entry in `functions/catalogs/<parent_catalog>.json` with `"fractional": true`.
-4. If the module needs custom thresholds or gap tiers, extend `composeFractionalPlan`
-   to accept module-level overrides (or create a per-module config alongside the catalog).
+4. If the module needs different placement logic than NF/IM, add a dedicated composer (as for `PB_FRAC` / `BS_FRAC`) rather than overloading `fractionalTimeline.ts`.
