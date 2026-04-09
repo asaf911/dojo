@@ -104,7 +104,7 @@ extension FractionalModules {
                 }
 
                 if selectedModule == .intro {
-                    Text("Layered intro (greeting / arrival / orientation). Server: 17–120s.")
+                    Text("Intro (greeting / arrival / orientation). Server: 17–120s.")
                         .nunitoFont(size: 13, style: .regular)
                         .foregroundColor(.foregroundLightGray.opacity(0.85))
                         .multilineTextAlignment(.center)

@@ -1,4 +1,6 @@
 /** @see ../../docs/fractional-module-intro-rule.md */
+process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { expandFractionalCues } from "./fractionalComposer";
@@ -50,12 +52,12 @@ test("expandFractionalCues: second fractional row skips PB OPEN for 2m block (ev
   );
 });
 
-test("expandFractionalCues: INT_GEN before IM_FRAC at start skips IM framing intro for 3m", () => {
+test("expandFractionalCues: non-fractional cue before IM_FRAC at start skips IM framing intro for 3m", () => {
   const out = expandFractionalCues(
     [
       {
-        id: "INT_GEN_1",
-        name: "Intro",
+        id: "VC",
+        name: "Vision",
         url: "",
         trigger: "start",
       },

@@ -25,6 +25,7 @@ import {
   nfImSelectionFits,
   scheduleNfImPlan,
 } from "./fractionalTimeline";
+import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
 export { FRACTIONAL_INSTRUCTION_PAIR_GAPS } from "./fractionalTimeline";
 
@@ -355,6 +356,9 @@ export function expandFractionalCues(
   voiceId: string
 ): ResolvedCue[] {
   const TAG = "[FractionalExpand]";
+  if (!useFractionalModulesInCatalogsAndAI()) {
+    return cues;
+  }
   const hasFractional = cues.some((c) => FRACTIONAL_MODULE_MAP[c.id]);
   if (!hasFractional) return cues;
 
@@ -376,7 +380,7 @@ export function expandFractionalCues(
     const hasNonFractionalCueBefore = cues
       .slice(0, i)
       .some((c) => !FRACTIONAL_MODULE_MAP[c.id]);
-    /** Framing intro only if: meditation truly starts with this block (t=0), it's the first fractional row, and no regular cue precedes it (e.g. INT_GEN before IM_FRAC). */
+    /** Framing intro only if: meditation truly starts with this block (t=0), it's the first fractional row, and no regular cue precedes it (e.g. another intro or module before IM_FRAC). */
     const atFractModuleTimelineStart =
       startSec === 0 &&
       i === firstFractionalCueIndex &&

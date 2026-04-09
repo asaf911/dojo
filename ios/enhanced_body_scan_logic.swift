@@ -238,7 +238,7 @@ private func getEnhancedCueDuration(_ cueId: String) -> Int {
         return 3  // Default body scan duration (fallback)
     case "MA", "OH", "VC", "RT":
         return 3  // Other guided cues are typically 3 minutes
-    case "INT_GEN_1", "INT_MORN_1", "GB":
+    case "INT_FRAC", "GB":
         return 1  // Quick transitional cues (Introduction, Gentle Bell)
     default:
         return 2  // Default safe duration

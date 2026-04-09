@@ -384,7 +384,7 @@ extension MeditationsService {
                 backgroundSound: MeditationAsset(id: "SP", name: "Preview Sound", url: "gs://preview", description: nil),
                 binauralBeat: MeditationAsset(id: "BB10", name: "Preview Beat", url: "gs://preview", description: nil),
                 cues: [
-                    MeditationCue(id: "INT_GEN_1", name: "General Introduction", url: "gs://preview", trigger: .start),
+                    MeditationCue(id: "INT_FRAC", name: "Intro", url: "gs://preview", trigger: .start),
                     MeditationCue(id: "PB_FRAC", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1), parallelSfx: nil),
                     MeditationCue(id: "BS_FRAC_UP", name: "Body Scan Up", url: "gs://preview", trigger: .minute(2)),
                     MeditationCue(id: "IM_FRAC", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),

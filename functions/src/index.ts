@@ -16,6 +16,8 @@ import {
   INT_FRAC_PLAN_MAX_DURATION_SEC,
   INT_FRAC_PLAN_MIN_DURATION_SEC,
 } from "./fractionalSessionConstants";
+import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
+import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
 admin.initializeApp();
 
@@ -517,16 +519,27 @@ export const proxyOpenAIChat = functions.runWith({
 // ---------------------------------------------------------------------------
 
 const CONTENT_STORAGE_BUCKET = "imagine-c6162.appspot.com";
-const CATALOG_FILE_NAMES = [
-  "background_music",
-  "binaural_beats",
-  "cues",
-  "introduction",
-  "body_scan",
-  "perfect_breath",
-  "i_am_mantra",
-  "nostril_focus",
-] as const;
+/** Cue JSON basenames merged into `cues` — production uses *_legacy monolithic files. */
+function getCueCatalogFileBasenames(): string[] {
+  if (useFractionalModulesInCatalogsAndAI()) {
+    return [
+      "cues",
+      "introduction",
+      "body_scan",
+      "perfect_breath",
+      "i_am_mantra",
+      "nostril_focus",
+    ];
+  }
+  return [
+    "cues",
+    "introduction_legacy",
+    "body_scan_legacy",
+    "perfect_breath_legacy",
+    "i_am_mantra_legacy",
+    "nostril_focus_legacy",
+  ];
+}
 
 interface RepoCatalogModel {
   id: string;
@@ -547,11 +560,16 @@ interface VoiceItem {
   name: string;
 }
 
-const DEPRECATED_CUE_IDS = new Set([
-  "MA",
-  "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
-  "PB1", "PB2", "PB3", "PB4", "PB5",
-]);
+function getDeprecatedCueIds(): Set<string> {
+  if (useFractionalModulesInCatalogsAndAI()) {
+    return new Set([
+      "MA",
+      "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
+      "PB1", "PB2", "PB3", "PB4", "PB5",
+    ]);
+  }
+  return new Set(["MA"]);
+}
 
 function resolveStorageUrl(relativePath: string): string {
   return `gs://${CONTENT_STORAGE_BUCKET}/${relativePath}`;
@@ -646,8 +664,7 @@ function loadCatalogs(): LoadedCatalogs {
     functions.logger.warn("loadCatalogs: Failed to parse binaural_beats", e);
   }
 
-  // Cues: merge from cues + body_scan + perfect_breath + i_am_mantra + nostril_focus
-  const cueFileNames = CATALOG_FILE_NAMES.slice(2);
+  const cueFileNames = getCueCatalogFileBasenames();
   const allModels: RepoCatalogModel[] = [];
   const bodyScanDurations: Record<string, number> = {};
 
@@ -669,10 +686,11 @@ function loadCatalogs(): LoadedCatalogs {
     }
   }
 
+  const deprecatedCueIds = getDeprecatedCueIds();
   const seen = new Set<string>();
   const cues: CueItem[] = [];
   for (const m of allModels) {
-    if (seen.has(m.id) || DEPRECATED_CUE_IDS.has(m.id)) continue;
+    if (seen.has(m.id) || deprecatedCueIds.has(m.id)) continue;
     seen.add(m.id);
     const url = resolveStorageUrl(m.path);
     const urlsByVoice: Record<string, string> | undefined = m.voices
@@ -839,6 +857,13 @@ export const postMeditations = functions.runWith({
           apiKey,
         });
 
+        if (!useFractionalModulesInCatalogsAndAI()) {
+          meditation.cues = normalizeFractionalSurfaceCueIdsForProd(
+            meditation.cues,
+            meditation.duration
+          );
+        }
+
         const voiceId = body.voiceId ?? "Asaf";
 
         // Resolve IDs to catalog objects
@@ -879,7 +904,12 @@ export const postMeditations = functions.runWith({
           durationMinutes?: number;
         }> = [];
         for (const c of meditation.cues) {
-          const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
+          const cueId =
+            c.id === "SI"
+              ? useFractionalModulesInCatalogsAndAI()
+                ? "INT_FRAC"
+                : "INT_GEN_1"
+              : c.id;
           const asset = cueMap.get(cueId);
           if (asset) {
             resolvedCues.push({
@@ -943,7 +973,7 @@ export const postMeditations = functions.runWith({
       const voiceId = body.voiceId ?? "Asaf";
       const backgroundSoundId = body.backgroundSoundId ?? "";
       const binauralBeatId = body.binauralBeatId ?? "None";
-      const cues = body.cues ?? [];
+      let cues = body.cues ?? [];
 
       functions.logger.info(
         `${TAG_MEDITATIONS} postMeditations: request received type=manual trigger=${trigger} duration=${duration} cueCount=${cues.length} bs=${backgroundSoundId} bb=${binauralBeatId} voiceId=${voiceId}`
@@ -958,6 +988,10 @@ export const postMeditations = functions.runWith({
           JSON.stringify({ error: "Invalid duration: must be 1-60" })
         );
         return;
+      }
+
+      if (!useFractionalModulesInCatalogsAndAI()) {
+        cues = normalizeFractionalSurfaceCueIdsForProd(cues, duration);
       }
 
       const catalogs = loadCatalogs();
@@ -1273,6 +1307,17 @@ export const postFractionalPlan = functions.https.onRequest(
     }
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    if (!useFractionalModulesInCatalogsAndAI()) {
+      res.set("Content-Type", "application/json");
+      res.status(403).send(
+        JSON.stringify({
+          error:
+            "Fractional planning is only enabled on the development Firebase project.",
+        })
+      );
       return;
     }
 

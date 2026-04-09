@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "description": "Introduction — monolithic (production).",
+  "models": [
+    {
+      "id": "INT_GEN_1",
+      "name": "General Introduction",
+      "path": "modules/introduction/general/asaf/int_general_asaf.mp3",
+      "voices": {
+        "Asaf": "modules/introduction/general/asaf/int_general_asaf.mp3",
+        "Dan": "modules/introduction/general/dan/int_general_dan.mp3"
+      },
+      "duration_minutes": 1
+    },
+    {
+      "id": "INT_MORN_1",
+      "name": "Morning Introduction",
+      "path": "modules/introduction/morning/asaf/int_morning_1_asaf.mp3",
+      "voices": {
+        "Asaf": "modules/introduction/morning/asaf/int_morning_1_asaf.mp3",
+        "Dan": "modules/introduction/morning/dan/int_morning_1_dan.mp3"
+      },
+      "duration_minutes": 1
+    }
+  ]
+}

@@ -2,15 +2,15 @@
 
 **Scope:** Every **fractional** meditation module in this repo — `NF_FRAC`, `IM_FRAC`, `PB_FRAC`, `BS_FRAC` / `BS_FRAC_UP` / `BS_FRAC_DOWN`.
 
-**Exception — `INT_FRAC`:** The layered **Intro** module is **not** an NF/IM-style “framing intro” clip. It **is** the composed opening (greeting / arrival / orientation). See [`intro-fractional-composer.md`](./intro-fractional-composer.md). Do not confuse with **`INT_GEN_*`** monolithic intro cues.
+**Exception — `INT_FRAC`:** The **Intro** module is **not** an NF/IM-style “framing intro” clip. It **is** the composed opening (greeting / arrival / orientation). See [`intro-fractional-composer.md`](./intro-fractional-composer.md).
 
-**Not in scope:** Session-level cues such as **`INT_GEN_*`** (general meditation opening). Those are composed outside fractional composers (`postMeditations`, `postAIRequest`, etc.).
+**Not in scope:** Legacy monolithic intro assets have been removed from catalogs in favor of **`INT_FRAC`**.
 
 ---
 
 ## Rule (plain language)
 
-- **Under 5 minutes** (`durationSec < 300`): **no** module framing intro — **unless** this fractional block is the **actual start of the meditation** (its window begins at session second **0**), it is the **first fractional row** in the cue list, and **no non-fractional cue** appears **above** it (so a general intro like **`INT_GEN_*`** or any regular module first → the following fractional module does **not** get a framing intro). Standalone: **`POST /postFractionalPlan`** with **`atTimelineStart: true`** still opts in.
+- **Under 5 minutes** (`durationSec < 300`): **no** module framing intro — **unless** this fractional block is the **actual start of the meditation** (its window begins at session second **0**), it is the **first fractional row** in the cue list, and **no non-fractional cue** appears **above** it (so a non-fractional cue or regular module first → the following fractional module does **not** get a framing intro). Standalone: **`POST /postFractionalPlan`** with **`atTimelineStart: true`** still opts in.
 - **5 minutes or longer** (`durationSec >= 300`): framing intro is **allowed** (still subject to body-scan `introShort` / `introLong`, and composer fit logic).
 
 **Wording note:** “1–4 minutes” in product copy maps to **under 5 minutes** in code; the boundary is **`FRACTIONAL_INTRO_MIN_DURATION_SEC` (300 seconds)**, not 240.

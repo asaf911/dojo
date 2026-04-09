@@ -7,6 +7,8 @@ import * as functions from "firebase-functions";
 import { generateAIMeditation } from "./aiMeditation";
 import type { LoadedCatalogs } from "./aiMeditation";
 import { expandFractionalCues } from "./fractionalComposer";
+import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
+import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
 const TAG = "[Server][AI]";
 
@@ -306,6 +308,13 @@ function buildMeditationPackage(
   const bbId = meditation.binauralBeatId ?? "None";
   const binauralBeat = bbId && bbId !== "None" ? beatMap.get(bbId) ?? null : null;
 
+  const normalizedCues = useFractionalModulesInCatalogsAndAI()
+    ? meditation.cues
+    : normalizeFractionalSurfaceCueIdsForProd(
+        meditation.cues,
+        meditation.duration
+      );
+
   const resolvedCues: Array<{
     id: string;
     name: string;
@@ -313,8 +322,13 @@ function buildMeditationPackage(
     trigger: string | number;
     durationMinutes?: number;
   }> = [];
-  for (const c of meditation.cues) {
-    const cueId = c.id === "SI" ? "INT_GEN_1" : c.id;
+  for (const c of normalizedCues) {
+    const cueId =
+      c.id === "SI"
+        ? useFractionalModulesInCatalogsAndAI()
+          ? "INT_FRAC"
+          : "INT_GEN_1"
+        : c.id;
     const asset = cueMap.get(cueId);
     if (asset) {
       resolvedCues.push({

@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "description": "Monolithic perfect breath (production).",
+  "models": [
+    {
+      "id": "PB1",
+      "name": "Perfect Breath (1 min)",
+      "path": "modules/perfect_breath/asaf/perfect-breath-1min.mp3",
+      "voices": {
+        "Asaf": "modules/perfect_breath/asaf/perfect-breath-1min.mp3",
+        "Dan": "modules/perfect_breath/asaf/perfect-breath-1min.mp3"
+      },
+      "duration_minutes": 1
+    },
+    {
+      "id": "PB2",
+      "name": "Perfect Breath (2 min)",
+      "path": "modules/perfect_breath/asaf/perfect-breath-2min.mp3",
+      "voices": {
+        "Asaf": "modules/perfect_breath/asaf/perfect-breath-2min.mp3",
+        "Dan": "modules/perfect_breath/asaf/perfect-breath-2min.mp3"
+      },
+      "duration_minutes": 2
+    },
+    {
+      "id": "PB3",
+      "name": "Perfect Breath (3 min)",
+      "path": "modules/perfect_breath/asaf/perfect-breath-3min.mp3",
+      "voices": {
+        "Asaf": "modules/perfect_breath/asaf/perfect-breath-3min.mp3",
+        "Dan": "modules/perfect_breath/asaf/perfect-breath-3min.mp3"
+      },
+      "duration_minutes": 3
+    },
+    {
+      "id": "PB4",
+      "name": "Perfect Breath (4 min)",
+      "path": "modules/perfect_breath/asaf/perfect-breath-4min.mp3",
+      "voices": {
+        "Asaf": "modules/perfect_breath/asaf/perfect-breath-4min.mp3",
+        "Dan": "modules/perfect_breath/asaf/perfect-breath-4min.mp3"
+      },
+      "duration_minutes": 4
+    },
+    {
+      "id": "PB5",
+      "name": "Perfect Breath (5 min)",
+      "path": "modules/perfect_breath/asaf/perfect-breath-5min.mp3",
+      "voices": {
+        "Asaf": "modules/perfect_breath/asaf/perfect-breath-5min.mp3",
+        "Dan": "modules/perfect_breath/asaf/perfect-breath-5min.mp3"
+      },
+      "duration_minutes": 5
+    }
+  ]
+}

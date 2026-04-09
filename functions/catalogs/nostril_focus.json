@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "description": "Dev: single fractional Nostril Focus placeholder (production uses nostril_focus_legacy.json).",
   "models": [
     {
       "id": "NF_FRAC",

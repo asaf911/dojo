@@ -1,0 +1,106 @@
+{
+  "version": "1.0",
+  "description": "Monolithic body scan (production).",
+  "models": [
+    {
+      "id": "BS1",
+      "name": "Body Scan (1 min)",
+      "path": "modules/body_scan/asaf/body-scan-1min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-1min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-1min.mp3"
+      },
+      "duration_minutes": 1
+    },
+    {
+      "id": "BS2",
+      "name": "Body Scan (2 min)",
+      "path": "modules/body_scan/asaf/body-scan-2min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-2min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-2min.mp3"
+      },
+      "duration_minutes": 2
+    },
+    {
+      "id": "BS3",
+      "name": "Body Scan (3 min)",
+      "path": "modules/body_scan/asaf/body-scan-3min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-3min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-3min.mp3"
+      },
+      "duration_minutes": 3
+    },
+    {
+      "id": "BS4",
+      "name": "Body Scan (4 min)",
+      "path": "modules/body_scan/asaf/body-scan-4min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-4min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-4min.mp3"
+      },
+      "duration_minutes": 4
+    },
+    {
+      "id": "BS5",
+      "name": "Body Scan (5 min)",
+      "path": "modules/body_scan/asaf/body-scan-5min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-5min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-5min.mp3"
+      },
+      "duration_minutes": 5
+    },
+    {
+      "id": "BS6",
+      "name": "Body Scan (6 min)",
+      "path": "modules/body_scan/asaf/body-scan-6min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-6min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-6min.mp3"
+      },
+      "duration_minutes": 6
+    },
+    {
+      "id": "BS7",
+      "name": "Body Scan (7 min)",
+      "path": "modules/body_scan/asaf/body-scan-7min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-7min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-7min.mp3"
+      },
+      "duration_minutes": 7
+    },
+    {
+      "id": "BS8",
+      "name": "Body Scan (8 min)",
+      "path": "modules/body_scan/asaf/body-scan-8min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-8min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-8min.mp3"
+      },
+      "duration_minutes": 8
+    },
+    {
+      "id": "BS9",
+      "name": "Body Scan (9 min)",
+      "path": "modules/body_scan/asaf/body-scan-9min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-9min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-9min.mp3"
+      },
+      "duration_minutes": 9
+    },
+    {
+      "id": "BS10",
+      "name": "Body Scan (10 min)",
+      "path": "modules/body_scan/asaf/body-scan-10min.mp3",
+      "voices": {
+        "Asaf": "modules/body_scan/asaf/body-scan-10min.mp3",
+        "Dan": "modules/body_scan/asaf/body-scan-10min.mp3"
+      },
+      "duration_minutes": 10
+    }
+  ]
+}

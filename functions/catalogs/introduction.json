@@ -1,36 +1,10 @@
 {
   "version": "1.0",
-  "description": "Introduction module - replaces Settling In (SI) cue. Select by class and duration.",
+  "description": "Introduction module — fractional Intro (INT_FRAC).",
   "models": [
     {
-      "id": "INT_GEN_1",
-      "name": "General Introduction",
-      "class": "general",
-      "path": "modules/introduction/general/asaf/int_general_asaf.mp3",
-      "voices": {
-        "Asaf": "modules/introduction/general/asaf/int_general_asaf.mp3",
-        "Dan": "modules/introduction/general/dan/int_general_dan.mp3"
-      },
-      "duration_minutes": 1,
-      "session_types": ["default", "relaxation", "focus", "morning", "evening", "anxiety", "stress", "energy", "creativity", "gratitude"],
-      "keywords": ["general", "any", "default", "settling in"]
-    },
-    {
-      "id": "INT_MORN_1",
-      "name": "Morning Introduction",
-      "class": "morning",
-      "path": "modules/introduction/morning/asaf/int_morning_1_asaf.mp3",
-      "voices": {
-        "Asaf": "modules/introduction/morning/asaf/int_morning_1_asaf.mp3",
-        "Dan": "modules/introduction/morning/dan/int_morning_1_dan.mp3"
-      },
-      "duration_minutes": 1,
-      "session_types": ["morning"],
-      "keywords": ["morning", "wake up", "start day", "energize", "sunrise"]
-    },
-    {
       "id": "INT_FRAC",
-      "name": "Intro (layered)",
+      "name": "Intro",
       "path": "modules/intro_fractional/asaf/INT_GRT_106_WELCOME_ASAF.mp3",
       "voices": {
         "Asaf": "modules/intro_fractional/asaf/INT_GRT_106_WELCOME_ASAF.mp3",
