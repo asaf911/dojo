@@ -5,7 +5,7 @@ import { buildCuesFromAllocation } from "./cueBuilder";
 test("buildCuesFromAllocation: NF focus emits monolithic NF5 when focus minutes is 5", () => {
   const cues = buildCuesFromAllocation(
     {
-      intro: 1,
+      intro: 0,
       breath: 1,
       relax: 2,
       focus: 5,
@@ -27,7 +27,7 @@ test("buildCuesFromAllocation: NF focus emits monolithic NF5 when focus minutes 
 test("buildCuesFromAllocation: NF focus clamps to NF10 when focus > 10", () => {
   const cues = buildCuesFromAllocation(
     {
-      intro: 1,
+      intro: 0,
       breath: 0,
       relax: 0,
       focus: 15,
@@ -52,7 +52,7 @@ test("buildCuesFromAllocation (dev project): NF focus emits NF_FRAC", () => {
   try {
     const cues = buildCuesFromAllocation(
       {
-        intro: 1,
+        intro: 0,
         breath: 1,
         relax: 2,
         focus: 5,

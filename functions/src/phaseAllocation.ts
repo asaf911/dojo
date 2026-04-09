@@ -20,7 +20,8 @@ export interface UserStructureOverrides {
 }
 
 export interface PhaseAllocation {
-  intro: 1;
+  /** Reserved for analytics; intro audio is a session prefix, not a deducted practice minute. */
+  intro: 0;
   breath: number;
   relax: number;
   focus: number;
@@ -29,18 +30,21 @@ export interface PhaseAllocation {
   focusType?: "IM" | "NF";
 }
 
-/** Lookup table for 1-10 min (from user spec) */
+/**
+ * Lookup table for 1–10 min practice: phase minutes sum to **session duration** (no separate “intro minute”).
+ * INT_FRAC length is a dynamic prefix on the playback clock, not subtracted here.
+ */
 const ALLOCATION_1_10: Record<number, Omit<PhaseAllocation, "intro">> = {
-  1: { breath: 0, relax: 0, focus: 0, insight: 0 },
-  2: { breath: 1, relax: 0, focus: 0, insight: 0 },
-  3: { breath: 1, relax: 1, focus: 0, insight: 0 },
-  4: { breath: 1, relax: 2, focus: 0, insight: 0 },
-  5: { breath: 1, relax: 2, focus: 1, insight: 0 },
-  6: { breath: 1, relax: 2, focus: 2, insight: 0 },
-  7: { breath: 1, relax: 2, focus: 2, insight: 1 },
-  8: { breath: 1, relax: 2, focus: 2, insight: 2 },
-  9: { breath: 2, relax: 2, focus: 2, insight: 2 },
-  10: { breath: 2, relax: 2, focus: 2, insight: 3 },
+  1: { breath: 1, relax: 0, focus: 0, insight: 0 },
+  2: { breath: 2, relax: 0, focus: 0, insight: 0 },
+  3: { breath: 2, relax: 1, focus: 0, insight: 0 },
+  4: { breath: 2, relax: 2, focus: 0, insight: 0 },
+  5: { breath: 2, relax: 2, focus: 1, insight: 0 },
+  6: { breath: 2, relax: 2, focus: 2, insight: 0 },
+  7: { breath: 2, relax: 2, focus: 2, insight: 1 },
+  8: { breath: 2, relax: 2, focus: 2, insight: 2 },
+  9: { breath: 3, relax: 2, focus: 2, insight: 2 },
+  10: { breath: 3, relax: 2, focus: 2, insight: 3 },
 };
 
 /**
@@ -64,7 +68,7 @@ export function allocatePhases(
     focus = base.focus;
     insight = base.insight;
   } else {
-    const remaining = d - 1;
+    const remaining = d;
     breath = Math.max(0, Math.floor(remaining * 0.2));
     relax = Math.max(0, Math.floor(remaining * 0.25));
     focus = Math.max(0, Math.floor(remaining * 0.25));
@@ -101,7 +105,7 @@ export function allocatePhases(
   }
 
   return {
-    intro: 1,
+    intro: 0,
     breath: Math.min(5, breath),
     relax: Math.min(10, relax),
     focus: Math.min(10, focus),
@@ -120,13 +124,12 @@ export function allocatePhasesFromOverrides(
   prefs: SessionPreferences
 ): PhaseAllocation {
   const d = Math.max(1, Math.min(60, Math.floor(duration)));
-  const intro = 1;
   let breath = overrides.breathMinutes ?? 0;
   let relax = overrides.bodyScanMinutes ?? 0;
   let focus = overrides.mantraMinutes ?? 0;
   let insight = 0;
 
-  let used = intro + breath + relax + focus;
+  let used = breath + relax + focus;
   let remaining = d - used;
 
   if (remaining > 0) {
@@ -141,7 +144,7 @@ export function allocatePhasesFromOverrides(
       focus = Math.min(10, base.focus);
       insight = Math.min(10, base.insight);
       return {
-        intro: 1,
+        intro: 0,
         breath,
         relax,
         focus,
@@ -180,7 +183,7 @@ export function allocatePhasesFromOverrides(
   }
 
   return {
-    intro: 1,
+    intro: 0,
     breath: Math.min(5, breath),
     relax: Math.min(10, relax),
     focus: Math.min(10, focus),

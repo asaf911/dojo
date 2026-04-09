@@ -337,6 +337,26 @@ function triggerToSeconds(trigger: string | number): number | null {
 }
 
 /**
+ * Practice-minute index from cue triggers (`0` = meditation 00:00, `1` = +1 min, …).
+ * String forms come from `cueBuilder` (`String(minute)`). Absolute `s{N}` triggers are excluded.
+ */
+function parsePracticeMinuteIndex(trigger: string | number): number | null {
+  if (trigger === "start" || trigger === "end") return null;
+  if (typeof trigger === "number" && Number.isFinite(trigger)) {
+    return trigger;
+  }
+  if (typeof trigger === "string") {
+    const t = trigger.trim();
+    if (t.startsWith("s")) return null;
+    if (/^-?\d+$/.test(t)) {
+      const n = parseInt(t, 10);
+      return Number.isNaN(n) ? null : n;
+    }
+  }
+  return null;
+}
+
+/**
  * Intro (`INT_FRAC`) is a prefix: practice-length is chosen by the user; intro audio is added **before**
  * the practice timeline. Numeric minute triggers are practice-relative (0 = practice start); they become
  * absolute `s{sec}` on the playback clock (introPrefix + minuteIndex * 60).
@@ -381,8 +401,8 @@ export function applyPracticeRelativeIntroPrefix(
       // INT_FRAC is handled above. Any other `start` is practice 00:00 (after intro prefix).
       return { ...c, trigger: `s${introPrefixSec}` };
     }
-    if (typeof c.trigger === "number") {
-      const minuteIndex = c.trigger;
+    const minuteIndex = parsePracticeMinuteIndex(c.trigger);
+    if (minuteIndex !== null) {
       return {
         ...c,
         trigger: `s${introPrefixSec + minuteIndex * 60}`,

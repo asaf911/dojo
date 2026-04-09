@@ -541,25 +541,48 @@ class CuePlaybackManager {
 
         let group = DispatchGroup()
 
+        // Per-track seek seconds: `effDuration` is max(voice, parallel SFX). Using that same value for
+        // both `scheduleSegment` calls can push the shorter track past its end → frameCount 0 →
+        // AVAudioPlayerNode assertion ("numberFrames > 0"). Clamp each file independently.
         let vRate = audioFile.processingFormat.sampleRate
         let vTotal = audioFile.length
-        let vTarget = AVAudioFramePosition(clampedSeek * vRate)
+        let voiceDurationSec = Double(vTotal) / vRate
+        let voiceSeekSec = min(clampedSeek, voiceDurationSec)
+        let vTarget = AVAudioFramePosition(voiceSeekSec * vRate)
         let vClamped = max(0, min(vTarget, vTotal))
         let vRemaining = AVAudioFrameCount(vTotal - vClamped)
-        group.enter()
-        playerNode.scheduleSegment(audioFile, startingFrame: vClamped, frameCount: vRemaining, at: nil) { [weak self] in
+
+        func completeTrackInGroup() {
+            group.enter()
             DispatchQueue.main.async { group.leave() }
         }
 
+        if vRemaining > 0 {
+            group.enter()
+            playerNode.scheduleSegment(audioFile, startingFrame: vClamped, frameCount: vRemaining, at: nil) { [weak self] in
+                DispatchQueue.main.async { group.leave() }
+            }
+        } else {
+            completeTrackInGroup()
+        }
+
+        var sfxRemaining: AVAudioFrameCount = 0
         if let sfxFile = currentSfxAudioFile {
             let sRate = sfxFile.processingFormat.sampleRate
             let sTotal = sfxFile.length
-            let sTarget = AVAudioFramePosition(clampedSeek * sRate)
+            let sfxDurationSec = Double(sTotal) / sRate
+            let sfxSeekSec = min(clampedSeek, sfxDurationSec)
+            let sTarget = AVAudioFramePosition(sfxSeekSec * sRate)
             let sClamped = max(0, min(sTarget, sTotal))
             let sRemaining = AVAudioFrameCount(sTotal - sClamped)
-            group.enter()
-            sfxPlayerNode.scheduleSegment(sfxFile, startingFrame: sClamped, frameCount: sRemaining, at: nil) { [weak self] in
-                DispatchQueue.main.async { group.leave() }
+            sfxRemaining = sRemaining
+            if sRemaining > 0 {
+                group.enter()
+                sfxPlayerNode.scheduleSegment(sfxFile, startingFrame: sClamped, frameCount: sRemaining, at: nil) { [weak self] in
+                    DispatchQueue.main.async { group.leave() }
+                }
+            } else {
+                completeTrackInGroup()
             }
         }
 
@@ -569,13 +592,15 @@ class CuePlaybackManager {
         }
 
         if wasPlaying {
-            playerNode.play()
-            if currentSfxAudioFile != nil {
+            if vRemaining > 0 {
+                playerNode.play()
+            }
+            if sfxRemaining > 0 {
                 sfxPlayerNode.play()
             }
         }
 
-        print("🧠 AI_DEBUG [CUE] Seeked combined cue to \(String(format: "%.2f", clampedSeek))s / \(String(format: "%.2f", effDuration))s")
+        print("🧠 AI_DEBUG [CUE] Seeked combined cue to \(String(format: "%.2f", clampedSeek))s / \(String(format: "%.2f", effDuration))s (voiceSeek=\(String(format: "%.2f", voiceSeekSec))s)")
     }
     
     /// Stops the current cue and clears tracking state.

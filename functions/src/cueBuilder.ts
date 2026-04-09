@@ -46,7 +46,8 @@ function buildCuesFromAllocationLegacy(
   options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
   const cues: CueWithTrigger[] = [];
-  let currentMinute = 1;
+  /// Practice-minute index: 0 = meditation clock 00:00 (INT_FRAC prelude uses negative countdown / prefix).
+  let currentMinute = 0;
 
   const introId = prefs.isMorning ? "INT_MORN_1" : "INT_GEN_1";
   cues.push({ id: introId, trigger: "start" });
@@ -106,7 +107,8 @@ function buildCuesFromAllocationFractional(
   options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
   const cues: CueWithTrigger[] = [];
-  let currentMinute = 1;
+  /// Practice-minute index: 0 = first module at meditation 00:00 (intro is a separate prefix).
+  let currentMinute = 0;
 
   cues.push({ id: "INT_FRAC", trigger: "start" });
 
