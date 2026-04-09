@@ -168,6 +168,95 @@ test("pickEntryClip resolves top macro", () => {
   assert.equal(e!.clipId, "E");
 });
 
+test("chooseBodyScanPlan omits framing intros under 5 min when not at timeline start", () => {
+  const clips: FractionalClip[] = [
+    {
+      clipId: "INTRO_S",
+      role: "intro",
+      order: 0,
+      text: "",
+      voices: {},
+      introVariant: "short",
+    },
+    macro(1, "M1", 1, 1),
+    macro(2, "M2", 2, 2),
+    macro(3, "M3", 3, 3),
+    {
+      clipId: "I1",
+      role: "integration",
+      order: 99,
+      text: "",
+      voices: {},
+      integrationOrder: 1,
+    },
+    {
+      clipId: "I2",
+      role: "integration",
+      order: 100,
+      text: "",
+      voices: {},
+      integrationOrder: 2,
+    },
+  ];
+
+  const plan = chooseBodyScanPlan(clips, {
+    durationSec: 180,
+    bodyScanDirection: "up",
+    introShort: true,
+    introLong: false,
+    includeEntry: false,
+    voiceId: "Asaf",
+    moduleId: "BS_FRAC",
+    atTimelineStart: false,
+  });
+  assert.equal(plan.intros.length, 0);
+});
+
+test("chooseBodyScanPlan keeps framing intros under 5 min when at timeline start", () => {
+  const clips: FractionalClip[] = [
+    {
+      clipId: "INTRO_S",
+      role: "intro",
+      order: 0,
+      text: "",
+      voices: {},
+      introVariant: "short",
+    },
+    macro(1, "M1", 1, 1),
+    macro(2, "M2", 2, 2),
+    macro(3, "M3", 3, 3),
+    {
+      clipId: "I1",
+      role: "integration",
+      order: 99,
+      text: "",
+      voices: {},
+      integrationOrder: 1,
+    },
+    {
+      clipId: "I2",
+      role: "integration",
+      order: 100,
+      text: "",
+      voices: {},
+      integrationOrder: 2,
+    },
+  ];
+
+  const plan = chooseBodyScanPlan(clips, {
+    durationSec: 180,
+    bodyScanDirection: "up",
+    introShort: true,
+    introLong: false,
+    includeEntry: false,
+    voiceId: "Asaf",
+    moduleId: "BS_FRAC",
+    atTimelineStart: true,
+  });
+  assert.equal(plan.intros.length, 1);
+  assert.equal(plan.intros[0]!.clipId, "INTRO_S");
+});
+
 test("chooseBodyScanPlan skips first body when includeEntry", () => {
   const clips: FractionalClip[] = [
     {

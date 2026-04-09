@@ -6,7 +6,8 @@
       "name": "Perfect Breath",
       "path": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_OPEN_000_INTRO_DAN.mp3"
       },
       "fractional": true
     }

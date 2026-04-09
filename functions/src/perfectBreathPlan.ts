@@ -1,6 +1,6 @@
 /**
  * Deterministic Perfect Breath (PB_FRAC) timeline composer.
- * See docs/perfect-breath-fractional-composer.md.
+ * See docs/perfect-breath-fractional-composer.md and docs/fractional-module-intro-rule.md.
  */
 
 import * as functions from "firebase-functions";
@@ -10,6 +10,7 @@ import type {
   FractionalPlan,
   FractionalPlanItem,
 } from "./fractionalComposer"; // type-only: no runtime cycle with fractionalComposer importing this module
+import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
 
 const TAG = "[PerfectBreathPlan]";
 
@@ -97,6 +98,20 @@ const ID_320 = "PBV_BREATH_320_FINAL_EXHALE_ASAF";
 const ID_322 = "PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF";
 const ID_SFX_IN = "PBS_IN";
 const ID_SFX_OUT = "PBS_OUT";
+
+/**
+ * `PBV_OPEN_000` follows the shared fractional **module intro** rule (see `fractional-module-intro-rule.md`).
+ * Always omitted for the 1-minute block (≤60s) so the breath grid still fits.
+ */
+function includePerfectBreathOpenVoice(
+  durationSec: number,
+  atTimelineStart: boolean
+): boolean {
+  if (durationSec <= ONE_MINUTE_PB_MAX_SEC) return false;
+  return (
+    durationSec >= FRACTIONAL_INTRO_MIN_DURATION_SEC || atTimelineStart
+  );
+}
 
 const RELEASE_ORDER: { clipId: string; holdSec: number }[] = [
   { clipId: "PBV_BREATH_240_RELEASE_HOLD_10S_ASAF", holdSec: 10 },
@@ -240,10 +255,11 @@ function estimateSessionSec(
   durationSec: number,
   prepPairs: number,
   release: { clipId: string; holdSec: number },
-  numCycles: number
+  numCycles: number,
+  atTimelineStart: boolean
 ): number {
   let t = 0;
-  if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
+  if (includePerfectBreathOpenVoice(durationSec, atTimelineStart)) {
     t = afterScheduledVoiceCue(0, map, ID_OPEN);
     t += introSilenceSec(durationSec);
   }
@@ -263,10 +279,18 @@ function maxCyclesThatFit(
   map: Map<string, FractionalClip>,
   durationSec: number,
   prepPairs: number,
-  release: { clipId: string; holdSec: number }
+  release: { clipId: string; holdSec: number },
+  atTimelineStart: boolean
 ): number {
   for (let k = 20; k >= 1; k--) {
-    const est = estimateSessionSec(map, durationSec, prepPairs, release, k);
+    const est = estimateSessionSec(
+      map,
+      durationSec,
+      prepPairs,
+      release,
+      k,
+      atTimelineStart
+    );
     if (est <= durationSec + 0.5) {
       return k;
     }
@@ -314,15 +338,29 @@ export function composePerfectBreathPlan(
   clips: FractionalClip[],
   durationSec: number,
   voiceId: string,
-  moduleId: string
+  moduleId: string,
+  atTimelineStart = false
 ): FractionalPlan {
   const map = clipMapFromList(clips);
   let release = pickReleaseForSession(durationSec);
   let prepPairs = pickPrepPairCount(durationSec);
-  let numCycles = maxCyclesThatFit(map, durationSec, prepPairs, release);
+  let numCycles = maxCyclesThatFit(
+    map,
+    durationSec,
+    prepPairs,
+    release,
+    atTimelineStart
+  );
 
   while (
-    estimateSessionSec(map, durationSec, prepPairs, release, numCycles) >
+    estimateSessionSec(
+      map,
+      durationSec,
+      prepPairs,
+      release,
+      numCycles,
+      atTimelineStart
+    ) >
     durationSec + 0.5
   ) {
     const idx = RELEASE_ORDER.findIndex((r) => r.clipId === release.clipId);
@@ -336,13 +374,19 @@ export function composePerfectBreathPlan(
       );
       break;
     }
-    numCycles = maxCyclesThatFit(map, durationSec, prepPairs, release);
+    numCycles = maxCyclesThatFit(
+      map,
+      durationSec,
+      prepPairs,
+      release,
+      atTimelineStart
+    );
   }
 
   const items: FractionalPlanItem[] = [];
   let cursor = 0;
 
-  if (durationSec > ONE_MINUTE_PB_MAX_SEC) {
+  if (includePerfectBreathOpenVoice(durationSec, atTimelineStart)) {
     cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");
     cursor += introSilenceSec(durationSec);
   }

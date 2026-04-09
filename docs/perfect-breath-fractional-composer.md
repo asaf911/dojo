@@ -2,9 +2,11 @@
 
 Server: [`functions/src/perfectBreathPlan.ts`](../functions/src/perfectBreathPlan.ts). Catalog: [`functions/catalogs/perfect_breath_fractional.json`](../functions/catalogs/perfect_breath_fractional.json).
 
+**Module intro (`PBV_OPEN_000`):** Same policy as other fractional modules; see [`fractional-module-intro-rule.md`](./fractional-module-intro-rule.md) (plus ≤60s never uses OPEN).
+
 ## API
 
-- `POST /postFractionalPlan` with `moduleId: "PB_FRAC"`, `durationSec` (60–1200), `voiceId`.
+- `POST /postFractionalPlan` with `moduleId: "PB_FRAC"`, `durationSec` (60–1200), `voiceId`, optional `atTimelineStart` (see module-intro doc).
 - Inline expansion: `expandFractionalCues` maps `PB_FRAC` the same way as other fractional modules; breath phase minutes map to `durationMinutes` on the cue (see [`cueBuilder.ts`](../functions/src/cueBuilder.ts)).
 
 ## Storage filenames vs `clipId`
@@ -83,7 +85,7 @@ After preparation, the cursor advances by **`atSec + durationSec`** from the cat
 
 ## Selection
 
-- **Intro (`PBV_OPEN_000`)**: omitted for **≤60s** (1-minute block); first plan item is **`100`** at `atSec` 0 (start trigger on clients).
+- **Intro (`PBV_OPEN_000`)**: follows [**fractional module intro rule**](./fractional-module-intro-rule.md): **≤60s** never (one-minute block); **61–299s** only if `atTimelineStart` (or inline window starts at second 0); **≥300s** always allowed when the plan fits.
 - **Prep pairs**: **1** (≤60s), **2** (61s–119s and **~3 min ≈165–200s**), **3** (120s–164s, 201s–539s), **4** (≥540s).
 - **Release / bottom hold**: tier from `durationSec`; composer may step down if the plan would exceed `durationSec`. **≤60s:** `240` (10s). **61s–120s:** `244` (20s) for the ~2 min window. **~3 min (165–200s):** `244` (20s) with only two prep pairs. **Other 121s–240s:** `240` (10s), then the usual ladder upward.
 - **Cycles**: As many full cycles as fit; the **last** cycle always ends with `PBV_BREATH_320_FINAL_EXHALE_ASAF` (never `322`).

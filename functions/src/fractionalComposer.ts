@@ -7,6 +7,7 @@
  *   Phase 2 — place them on the timeline with growing gaps
  *
  * See docs/fractional-module-composition.md for the full design reference.
+ * Module framing intros (all fractional types): docs/fractional-module-intro-rule.md
  * Body scan (BS_FRAC): docs/body-scan-tier-composer.md — `composeBodyScanTierPlan` in bodyScanTierPlan.ts.
  */
 
@@ -18,6 +19,7 @@ import {
   type BodyScanTierPlanParams,
 } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
+import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,7 +83,6 @@ export interface FractionalPlan {
 
 const ESTIMATED_CLIP_SEC = 5;
 const TRAILING_BUFFER_FACTOR = 1.1;
-const INTRO_THRESHOLD_SEC = 240;
 const REMINDER_THRESHOLD_SEC = 120;
 const OUTRO_THRESHOLD_SEC = 120;
 
@@ -176,7 +177,8 @@ const NF_IM_CLIP_ROLES: ReadonlySet<FractionalClipRole> = new Set([
 
 function selectClips(
   clips: FractionalClip[],
-  durationSec: number
+  durationSec: number,
+  atTimelineStart: boolean
 ): FractionalClip[] {
   const sorted = [...clips]
     .filter((c) => NF_IM_CLIP_ROLES.has(c.role))
@@ -195,7 +197,10 @@ function selectClips(
 
   const selected: FractionalClip[] = [];
 
-  if (durationSec >= INTRO_THRESHOLD_SEC && intros.length > 0) {
+  const includeFramingIntro =
+    (durationSec >= FRACTIONAL_INTRO_MIN_DURATION_SEC || atTimelineStart) &&
+    intros.length > 0;
+  if (includeFramingIntro) {
     selected.push(intros[0]);
   }
 
@@ -368,11 +373,12 @@ export function composeFractionalPlan(
   clips: FractionalClip[],
   durationSec: number,
   voiceId: string,
-  moduleId: string
+  moduleId: string,
+  atTimelineStart = false
 ): FractionalPlan {
   const TAG = "[FractionalComposer]";
 
-  const selected = selectClips(clips, durationSec);
+  const selected = selectClips(clips, durationSec, atTimelineStart);
   const items = placeOnTimeline(selected, durationSec, voiceId, moduleId);
 
   const planId = `${moduleId.toLowerCase()}-${durationSec}s-${voiceId.toLowerCase()}-${Date.now()}`;
@@ -495,6 +501,8 @@ export function expandFractionalCues(
 
   const durationSec = durationMinutes * 60;
   const result: ResolvedCue[] = [];
+  /** First `*_FRAC` row in this cue list (avoids a second fractional row with a bogus `start` trigger). */
+  const firstFractionalCueIndex = cues.findIndex((c) => Boolean(FRACTIONAL_MODULE_MAP[c.id]));
 
   for (let i = 0; i < cues.length; i++) {
     const cue = cues[i];
@@ -506,6 +514,14 @@ export function expandFractionalCues(
     }
 
     const startSec = triggerToSeconds(cue.trigger) ?? 0;
+    const hasNonFractionalCueBefore = cues
+      .slice(0, i)
+      .some((c) => !FRACTIONAL_MODULE_MAP[c.id]);
+    /** Framing intro only if: meditation truly starts with this block (t=0), it's the first fractional row, and no regular cue precedes it (e.g. INT_GEN before IM_FRAC). */
+    const atFractModuleTimelineStart =
+      startSec === 0 &&
+      i === firstFractionalCueIndex &&
+      !hasNonFractionalCueBefore;
 
     let endSec: number;
     if (cue.durationMinutes && cue.durationMinutes > 0) {
@@ -567,15 +583,28 @@ export function expandFractionalCues(
         ...DEFAULT_BODY_SCAN_EXPAND_PARAMS,
         voiceId,
         moduleId: cue.id,
+        atTimelineStart: atFractModuleTimelineStart,
       });
     } else if (cue.id === "PB_FRAC") {
-      plan = composePerfectBreathPlan(resolvedClips, windowSec, voiceId, cue.id);
+      plan = composePerfectBreathPlan(
+        resolvedClips,
+        windowSec,
+        voiceId,
+        cue.id,
+        atFractModuleTimelineStart
+      );
     } else {
-      plan = composeFractionalPlan(resolvedClips, windowSec, voiceId, cue.id);
+      plan = composeFractionalPlan(
+        resolvedClips,
+        windowSec,
+        voiceId,
+        cue.id,
+        atFractModuleTimelineStart
+      );
     }
 
     functions.logger.info(
-      `${TAG} expanded ${cue.id} at ${startSec}s: window=${windowSec}s items=${plan.items.length}`
+      `${TAG} expanded ${cue.id} at ${startSec}s: window=${windowSec}s items=${plan.items.length} fractIntroAtMedStart=${atFractModuleTimelineStart}`
     );
 
     for (const item of plan.items) {

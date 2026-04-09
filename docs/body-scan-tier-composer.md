@@ -12,6 +12,8 @@
 | Catalog | `functions/catalogs/body_scan_fractional.json` |
 | Dev UI → API | `ios/imagine/Features/FractionalModules/*` (MVVM; see `.cursorrules`) |
 
+**Module intro (1–4 min vs first on timeline):** [`docs/fractional-module-intro-rule.md`](./fractional-module-intro-rule.md) — applies to BS and every other fractional module.
+
 ## Product vs composer direction (do not invert again)
 
 | Product label | Scan direction | Composer `bodyScanDirection` |
@@ -42,11 +44,12 @@ Body-scan modules: `BS_FRAC`, `BS_FRAC_UP`, `BS_FRAC_DOWN`.
 
 - `bodyScanDirection` optional unless `BS_FRAC`; UP/DOWN moduleIds **override** direction.
 - `introShort` / `introLong` booleans; legacy `introStyle` if neither boolean sent.
+- `atTimelineStart` — optional boolean. When **true**, short/long framing intros are allowed even if `durationSec < 300`. Inline expansion sets this only when the fractional block is at **meditation start** (second 0), is the **first fractional row**, and **no non-fractional cue** precedes it (see `fractional-module-intro-rule.md`).
 - `includeEntry` — **default `true`** when omitted for body scan; send `false` for instruction-only first anchor.
 
 ## Inline expansion (`expandFractionalCues`)
 
-Used by `postMeditations` / AI paths. Body scan uses **fixed** composer flags: short intro only, long off, **entry on** (`fractionalComposer.ts`). To change defaults, edit that call site.
+Used by `postMeditations` / AI paths. Body scan uses **fixed** composer flags: short intro only, long off, **entry on** (`fractionalComposer.ts`). `atTimelineStart` is set in `expandFractionalCues` when the cue is the **first fractional module row** in the request cue list (not “trigger is start”). To change defaults, edit that call site.
 
 ## Tests
 

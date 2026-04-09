@@ -9,7 +9,8 @@
       "order": 0,
       "text": "Perfect Breath introduction",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_OPEN_000_INTRO_DAN.mp3"
       },
       "durationSec": 5.799
     },
@@ -19,7 +20,8 @@
       "order": 10,
       "text": "Preparation inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_100_INHALE_EXPAND_FULL_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_100_INHALE_EXPAND_FULL_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_100_INHALE_EXPAND_FULL_DAN.mp3"
       },
       "durationSec": 7.967
     },
@@ -29,7 +31,8 @@
       "order": 11,
       "text": "Preparation exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_110_EXHALE_RELAX_FULL_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_110_EXHALE_RELAX_FULL_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_110_EXHALE_RELAX_FULL_DAN.mp3"
       },
       "durationSec": 4.989
     },
@@ -39,7 +42,8 @@
       "order": 12,
       "text": "Preparation inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_120_INHALE_EXPAND_MEDIUM_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_120_INHALE_EXPAND_MEDIUM_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_120_INHALE_EXPAND_MEDIUM_DAN.mp3"
       },
       "durationSec": 5.799
     },
@@ -49,7 +53,8 @@
       "order": 13,
       "text": "Preparation exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_130_EXHALE_RELAX_MEDIUM_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_130_EXHALE_RELAX_MEDIUM_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_130_EXHALE_RELAX_MEDIUM_DAN.mp3"
       },
       "durationSec": 2.064
     },
@@ -59,7 +64,8 @@
       "order": 14,
       "text": "Preparation inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_140_INHALE_EXPAND_SHORT_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_140_INHALE_EXPAND_SHORT_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_140_INHALE_EXPAND_SHORT_DAN.mp3"
       },
       "durationSec": 1.306
     },
@@ -69,7 +75,8 @@
       "order": 15,
       "text": "Preparation exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_150_EXHALE_RELAX_SHORT_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_150_EXHALE_RELAX_SHORT_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_150_EXHALE_RELAX_SHORT_DAN.mp3"
       },
       "durationSec": 1.672
     },
@@ -79,7 +86,8 @@
       "order": 16,
       "text": "Preparation inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_160_INHALE_EXPAND_MINIMAL_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_160_INHALE_EXPAND_MINIMAL_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_160_INHALE_EXPAND_MINIMAL_DAN.mp3"
       },
       "durationSec": 0.967
     },
@@ -89,7 +97,8 @@
       "order": 17,
       "text": "Preparation exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_170_EXHALE_RELAX_MINIMAL_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_170_EXHALE_RELAX_MINIMAL_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_170_EXHALE_RELAX_MINIMAL_DAN.mp3"
       },
       "durationSec": 0.914
     },
@@ -99,7 +108,8 @@
       "order": 20,
       "text": "Deep inhale and hold at the top",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_200_INHALE_DEEP_AND_HOLD_TOP_DAN.mp3"
       },
       "durationSec": 3.344
     },
@@ -107,9 +117,10 @@
       "clipId": "PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF",
       "role": "instruction",
       "order": 23,
-      "text": "Squeeze air at top of belly and lower lungs",
+      "text": "Gently squeeze the air into your lower lungs and belly",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_230_SQUEEZE_AIR_TOP_OF_BELLY_LOWER_LUNGS_DAN.mp3"
       },
       "durationSec": 4.624
     },
@@ -119,7 +130,8 @@
       "order": 240,
       "text": "Release into ten second hold",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_240_RELEASE_HOLD_10S_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_240_RELEASE_HOLD_10S_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_240_RELEASE_HOLD_10S_DAN.mp3"
       },
       "durationSec": 4.493
     },
@@ -129,7 +141,8 @@
       "order": 242,
       "text": "Release into fifteen second hold",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_242_RELEASE_HOLD_15S_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_242_RELEASE_HOLD_15S_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_242_RELEASE_HOLD_15S_DAN.mp3"
       },
       "durationSec": 4.545
     },
@@ -139,7 +152,8 @@
       "order": 244,
       "text": "Release into twenty second hold",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_244_RELEASE_HOLD_20S_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_244_RELEASE_HOLD_20S_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_244_RELEASE_HOLD_20S_DAN.mp3"
       },
       "durationSec": 4.545
     },
@@ -149,7 +163,8 @@
       "order": 246,
       "text": "Release into twenty-five second hold",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_246_RELEASE_HOLD_25S_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_246_RELEASE_HOLD_25S_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_246_RELEASE_HOLD_25S_DAN.mp3"
       },
       "durationSec": 4.833
     },
@@ -159,7 +174,8 @@
       "order": 248,
       "text": "Release into thirty second hold",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_248_RELEASE_HOLD_30S_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_248_RELEASE_HOLD_30S_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_248_RELEASE_HOLD_30S_DAN.mp3"
       },
       "durationSec": 4.728
     },
@@ -169,7 +185,8 @@
       "order": 250,
       "text": "Let thoughts escape",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_HOLD_250_THOUGHTS_ESCAPE_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_HOLD_250_THOUGHTS_ESCAPE_DAN.mp3"
       },
       "durationSec": 2.247
     },
@@ -179,7 +196,8 @@
       "order": 280,
       "text": "Recovery inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_280_INHALE_RECOVERY_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_280_INHALE_RECOVERY_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_280_INHALE_RECOVERY_DAN.mp3"
       },
       "durationSec": 2.717
     },
@@ -189,7 +207,8 @@
       "order": 320,
       "text": "Final exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_320_FINAL_EXHALE_END_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_320_FINAL_EXHALE_END_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_320_FINAL_EXHALE_DAN.mp3"
       },
       "durationSec": 5.042
     },
@@ -199,7 +218,8 @@
       "order": 322,
       "text": "Exhale before next cycle",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_ASAF.mp3",
+        "Dan": "modules/perfect_breath_fractional/dan/PBV_BREATH_322_FINAL_EXHALE_NEXT_CYCLE_DAN.mp3"
       },
       "durationSec": 3.474
     },
@@ -209,7 +229,8 @@
       "order": 900,
       "text": "Breath SFX inhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_IN.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_IN.mp3",
+        "Dan": "modules/perfect_breath_fractional/asaf/PBS_IN.mp3"
       },
       "durationSec": 4.963
     },
@@ -219,7 +240,8 @@
       "order": 901,
       "text": "Breath SFX exhale",
       "voices": {
-        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_OUT.mp3"
+        "Asaf": "modules/perfect_breath_fractional/asaf/PBS_OUT.mp3",
+        "Dan": "modules/perfect_breath_fractional/asaf/PBS_OUT.mp3"
       },
       "durationSec": 5.146
     }

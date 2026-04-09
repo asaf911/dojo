@@ -2,6 +2,7 @@
  * @fileoverview Tier-based body scan composer for `body_scan_fractional.json` (module BS_FRAC / BS_FRAC_*).
  *
  * **Handoff:** Read `docs/body-scan-tier-composer.md` first (product vs composer direction, API, expansion).
+ * Module intro policy: `docs/fractional-module-intro-rule.md`.
  *
  * **Pipeline**
  * 1. `chooseBodyScanPlan` — pick per-zone tiers (macro|regional|micro)³, integration count (0–2), and strip
@@ -14,6 +15,7 @@
  */
 
 import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
+import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
 
 export type BodyTier = "macro" | "regional" | "micro";
 export type BodyScanDirection = "up" | "down";
@@ -29,6 +31,11 @@ export interface BodyScanTierPlanParams {
   includeEntry: boolean;
   voiceId: string;
   moduleId: string;
+  /**
+   * When true, module framing intros are allowed even when `durationSec` is under
+   * `FRACTIONAL_INTRO_MIN_DURATION_SEC` (fractional block starts at session second 0).
+   */
+  atTimelineStart?: boolean;
 }
 
 const ESTIMATED_CLIP_SEC = 5;
@@ -316,9 +323,22 @@ export function chooseBodyScanPlan(
   bodyInstructions: FractionalClip[];
   integrations: FractionalClip[];
 } {
-  const { durationSec, bodyScanDirection, introShort, introLong, includeEntry } =
-    params;
-  const intros = pickIntroClips(clips, introShort, introLong);
+  const {
+    durationSec,
+    bodyScanDirection,
+    introShort,
+    introLong,
+    includeEntry,
+    atTimelineStart = false,
+  } = params;
+  const framingIntroAllowed =
+    durationSec >= FRACTIONAL_INTRO_MIN_DURATION_SEC || atTimelineStart;
+  const useIntroShort = framingIntroAllowed && introShort;
+  const useIntroLong = framingIntroAllowed && introLong;
+  const intros =
+    useIntroShort || useIntroLong
+      ? pickIntroClips(clips, useIntroShort, useIntroLong)
+      : [];
   const allInt = integrationClipsSorted(clips);
 
   const tiers: BodyTier[] = ["macro", "regional", "micro"];

@@ -1,4 +1,5 @@
 /** @see ../../docs/perfect-breath-fractional-composer.md */
+/** @see ../../docs/fractional-module-intro-rule.md */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { FractionalClip } from "./fractionalComposer";
@@ -94,6 +95,22 @@ test("composePerfectBreathPlan ~3min 180s runs two breath cycles and leaves ≥1
     end320 <= 180 - 10 + 1e-6,
     `final 320 should end by 170s (10s tail), got end=${end320}`
   );
+});
+
+test("composePerfectBreathPlan 120s omits OPEN when not at timeline start", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 120, "Asaf", "PB_FRAC", false);
+  assert.ok(!plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
+  assert.equal(plan.items[0]?.clipId, "PBV_BREATH_100");
+});
+
+test("composePerfectBreathPlan 120s includes OPEN when at timeline start", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 120, "Asaf", "PB_FRAC", true);
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
+});
+
+test("composePerfectBreathPlan 300s includes OPEN when not at timeline start", () => {
+  const plan = composePerfectBreathPlan(mockCatalog(), 300, "Asaf", "PB_FRAC", false);
+  assert.ok(plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
 });
 
 test("composePerfectBreathPlan 60s skips intro, one prep pair, 10s release, fits budget", () => {

@@ -12,7 +12,7 @@
     "deploy:dev-to-prod": "firebase use default && firebase deploy --only functions",
     "logs": "firebase functions:log",
     "scan:body-scan-durations": "node scripts/scanBodyScanDurations.mjs",
-    "test": "tsc && node --test lib/bodyScanTierPlan.test.js lib/perfectBreathPlan.test.js"
+    "test": "tsc && node --test lib/bodyScanTierPlan.test.js lib/perfectBreathPlan.test.js lib/fractionalIntroTimeline.test.js lib/expandFractionalCuesIntro.test.js"
   },
   "engines": {
     "node": "20"

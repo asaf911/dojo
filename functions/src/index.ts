@@ -1157,6 +1157,7 @@ export const postAIRequest = functions.runWith({
 // ---------------------------------------------------------------------------
 // 8. postFractionalPlan — Fractional module composition (second-precision timeline)
 // ---------------------------------------------------------------------------
+// Module intro policy (all fractional types): docs/fractional-module-intro-rule.md
 // Body scan tier composer: docs/body-scan-tier-composer.md
 
 const BODY_SCAN_MODULE_IDS = new Set([
@@ -1212,6 +1213,11 @@ interface PostFractionalPlanRequest {
    * Defaults to true when omitted; send false to skip entry and use the plain instruction clip.
    */
   includeEntry?: boolean;
+  /**
+   * When true, module framing intros are included even for sessions under 5 minutes (block starts at
+   * session second 0). Omitted or false: short sessions skip framing intros unless duration ≥ 300s.
+   */
+  atTimelineStart?: boolean;
 }
 
 function resolveBodyScanIntroFlags(body: PostFractionalPlanRequest): {
@@ -1327,9 +1333,10 @@ export const postFractionalPlan = functions.https.onRequest(
       }
 
       const includeEntry = fractionalIncludeEntry(isBodyScanTier, body);
+      const atTimelineStart = body?.atTimelineStart === true;
 
       functions.logger.info(
-        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} bodyScan=${isBodyScanTier ? `${bodyScanDirection} introShort=${introShort} introLong=${introLong} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
+        `${TAG_FRACTIONAL} request moduleId=${moduleId} durationSec=${durationSec} voiceId=${voiceId} atTimelineStart=${atTimelineStart} bodyScan=${isBodyScanTier ? `${bodyScanDirection} introShort=${introShort} introLong=${introLong} entry=${includeEntry}` : "n/a"} trigger=${trigger}`
       );
 
       const catalog = loadFractionalCatalog(catalogSlug);
@@ -1361,11 +1368,24 @@ export const postFractionalPlan = functions.https.onRequest(
           includeEntry,
           voiceId,
           moduleId,
+          atTimelineStart,
         });
       } else if (isPerfectBreath) {
-        plan = composePerfectBreathPlan(resolvedClips, durationSec, voiceId, moduleId);
+        plan = composePerfectBreathPlan(
+          resolvedClips,
+          durationSec,
+          voiceId,
+          moduleId,
+          atTimelineStart
+        );
       } else {
-        plan = composeFractionalPlan(resolvedClips, durationSec, voiceId, moduleId);
+        plan = composeFractionalPlan(
+          resolvedClips,
+          durationSec,
+          voiceId,
+          moduleId,
+          atTimelineStart
+        );
       }
 
       functions.logger.info(

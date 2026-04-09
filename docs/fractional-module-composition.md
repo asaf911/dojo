@@ -5,6 +5,10 @@ This document serves as a reference for building new fractional modules.
 
 **Body scan (BS_FRAC)** uses a separate tier-based composer — see [`body-scan-tier-composer.md`](./body-scan-tier-composer.md).
 
+## Module intro (1–4 min vs first on timeline)
+
+Every fractional module shares one **framing intro** policy: **no module intro for under 5 minutes** unless the block is **at meditation start (t=0)** **and** **first fractional row** **and** **no regular cue precedes it** (or standalone `postFractionalPlan` with `atTimelineStart`). Authoritative spec: [**`fractional-module-intro-rule.md`**](./fractional-module-intro-rule.md).
+
 ## Overview
 
 A fractional module is defined by a **catalog JSON** containing a flat list of audio clips.
@@ -79,10 +83,9 @@ Each fractional module has a JSON file under `functions/catalogs/`.
 
 ## Phase 1: Clip Selection
 
-### Intro threshold
+### Intro threshold (module framing only)
 
-The intro clip is included only when `durationSec >= 240` (4 minutes).
-Short sessions (1–3 min) skip the intro and jump straight into instructions.
+Same rule as all fractional modules: see [**`fractional-module-intro-rule.md`**](./fractional-module-intro-rule.md). NF/IM implementation: `selectClips` in `fractionalComposer.ts` uses `FRACTIONAL_INTRO_MIN_DURATION_SEC` and `atTimelineStart` on `composeFractionalPlan`.
 
 ### Instruction selection
 

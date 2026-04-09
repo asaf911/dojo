@@ -19,6 +19,7 @@ private struct PostFractionalPlanRequestBody: Encodable {
     let introShort: Bool?
     let introLong: Bool?
     let includeEntry: Bool?
+    let atTimelineStart: Bool
 
     enum CodingKeys: String, CodingKey {
         case moduleId
@@ -28,6 +29,7 @@ private struct PostFractionalPlanRequestBody: Encodable {
         case introShort
         case introLong
         case includeEntry
+        case atTimelineStart
     }
 
     func encode(to encoder: Encoder) throws {
@@ -39,6 +41,7 @@ private struct PostFractionalPlanRequestBody: Encodable {
         try container.encodeIfPresent(introShort, forKey: .introShort)
         try container.encodeIfPresent(introLong, forKey: .introLong)
         try container.encodeIfPresent(includeEntry, forKey: .includeEntry)
+        try container.encode(atTimelineStart, forKey: .atTimelineStart)
     }
 }
 
@@ -52,6 +55,7 @@ extension FractionalModules {
             _ durationSec: Int,
             _ voiceId: String,
             _ bodyScan: (direction: String, introShort: Bool, introLong: Bool, includeEntry: Bool)?,
+            _ atTimelineStart: Bool,
             _ triggerContext: String?
         ) async throws -> Plan
     }
@@ -62,14 +66,14 @@ extension FractionalModules {
 extension FractionalModules.Service {
 
     static let live = FractionalModules.Service(
-        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, triggerContext in
+        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, atTimelineStart, triggerContext in
             let tag = "🧠 AI_DEBUG [Fractional][Service]"
             let trigger = triggerContext ?? "unknown"
             let bsLog: String = {
                 guard let b = bodyScan else { return "nil" }
                 return "\(b.direction) introShort=\(b.introShort) introLong=\(b.introLong) entry=\(b.includeEntry)"
             }()
-            print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) bodyScan=\(bsLog)")
+            print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) atTimelineStart=\(atTimelineStart) bodyScan=\(bsLog)")
 
             var request = URLRequest(url: Config.fractionalPlanURL)
             request.httpMethod = "POST"
@@ -83,7 +87,8 @@ extension FractionalModules.Service {
                 bodyScanDirection: bodyScan?.direction,
                 introShort: bodyScan?.introShort,
                 introLong: bodyScan?.introLong,
-                includeEntry: bodyScan.map { $0.includeEntry }
+                includeEntry: bodyScan.map { $0.includeEntry },
+                atTimelineStart: atTimelineStart
             )
             request.httpBody = try JSONEncoder().encode(body)
 
@@ -117,8 +122,10 @@ extension FractionalModules.Service {
 extension FractionalModules.Service {
 
     static let preview = FractionalModules.Service(
-        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, _ in
+        fetchPlan: { moduleId, durationSec, voiceId, bodyScan, atTimelineStart, _ in
             try await Task.sleep(nanoseconds: 300_000_000)
+
+            let framingIntroAllowed = durationSec >= 300 || atTimelineStart
 
             let items: [FractionalModules.PlanItem]
             switch moduleId {
@@ -128,10 +135,22 @@ extension FractionalModules.Service {
                     FractionalModules.PlanItem(atSec: 10, clipId: "IM_C003", role: "instruction", text: "I AM, I AM, I AM", url: "gs://preview/IM_C003.mp3"),
                     FractionalModules.PlanItem(atSec: 22, clipId: "IM_C006", role: "reminder", text: "Keep repeating the mantra.", url: "gs://preview/IM_C006.mp3"),
                 ]
+            case "PB_FRAC":
+                let pbOpen = durationSec > 60 && framingIntroAllowed
+                if pbOpen {
+                    items = [
+                        FractionalModules.PlanItem(atSec: 0, clipId: "PBV_OPEN_000_INTRO_ASAF", role: "intro", text: "Perfect breath intro", url: "gs://preview/PBV_OPEN.mp3"),
+                        FractionalModules.PlanItem(atSec: 12, clipId: "PBV_BREATH_100", role: "instruction", text: "Prep inhale", url: "gs://preview/100.mp3"),
+                    ]
+                } else {
+                    items = [
+                        FractionalModules.PlanItem(atSec: 0, clipId: "PBV_BREATH_100", role: "instruction", text: "Prep inhale", url: "gs://preview/100.mp3"),
+                    ]
+                }
             case "BS_FRAC":
                 let entry = bodyScan?.includeEntry == true
-                let shortOn = bodyScan?.introShort != false
-                let longOn = bodyScan?.introLong == true
+                let shortOn = framingIntroAllowed && (bodyScan?.introShort != false)
+                let longOn = framingIntroAllowed && (bodyScan?.introLong == true)
                 var t = 0
                 var list: [FractionalModules.PlanItem] = []
                 if shortOn {
@@ -151,11 +170,18 @@ extension FractionalModules.Service {
                 list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_MAC_140_LEGS_FEET_ASAF", role: "instruction", text: "Relax your legs and feet", url: "gs://preview/m3.mp3"))
                 items = list
             default:
-                items = [
-                    FractionalModules.PlanItem(atSec: 0, clipId: "NF_C001", role: "intro", text: "We will now begin a focus exercise.", url: "gs://preview/NF_C001.mp3"),
-                    FractionalModules.PlanItem(atSec: 10, clipId: "NF_C002", role: "instruction", text: "Breathe normally through your nose and stay relaxed.", url: "gs://preview/NF_C002.mp3"),
-                    FractionalModules.PlanItem(atSec: 22, clipId: "NF_C007", role: "reminder", text: "Keep your attention on the breath in your nose.", url: "gs://preview/NF_C007.mp3"),
-                ]
+                if framingIntroAllowed {
+                    items = [
+                        FractionalModules.PlanItem(atSec: 0, clipId: "NF_C001", role: "intro", text: "We will now begin a focus exercise.", url: "gs://preview/NF_C001.mp3"),
+                        FractionalModules.PlanItem(atSec: 10, clipId: "NF_C002", role: "instruction", text: "Breathe normally through your nose and stay relaxed.", url: "gs://preview/NF_C002.mp3"),
+                        FractionalModules.PlanItem(atSec: 22, clipId: "NF_C007", role: "reminder", text: "Keep your attention on the breath in your nose.", url: "gs://preview/NF_C007.mp3"),
+                    ]
+                } else {
+                    items = [
+                        FractionalModules.PlanItem(atSec: 0, clipId: "NF_C002", role: "instruction", text: "Breathe normally through your nose and stay relaxed.", url: "gs://preview/NF_C002.mp3"),
+                        FractionalModules.PlanItem(atSec: 22, clipId: "NF_C007", role: "reminder", text: "Keep your attention on the breath in your nose.", url: "gs://preview/NF_C007.mp3"),
+                    ]
+                }
             }
 
             return FractionalModules.Plan(
