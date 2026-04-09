@@ -30,6 +30,11 @@ struct CueSetting: Identifiable, Codable, Equatable {
         return cue.id.hasPrefix("BS_FRAC_")
     }
 
+    /// Dev: `INT_FRAC` length is derived from total session duration on the server — no manual duration in create UI.
+    var allowsManualFractionalDuration: Bool {
+        isFractional && cue.id != "INT_FRAC"
+    }
+
     static func == (lhs: CueSetting, rhs: CueSetting) -> Bool {
         lhs.id == rhs.id &&
         lhs.triggerType == rhs.triggerType &&

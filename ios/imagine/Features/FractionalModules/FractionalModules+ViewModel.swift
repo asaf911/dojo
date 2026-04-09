@@ -29,8 +29,6 @@ extension FractionalModules {
     final class ViewModel {
         nonisolated(unsafe) var moduleId: String
         var selectedMinutes: Int = 3
-        /// Used when `moduleId == "INT_FRAC"` (POST /postFractionalPlan allows 17–120s).
-        var introDurationSec: Int = 60
         var bodyScanDirection: BodyScanDirection = .up
         var includeIntroShort: Bool = true
         var includeIntroLong: Bool = false
@@ -53,10 +51,8 @@ extension FractionalModules {
             errorMessage = nil
 
             let tag = "🧠 AI_DEBUG [Fractional][ViewModel]"
-            let durationSecForLog = moduleId == "INT_FRAC"
-                ? introDurationSec
-                : selectedMinutes * 60
-            print("\(tag) play tapped moduleId=\(moduleId) durationSec=\(durationSecForLog)")
+            let sessionSec = selectedMinutes * 60
+            print("\(tag) play tapped moduleId=\(moduleId) sessionDurationSec=\(sessionSec)")
 
             Task {
                 do {
@@ -65,10 +61,8 @@ extension FractionalModules {
                         as: String.self,
                         defaultValue: "Asaf"
                     )
-                    let durationSec = moduleId == "INT_FRAC"
-                        ? introDurationSec
-                        : selectedMinutes * 60
-                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId)")
+                    let durationSec = selectedMinutes * 60
+                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) sessionDurationSec=\(durationSec) voiceId=\(voiceId)")
 
                     let bodyScan: (
                         direction: String,

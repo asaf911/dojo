@@ -62,37 +62,18 @@ extension FractionalModules {
                     }
                 }
 
-                Group {
-                    if selectedModule == .intro {
-                        VStack(spacing: 8) {
-                            Text("Duration: \(viewModel.introDurationSec)s")
-                                .nunitoFont(size: 16, style: .regular)
-                                .foregroundColor(.foregroundLightGray)
-                            Picker("Intro seconds", selection: $viewModel.introDurationSec) {
-                                Text("30s").tag(30)
-                                Text("45s").tag(45)
-                                Text("60s").tag(60)
-                                Text("90s").tag(90)
-                                Text("2m").tag(120)
-                            }
-                            .pickerStyle(.segmented)
-                            .padding(.horizontal, 16)
-                        }
-                    } else {
-                        VStack(spacing: 8) {
-                            Text("Duration: \(viewModel.selectedMinutes) min")
-                                .nunitoFont(size: 16, style: .regular)
-                                .foregroundColor(.foregroundLightGray)
+                VStack(spacing: 8) {
+                    Text("Session: \(viewModel.selectedMinutes) min")
+                        .nunitoFont(size: 16, style: .regular)
+                        .foregroundColor(.foregroundLightGray)
 
-                            Picker("Minutes", selection: $viewModel.selectedMinutes) {
-                                ForEach(1...10, id: \.self) { min in
-                                    Text("\(min)m").tag(min)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .padding(.horizontal, 16)
+                    Picker("Minutes", selection: $viewModel.selectedMinutes) {
+                        ForEach(1...10, id: \.self) { min in
+                            Text("\(min)m").tag(min)
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 16)
                 }
 
                 if selectedModule == .perfectBreath {
@@ -104,7 +85,7 @@ extension FractionalModules {
                 }
 
                 if selectedModule == .intro {
-                    Text("Intro (greeting / arrival / orientation). Server: 17–120s.")
+                    Text("Intro length is chosen from total session time (shortest for 1m, up to 90s for 10m+).")
                         .nunitoFont(size: 13, style: .regular)
                         .foregroundColor(.foregroundLightGray.opacity(0.85))
                         .multilineTextAlignment(.center)

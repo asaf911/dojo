@@ -48,7 +48,7 @@ struct CueConfigurationView: View {
                     cueNameMenu(index: index)
 
                     if cueSettings[index].isFractional {
-                        fractionalRow(index: index)
+                        fractionalOrAutoRow(index: index)
                     } else {
                         standardTriggerRow(index: index)
                     }
@@ -101,9 +101,13 @@ struct CueConfigurationView: View {
                 Button(cue.name) {
                     cueSettings[index].cue = cue
                     if CueSetting(cue: cue).isFractional {
-                        let cap = max(1, selectedMinutes)
-                        let prior = cueSettings[index].fractionalDuration
-                        cueSettings[index].fractionalDuration = min(prior ?? selectedMinutes, cap)
+                        if cue.id == "INT_FRAC" {
+                            cueSettings[index].fractionalDuration = nil
+                        } else {
+                            let cap = max(1, selectedMinutes)
+                            let prior = cueSettings[index].fractionalDuration
+                            cueSettings[index].fractionalDuration = min(prior ?? selectedMinutes, cap)
+                        }
                     } else {
                         cueSettings[index].fractionalDuration = nil
                     }
@@ -124,21 +128,31 @@ struct CueConfigurationView: View {
     }
 
     @ViewBuilder
-    private func fractionalRow(index: Int) -> some View {
-        FractionalDurationStepper(
-            duration: Binding(
-                get: {
-                    let cap = max(1, selectedMinutes)
-                    return min(cueSettings[index].fractionalDuration ?? cap, cap)
-                },
-                set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
-            ),
-            range: 1...min(20, max(1, selectedMinutes))
-        )
+    private func fractionalOrAutoRow(index: Int) -> some View {
+        if cueSettings[index].allowsManualFractionalDuration {
+            FractionalDurationStepper(
+                duration: Binding(
+                    get: {
+                        let cap = max(1, selectedMinutes)
+                        return min(cueSettings[index].fractionalDuration ?? cap, cap)
+                    },
+                    set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
+                ),
+                range: 1...min(20, max(1, selectedMinutes))
+            )
 
-        Text("at")
-            .nunitoFont(size: 16, style: .medium)
-            .foregroundColor(.foregroundLightGray)
+            Text("at")
+                .nunitoFont(size: 16, style: .medium)
+                .foregroundColor(.foregroundLightGray)
+        } else {
+            Text("length from session")
+                .nunitoFont(size: 14, style: .regular)
+                .foregroundColor(.foregroundLightGray.opacity(0.9))
+
+            Text("at")
+                .nunitoFont(size: 16, style: .medium)
+                .foregroundColor(.foregroundLightGray)
+        }
 
         triggerMenu(index: index)
     }

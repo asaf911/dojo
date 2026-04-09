@@ -11,11 +11,10 @@ import {
 } from "./fractionalComposer";
 import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
-import { composeIntroFractionalPlan } from "./introFractionalPlan";
 import {
-  INT_FRAC_PLAN_MAX_DURATION_SEC,
-  INT_FRAC_PLAN_MIN_DURATION_SEC,
-} from "./fractionalSessionConstants";
+  composeIntroFractionalPlan,
+  introWindowSecFromSessionDurationSec,
+} from "./introFractionalPlan";
 import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
@@ -1352,27 +1351,13 @@ export const postFractionalPlan = functions.https.onRequest(
         res.status(400).send(JSON.stringify({ error: "durationSec is required" }));
         return;
       }
-      if (isIntroFrac) {
-        if (
-          durationSec < INT_FRAC_PLAN_MIN_DURATION_SEC ||
-          durationSec > INT_FRAC_PLAN_MAX_DURATION_SEC
-        ) {
-          functions.logger.warn(
-            `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec_INT_FRAC value=${durationSec} trigger=${trigger}`
-          );
-          res.status(400).send(
-            JSON.stringify({
-              error: `durationSec for INT_FRAC must be ${INT_FRAC_PLAN_MIN_DURATION_SEC}-${INT_FRAC_PLAN_MAX_DURATION_SEC}`,
-            })
-          );
-          return;
-        }
-      } else if (durationSec < 60 || durationSec > 1200) {
+      /** For INT_FRAC, durationSec is total session length (same as other modules); intro length is derived. */
+      if (durationSec < 60 || durationSec > 1200) {
         functions.logger.warn(
           `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec value=${durationSec} trigger=${trigger}`
         );
         res.status(400).send(
-          JSON.stringify({ error: "durationSec must be 60-1200" })
+          JSON.stringify({ error: "durationSec must be 60-1200 (session length)" })
         );
         return;
       }
@@ -1453,11 +1438,14 @@ export const postFractionalPlan = functions.https.onRequest(
           atTimelineStart
         );
       } else if (isIntroFrac) {
+        const introWindowSec =
+          introWindowSecFromSessionDurationSec(durationSec);
         plan = composeIntroFractionalPlan(
           resolvedClips,
-          durationSec,
+          introWindowSec,
           voiceId,
-          moduleId
+          moduleId,
+          { sessionDurationSec: durationSec }
         );
       } else {
         plan = composeFractionalPlan(

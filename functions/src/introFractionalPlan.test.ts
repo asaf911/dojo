@@ -7,6 +7,7 @@ import {
   composeIntroFractionalPlanWithRng,
   INTRO_FRAC_END_PAUSE_SEC,
   INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC,
+  introWindowSecFromSessionDurationSec,
 } from "./introFractionalPlan";
 import { clipDurationSec } from "./fractionalTimeline";
 
@@ -26,6 +27,13 @@ function clip(
     durationSec: dur,
   };
 }
+
+test("introWindowSecFromSessionDurationSec: 1m session ~18s, 10m ~90s", () => {
+  assert.equal(introWindowSecFromSessionDurationSec(60), 18);
+  assert.equal(introWindowSecFromSessionDurationSec(600), 90);
+  assert.ok(introWindowSecFromSessionDurationSec(300) > 18);
+  assert.ok(introWindowSecFromSessionDurationSec(300) < 90);
+});
 
 const fullCatalog: FractionalClip[] = [
   clip("INT_GRT_100", "greeting", 2, 100),
@@ -77,10 +85,23 @@ test("INT_FRAC: at most one greeting clip", () => {
     120,
     "Asaf",
     "INT_FRAC",
-    () => 0.77
+    () => 0.77,
+    { sessionDurationSec: 120 }
   );
   const g = plan.items.filter((i) => i.clipId.startsWith("INT_GRT_"));
   assert.ok(g.length <= 1);
+});
+
+test("INT_FRAC: 1m session uses exactly one clip", () => {
+  const plan = composeIntroFractionalPlanWithRng(
+    fullCatalog,
+    60,
+    "Asaf",
+    "INT_FRAC",
+    () => 0.42,
+    { sessionDurationSec: 60 }
+  );
+  assert.equal(plan.items.length, 1);
 });
 
 test("INT_FRAC: never both spine and free posture", () => {
@@ -90,7 +111,8 @@ test("INT_FRAC: never both spine and free posture", () => {
       120,
       "Asaf",
       "INT_FRAC",
-      () => (Math.sin(s + 1) * 0.5 + 0.5) % 1
+      () => (Math.sin(s + 1) * 0.5 + 0.5) % 1,
+      { sessionDurationSec: 120 }
     );
     const ids = plan.items.map((i) => i.clipId);
     assert.ok(!(ids.includes("INT_ARR_120") && ids.includes("INT_ARR_122")));

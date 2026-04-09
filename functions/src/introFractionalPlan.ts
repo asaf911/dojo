@@ -13,8 +13,15 @@ import {
   clipDurationSec,
   FRACTIONAL_INSTRUCTION_PAIR_GAPS,
 } from "./fractionalTimeline";
+import {
+  INT_FRAC_PLAN_MAX_DURATION_SEC,
+  INT_FRAC_PLAN_MIN_DURATION_SEC,
+} from "./fractionalSessionConstants";
 
 const TAG = "[IntroFractionalPlan]";
+
+/** Target intro window at a 1-minute session (seconds); selection forces a single clip. */
+const INTRO_WINDOW_MIN_TARGET_SEC = 18;
 
 /** First spoken line starts this many seconds after the module window begins (music at 0). */
 export const INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC = 7;
@@ -23,6 +30,37 @@ export const INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC = 7;
 export const INTRO_FRAC_END_PAUSE_SEC = 5;
 
 const MODULE_ID = "INT_FRAC";
+
+/**
+ * Maps total session length to intro block duration: shortest for ~1m sessions, longest (capped) for 10m+.
+ * Ignores explicit per-cue duration — used by expandFractionalCues and postFractionalPlan (dev).
+ */
+export function introWindowSecFromSessionDurationSec(
+  sessionDurationSec: number
+): number {
+  const sessionMin = Math.max(sessionDurationSec / 60, 1);
+  const cappedMin = Math.min(sessionMin, 10);
+  const t = (cappedMin - 1) / 9;
+  const raw =
+    INTRO_WINDOW_MIN_TARGET_SEC +
+    t * (INT_FRAC_PLAN_MAX_DURATION_SEC - INTRO_WINDOW_MIN_TARGET_SEC);
+  const rounded = Math.round(raw);
+  return Math.max(
+    INT_FRAC_PLAN_MIN_DURATION_SEC,
+    Math.min(INT_FRAC_PLAN_MAX_DURATION_SEC, rounded)
+  );
+}
+
+/** Sessions ≤60s are treated as “1 minute” for intro: one clip only, minimal window. */
+const ULTRA_SHORT_SESSION_SEC = 60;
+
+export type ComposeIntroFractionalPlanOptions = {
+  /**
+   * Total meditation length in seconds. Drives ultra-short (one clip) vs greedy fill.
+   * When omitted, defaults to the intro `durationSec` argument (window budget).
+   */
+  sessionDurationSec?: number;
+};
 
 type Layer = "greeting" | "arrival" | "orientation";
 
@@ -117,6 +155,11 @@ function pickOrientation(
   return o.find((c) => c.clipId === "INT_ORI_140") ?? o[0];
 }
 
+/** Arrival clips follow catalog `order` for sequential narration. */
+function sortArrivalsNarrativeOrder(arrivals: FractionalClip[]): FractionalClip[] {
+  return [...arrivals].sort((a, b) => a.order - b.order);
+}
+
 function pickArrivalSequence(
   byLayer: Map<Layer, FractionalClip[]>,
   count: 0 | 1 | 2,
@@ -184,11 +227,68 @@ function buildSequenceForTemplate(
   return out;
 }
 
-function selectIntroSequence(
-  clips: FractionalClip[],
-  durationSec: number,
+function selectSingleClipUltraShort(
+  byLayer: Map<Layer, FractionalClip[]>,
+  windowSec: number,
   moduleId: string,
   rng: () => number
+): FractionalClip[] {
+  const ori = pickOrientation(byLayer);
+  if (ori && fitsBudget([ori], windowSec, moduleId)) return [ori];
+
+  const arrivals = shuffle(sortArrivalsNarrativeOrder(byLayer.get("arrival") ?? []), rng);
+  for (const c of arrivals) {
+    if (fitsBudget([c], windowSec, moduleId)) return [c];
+  }
+
+  const greetings = shuffle(byLayer.get("greeting") ?? [], rng);
+  for (const c of greetings) {
+    if (fitsBudget([c], windowSec, moduleId)) return [c];
+  }
+  return [];
+}
+
+/**
+ * Greeting → arrivals in catalog order (skip lines that no longer fit) → orientation.
+ * Adds as many clips as fit in `windowSec` toward a full intro.
+ */
+function selectGreedySequential(
+  byLayer: Map<Layer, FractionalClip[]>,
+  windowSec: number,
+  moduleId: string,
+  rng: () => number
+): FractionalClip[] {
+  const seq: FractionalClip[] = [];
+
+  const tryPush = (c: FractionalClip): boolean => {
+    const next = [...seq, c];
+    const arrIds = next.filter((x) => x.layer === "arrival").map((x) => x.clipId);
+    if (!arrivalsMutuallyCompatible(arrIds)) return false;
+    if (!fitsBudget(next, windowSec, moduleId)) return false;
+    seq.push(c);
+    return true;
+  };
+
+  const g = pickGreeting(byLayer, rng);
+  if (g) tryPush(g);
+
+  for (const a of sortArrivalsNarrativeOrder(byLayer.get("arrival") ?? [])) {
+    tryPush(a);
+  }
+
+  const ori = pickOrientation(byLayer);
+  if (ori) tryPush(ori);
+
+  if (seq.length > 0) return seq;
+  return [];
+}
+
+function selectIntroSequence(
+  clips: FractionalClip[],
+  windowSec: number,
+  moduleId: string,
+  rng: () => number,
+  sessionDurationSec: number
 ): FractionalClip[] {
   const byLayer = new Map<Layer, FractionalClip[]>();
   for (const c of clips) {
@@ -198,25 +298,33 @@ function selectIntroSequence(
     byLayer.get(L)!.push(c);
   }
 
+  if (sessionDurationSec <= ULTRA_SHORT_SESSION_SEC) {
+    const one = selectSingleClipUltraShort(byLayer, windowSec, moduleId, rng);
+    if (one.length > 0) return one;
+  } else {
+    const greedy = selectGreedySequential(byLayer, windowSec, moduleId, rng);
+    if (greedy.length > 0) return greedy;
+  }
+
   for (const tmpl of TEMPLATES) {
     for (let trial = 0; trial < 25; trial++) {
       const seq = buildSequenceForTemplate(tmpl, byLayer, rng);
       if (seq.length === 0) continue;
-      if (fitsBudget(seq, durationSec, moduleId)) return seq;
+      if (fitsBudget(seq, windowSec, moduleId)) return seq;
     }
   }
 
   const ori = pickOrientation(byLayer);
-  if (ori && fitsBudget([ori], durationSec, moduleId)) return [ori];
+  if (ori && fitsBudget([ori], windowSec, moduleId)) return [ori];
 
   const arr = byLayer.get("arrival") ?? [];
   for (const c of shuffle(arr, rng)) {
-    if (fitsBudget([c], durationSec, moduleId)) return [c];
+    if (fitsBudget([c], windowSec, moduleId)) return [c];
   }
 
   const gr = byLayer.get("greeting") ?? [];
   for (const c of shuffle(gr, rng)) {
-    if (fitsBudget([c], durationSec, moduleId)) return [c];
+    if (fitsBudget([c], windowSec, moduleId)) return [c];
   }
 
   return [];
@@ -259,14 +367,16 @@ export function composeIntroFractionalPlan(
   clips: FractionalClip[],
   durationSec: number,
   voiceId: string,
-  moduleId: string = MODULE_ID
+  moduleId: string = MODULE_ID,
+  options?: ComposeIntroFractionalPlanOptions
 ): FractionalPlan {
   return composeIntroFractionalPlanWithRng(
     clips,
     durationSec,
     voiceId,
     moduleId,
-    Math.random
+    Math.random,
+    options
   );
 }
 
@@ -276,9 +386,17 @@ export function composeIntroFractionalPlanWithRng(
   durationSec: number,
   voiceId: string,
   moduleId: string,
-  rng: () => number
+  rng: () => number,
+  options?: ComposeIntroFractionalPlanOptions
 ): FractionalPlan {
-  const selected = selectIntroSequence(clips, durationSec, moduleId, rng);
+  const sessionSec = options?.sessionDurationSec ?? durationSec;
+  const selected = selectIntroSequence(
+    clips,
+    durationSec,
+    moduleId,
+    rng,
+    sessionSec
+  );
   const items = toPlanItems(selected, voiceId, moduleId);
 
   if (selected.length === 0) {

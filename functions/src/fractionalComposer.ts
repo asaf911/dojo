@@ -19,8 +19,15 @@ import {
   type BodyScanTierPlanParams,
 } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
-import { composeIntroFractionalPlan } from "./introFractionalPlan";
-import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
+import {
+  composeIntroFractionalPlan,
+  introWindowSecFromSessionDurationSec,
+} from "./introFractionalPlan";
+import {
+  FRACTIONAL_INTRO_MIN_DURATION_SEC,
+  INT_FRAC_PLAN_MAX_DURATION_SEC,
+  INT_FRAC_PLAN_MIN_DURATION_SEC,
+} from "./fractionalSessionConstants";
 import {
   nfImSelectionFits,
   scheduleNfImPlan,
@@ -329,6 +336,46 @@ function triggerToSeconds(trigger: string | number): number | null {
   return null;
 }
 
+/**
+ * When the session-derived intro block is longer than the gap to the next cue (e.g. PB @ 1:00),
+ * shift that cue and everything after it forward so the intro can use the full budget (up to 90s).
+ */
+function shiftSubsequentCuesForIntroEnd(
+  cues: ResolvedCue[],
+  introIndex: number,
+  introEndSec: number
+): ResolvedCue[] {
+  const out = cues.map((c) => ({ ...c }));
+  const originals = cues.map((c) => ({ ...c }));
+  const startSec = triggerToSeconds(originals[introIndex]!.trigger) ?? 0;
+
+  let firstAfter: number | null = null;
+  let firstT: number | null = null;
+  for (let j = introIndex + 1; j < originals.length; j++) {
+    const t = triggerToSeconds(originals[j]!.trigger);
+    if (t !== null && t > startSec) {
+      firstAfter = j;
+      firstT = t;
+      break;
+    }
+  }
+  if (firstAfter === null || firstT === null || firstT >= introEndSec) {
+    return out;
+  }
+
+  const delta = introEndSec - firstT;
+
+  for (let j = firstAfter; j < originals.length; j++) {
+    const origT = triggerToSeconds(originals[j]!.trigger);
+    if (origT === null) continue;
+    if (origT >= firstT) {
+      const newSec = origT + delta;
+      out[j] = { ...out[j]!, trigger: `s${Math.round(newSec)}` };
+    }
+  }
+  return out;
+}
+
 /** Optional breath SFX (or second layer) played in parallel with the primary cue at the same session second. */
 export type ResolvedParallelSfx = {
   id: string;
@@ -363,12 +410,27 @@ export function expandFractionalCues(
   if (!hasFractional) return cues;
 
   const durationSec = durationMinutes * 60;
+  let workingCues = cues.map((c) => ({ ...c }));
+  const introIdx = workingCues.findIndex((c) => c.id === "INT_FRAC");
+  if (introIdx >= 0) {
+    const introStart = triggerToSeconds(workingCues[introIdx]!.trigger) ?? 0;
+    const desiredIntro = Math.min(
+      introWindowSecFromSessionDurationSec(durationSec),
+      INT_FRAC_PLAN_MAX_DURATION_SEC,
+      durationSec - introStart
+    );
+    const introEnd = introStart + desiredIntro;
+    workingCues = shiftSubsequentCuesForIntroEnd(workingCues, introIdx, introEnd);
+  }
+
   const result: ResolvedCue[] = [];
   /** First `*_FRAC` row in this cue list (avoids a second fractional row with a bogus `start` trigger). */
-  const firstFractionalCueIndex = cues.findIndex((c) => Boolean(FRACTIONAL_MODULE_MAP[c.id]));
+  const firstFractionalCueIndex = workingCues.findIndex((c) =>
+    Boolean(FRACTIONAL_MODULE_MAP[c.id])
+  );
 
-  for (let i = 0; i < cues.length; i++) {
-    const cue = cues[i];
+  for (let i = 0; i < workingCues.length; i++) {
+    const cue = workingCues[i];
     let catalogSlug = FRACTIONAL_MODULE_MAP[cue.id];
 
     if (!catalogSlug) {
@@ -377,7 +439,7 @@ export function expandFractionalCues(
     }
 
     const startSec = triggerToSeconds(cue.trigger) ?? 0;
-    const hasNonFractionalCueBefore = cues
+    const hasNonFractionalCueBefore = workingCues
       .slice(0, i)
       .some((c) => !FRACTIONAL_MODULE_MAP[c.id]);
     /** Framing intro only if: meditation truly starts with this block (t=0), it's the first fractional row, and no regular cue precedes it (e.g. another intro or module before IM_FRAC). */
@@ -387,12 +449,33 @@ export function expandFractionalCues(
       !hasNonFractionalCueBefore;
 
     let endSec: number;
-    if (cue.durationMinutes && cue.durationMinutes > 0) {
+    if (cue.id === "INT_FRAC") {
+      const desiredIntro = introWindowSecFromSessionDurationSec(durationSec);
+      let boundary = durationSec;
+      for (let j = i + 1; j < workingCues.length; j++) {
+        const nextSec = triggerToSeconds(workingCues[j].trigger);
+        if (nextSec !== null && nextSec > startSec) {
+          boundary = Math.min(boundary, nextSec);
+          break;
+        }
+      }
+      const span = boundary - startSec;
+      let introSec = Math.min(
+        desiredIntro,
+        span,
+        INT_FRAC_PLAN_MAX_DURATION_SEC
+      );
+      if (introSec < INT_FRAC_PLAN_MIN_DURATION_SEC) {
+        introSec = Math.min(span, INT_FRAC_PLAN_MAX_DURATION_SEC);
+      }
+      introSec = Math.max(1, introSec);
+      endSec = startSec + introSec;
+    } else if (cue.durationMinutes && cue.durationMinutes > 0) {
       endSec = Math.min(startSec + cue.durationMinutes * 60, durationSec);
     } else {
       endSec = durationSec;
-      for (let j = i + 1; j < cues.length; j++) {
-        const nextSec = triggerToSeconds(cues[j].trigger);
+      for (let j = i + 1; j < workingCues.length; j++) {
+        const nextSec = triggerToSeconds(workingCues[j].trigger);
         if (nextSec !== null && nextSec > startSec) {
           endSec = nextSec;
           break;
@@ -457,12 +540,9 @@ export function expandFractionalCues(
         atFractModuleTimelineStart
       );
     } else if (cue.id === "INT_FRAC") {
-      plan = composeIntroFractionalPlan(
-        resolvedClips,
-        windowSec,
-        voiceId,
-        cue.id
-      );
+      plan = composeIntroFractionalPlan(resolvedClips, windowSec, voiceId, cue.id, {
+        sessionDurationSec: durationSec,
+      });
     } else {
       plan = composeFractionalPlan(
         resolvedClips,

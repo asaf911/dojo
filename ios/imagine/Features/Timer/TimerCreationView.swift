@@ -202,7 +202,7 @@ struct TimerView: View {
     /// Keeps fractional module duration ≤ session length so server-side expansion fits the relax-phase window.
     private func clampFractionalDurationsToSessionCap() {
         let cap = max(1, selectedMinutes)
-        for i in cueSettings.indices where cueSettings[i].isFractional {
+        for i in cueSettings.indices where cueSettings[i].allowsManualFractionalDuration {
             if let fd = cueSettings[i].fractionalDuration, fd > cap {
                 cueSettings[i].fractionalDuration = cap
             }

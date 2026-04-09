@@ -6,6 +6,33 @@ import { test } from "node:test";
 import { expandFractionalCues } from "./fractionalComposer";
 import { INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC } from "./introFractionalPlan";
 
+test("expandFractionalCues: long session shifts next cue after 90s intro (not stuck at 1:00)", () => {
+  const out = expandFractionalCues(
+    [
+      {
+        id: "INT_FRAC",
+        name: "Intro",
+        url: "",
+        trigger: "start",
+      },
+      {
+        id: "PB_FRAC",
+        name: "PB",
+        url: "",
+        trigger: 1,
+        durationMinutes: 2,
+      },
+    ],
+    20,
+    "Asaf"
+  );
+  // PB is not first fractional row — OPEN may be omitted; any PB atomic should start after the shifted block.
+  const pbAt90 = out.find(
+    (c) => c.trigger === "s90" && String(c.id).startsWith("PBV_")
+  );
+  assert.ok(pbAt90, "expected a Perfect Breath clip at 90s after intro shift");
+});
+
 test("expandFractionalCues: INT_FRAC first atomic cue at 7s", () => {
   const out = expandFractionalCues(
     [
