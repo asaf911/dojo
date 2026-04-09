@@ -6,7 +6,10 @@
 import * as functions from "firebase-functions";
 import { generateAIMeditation } from "./aiMeditation";
 import type { LoadedCatalogs } from "./aiMeditation";
-import { expandFractionalCues } from "./fractionalComposer";
+import {
+  applyPracticeRelativeIntroPrefix,
+  expandFractionalCues,
+} from "./fractionalComposer";
 import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
@@ -55,6 +58,8 @@ interface MeditationPackage {
   id: string;
   title: string | null;
   duration: number;
+  /** Practice + intro prelude (seconds). */
+  playbackDurationSec?: number;
   description: string | null;
   backgroundSound: { id: string; name: string; url: string };
   binauralBeat: {
@@ -346,6 +351,10 @@ function buildMeditationPackage(
     }
   }
 
+  const timelineMeta = applyPracticeRelativeIntroPrefix(
+    resolvedCues,
+    meditation.duration
+  );
   // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
   const expandedCues = expandFractionalCues(resolvedCues, meditation.duration, voiceId);
 
@@ -353,6 +362,7 @@ function buildMeditationPackage(
     id: randomUUID(),
     title: meditation.title ?? null,
     duration: meditation.duration,
+    playbackDurationSec: timelineMeta.sessionDurationSec,
     description: meditation.description ?? meditation.title ?? null,
     backgroundSound: { id: bg.id, name: bg.name, url: bg.url },
     binauralBeat: binauralBeat

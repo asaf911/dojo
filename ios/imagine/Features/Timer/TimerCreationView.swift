@@ -320,11 +320,17 @@ struct TimerView: View {
             )
             return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
         }
+        let shifted = resolvedCueSettings.applyingIntroPrefixIfNeeded(practiceMinutes: selectedMinutes)
+        let hasIntro = shifted.contains { $0.cue.id == "INT_FRAC" }
+        let playbackSec = hasIntro
+            ? IntroPrefixTimeline.playbackSeconds(practiceMinutes: selectedMinutes, hasIntroFrac: true)
+            : nil
         return TimerSessionConfig(
             minutes: selectedMinutes,
+            playbackDurationSeconds: playbackSec,
             backgroundSound: selectedBackgroundSound,
             binauralBeat: selectedBinauralBeat,
-            cueSettings: resolvedCueSettings
+            cueSettings: shifted
         )
     }
 
@@ -341,6 +347,7 @@ struct TimerView: View {
         }
         navigationCoordinator.navigateToTimerCountdown(
             totalMinutes: timerConfig.minutes,
+            playbackDurationSeconds: timerConfig.playbackDurationSeconds,
             backgroundSound: timerConfig.backgroundSound,
             cueSettings: timerConfig.cueSettings,
             binauralBeat: timerConfig.binauralBeat,

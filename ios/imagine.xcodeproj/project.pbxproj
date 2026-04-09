@@ -139,6 +139,7 @@
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
 		A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */; };
+		B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */; };
 		A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */; };
 		A56B87AA2D35EE00002BEAD2 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */; };
 		A56B87AE2D3637FB002BEAD2 /* TimerCreationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AD2D3637FB002BEAD2 /* TimerCreationManager.swift */; };
@@ -539,6 +540,7 @@
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
 		A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationConfiguration.swift; sourceTree = "<group>"; };
+		B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPrefixTimeline.swift; sourceTree = "<group>"; };
 		A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationView.swift; sourceTree = "<group>"; };
 		A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
 		A56B87AD2D3637FB002BEAD2 /* TimerCreationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationManager.swift; sourceTree = "<group>"; };
@@ -1457,6 +1459,7 @@
 			isa = PBXGroup;
 			children = (
 				A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */,
+				B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */,
 				C5A1B0012F000100000001 /* CatalogsManager.swift */,
 				C5A1B0042F000100000002 /* MeditationsService.swift */,
 				A51434152D554AC900105271 /* BackgroundSound.swift */,
@@ -2284,6 +2287,7 @@
 				C5A1B0032F000100000002 /* MeditationsService.swift in Sources */,
 				A53A05662D9CAD1600E25959 /* AuthDividerView.swift in Sources */,
 				A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */,
+				B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */,
 				A58C21882B196127000EC608 /* AudioPlayerManager.swift in Sources */,
 				A5F1A0052E7D000500A50005 /* Authentication+Screen.swift in Sources */,
 				A5A7DF672DB1A48100A6469C /* CueIndicatorView.swift in Sources */,

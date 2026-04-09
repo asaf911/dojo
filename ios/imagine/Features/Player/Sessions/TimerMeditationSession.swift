@@ -13,7 +13,10 @@ import AVFoundation
 
 /// Configuration for a timer meditation session
 struct TimerSessionConfig {
+    /// Practice duration in minutes (user-selected); used for display and analytics.
     let minutes: Int
+    /// When set, total countdown/play length includes intro prelude (e.g. `INT_FRAC`) before practice.
+    let playbackDurationSeconds: Int?
     let backgroundSound: BackgroundSound
     let binauralBeat: BinauralBeat
     let cueSettings: [CueSetting]
@@ -26,6 +29,7 @@ struct TimerSessionConfig {
     
     init(
         minutes: Int,
+        playbackDurationSeconds: Int? = nil,
         backgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: ""),
         binauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil),
         cueSettings: [CueSetting] = [],
@@ -34,6 +38,7 @@ struct TimerSessionConfig {
         description: String? = nil
     ) {
         self.minutes = minutes
+        self.playbackDurationSeconds = playbackDurationSeconds
         self.backgroundSound = backgroundSound
         self.binauralBeat = binauralBeat
         self.cueSettings = cueSettings
@@ -65,6 +70,19 @@ extension TimerSessionConfig {
         }
         return Array(Set(urls))
     }
+
+    /// Seconds of intro prelude before the practice clock reads `00:00`.
+    /// When `playbackDurationSeconds` is unset (legacy paths), infers the same intro length used for cue shifting
+    /// whenever `INT_FRAC` is present at `start`.
+    var introPrefixSeconds: Int {
+        if let playback = playbackDurationSeconds {
+            let practice = minutes * 60
+            return max(0, playback - practice)
+        }
+        let hasIntroFrac = cueSettings.contains { $0.cue.id == "INT_FRAC" && $0.triggerType == .start }
+        guard hasIntroFrac else { return 0 }
+        return IntroPrefixTimeline.introPrefixSeconds(practiceDurationSec: minutes * 60)
+    }
 }
 
 /// Timer meditation session that wraps MeditationSessionTimer and audio layers
@@ -92,6 +110,36 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     var elapsedTimeDisplay: String {
         let elapsed = timerManager.totalSeconds - timerManager.remainingSeconds
         return formatTime(elapsed)
+    }
+
+    /// Player UI: during intro shows remaining intro as `-MM:SS` (e.g. `-00:18`); after that, practice elapsed from `00:00`.
+    var playerElapsedTimeDisplay: String {
+        let elapsed = timerManager.totalSeconds - timerManager.remainingSeconds
+        let intro = config.introPrefixSeconds
+        if intro <= 0 {
+            return formatTime(elapsed)
+        }
+        if elapsed < intro {
+            let remainingIntro = intro - elapsed
+            return "-\(formatTime(remainingIntro))"
+        }
+        return formatTime(elapsed - intro)
+    }
+
+    /// Player UI: total shown as practice length when intro exists so left/right match the meditation timeline.
+    var playerTotalTimeDisplay: String {
+        if config.introPrefixSeconds > 0 {
+            return formatTime(config.minutes * 60)
+        }
+        return totalTimeDisplay
+    }
+
+    /// Fraction along the full session bar where practice starts (`00:00`), for a marker line.
+    var practiceStartBarFraction: CGFloat? {
+        let intro = config.introPrefixSeconds
+        let total = timerManager.totalSeconds
+        guard intro > 0, total > 0, intro < total else { return nil }
+        return CGFloat(intro) / CGFloat(total)
     }
     
     /// For timer: shows total duration
@@ -190,8 +238,9 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     
     init(config: TimerSessionConfig) {
         self.config = config
+        let totalSec = config.playbackDurationSeconds ?? (config.minutes * 60)
         self.timerManager = MeditationSessionTimer(
-            totalSeconds: config.minutes * 60,
+            totalSeconds: totalSec,
             cueSettings: config.cueSettings,
             title: config.title,
             description: config.description

@@ -163,11 +163,17 @@ extension MeditationConfiguration {
             )
             return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
         }
+        let shifted = resolvedCueSettings.applyingIntroPrefixIfNeeded(practiceMinutes: duration)
+        let hasIntro = shifted.contains { $0.cue.id == "INT_FRAC" }
+        let playbackSec = hasIntro
+            ? IntroPrefixTimeline.playbackSeconds(practiceMinutes: duration, hasIntroFrac: true)
+            : nil
         return TimerSessionConfig(
             minutes: duration,
+            playbackDurationSeconds: playbackSec,
             backgroundSound: backgroundSound,
             binauralBeat: binauralBeat ?? BinauralBeat(id: "None", name: "None", url: "", description: nil),
-            cueSettings: resolvedCueSettings,
+            cueSettings: shifted,
             isDeepLinked: isDeepLinked,
             title: title,
             description: description

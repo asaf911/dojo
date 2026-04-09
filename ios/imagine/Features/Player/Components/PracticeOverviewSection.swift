@@ -26,6 +26,26 @@ struct PracticeOverviewSection: View {
     private var config: TimerSessionConfig {
         session.config
     }
+
+    /// Chronological order on the playback timeline (expanded server cues + manual rows).
+    private var orderedCueSettings: [CueSetting] {
+        config.cueSettings.sorted { sessionSecondForSort($0) < sessionSecondForSort($1) }
+    }
+
+    private func sessionSecondForSort(_ setting: CueSetting) -> Int {
+        let intro = config.introPrefixSeconds
+        switch setting.triggerType {
+        case .start:
+            return 0
+        case .end:
+            return intro + config.minutes * 60
+        case .minute:
+            let m = setting.minute ?? 0
+            return intro + m * 60
+        case .second:
+            return setting.minute ?? 0
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -74,7 +94,7 @@ struct PracticeOverviewSection: View {
                                 .nunitoFont(size: 14, style: .semiBold)
                                 .foregroundColor(.white.opacity(0.7))
                             
-                            ForEach(config.cueSettings, id: \.id) { cueSetting in
+                            ForEach(orderedCueSettings, id: \.id) { cueSetting in
                                 HStack {
                                     Text(cueSetting.cue.name)
                                         .nunitoFont(size: 14, style: .regular)
@@ -132,23 +152,78 @@ struct PracticeOverviewSection: View {
     }
     
     private func cueTimingText(for setting: CueSetting) -> String {
+        let intro = config.introPrefixSeconds
+        let practiceSec = config.minutes * 60
+
+        // Full-session focus modules (I AM / nostril) span the practice and begin at meditation 00:00,
+        // even if the editor stored `1 min` (slot index). Matches intro-relative playback after cue shift.
+        if isFullSessionFocusModule(setting) {
+            return "at 00:00"
+        }
+
         switch setting.triggerType {
         case .start:
-            return "at start"
+            return "at \(meditationClockLabel(for: setting, sessionSecond: 0, intro: intro))"
         case .end:
-            return "at end"
+            return "at \(formatTimelineMMSS(practiceSec))"
         case .minute:
-            if let minute = setting.minute {
-                let totalSeconds = minute * 60
-                return "at \(totalSeconds / 60):\(String(format: "%02d", totalSeconds % 60))"
-            }
-            return ""
+            guard let minute = setting.minute else { return "" }
+            let sessionSecond = intro + minute * 60
+            return "at \(meditationClockLabel(for: setting, sessionSecond: sessionSecond, intro: intro))"
         case .second:
-            if let sec = setting.minute {
-                return "at \(sec / 60):\(String(format: "%02d", sec % 60))"
-            }
-            return ""
+            guard let sec = setting.minute else { return "" }
+            return "at \(meditationClockLabel(for: setting, sessionSecond: sec, intro: intro))"
         }
+    }
+
+    /// Intro clips (`INT_*`) use the same negative countdown as the player during the prelude.
+    /// All other modules (Perfect Breath, body scan, mantra, …) use the meditation clock from `00:00` — never negative.
+    private func meditationClockLabel(for setting: CueSetting, sessionSecond: Int, intro: Int) -> String {
+        if intro <= 0 {
+            return formatTimelineMMSS(sessionSecond)
+        }
+        if isIntroTimelineClip(setting) {
+            return introCountdownClock(sessionSecond: sessionSecond, introPrefixSeconds: intro)
+        }
+        let practiceElapsed = max(0, sessionSecond - intro)
+        return formatTimelineMMSS(practiceElapsed)
+    }
+
+    private func isIntroTimelineClip(_ setting: CueSetting) -> Bool {
+        let id = setting.cue.id
+        if id == "INT_FRAC" { return true }
+        // Expanded intro fractional clips (server-expanded `INT_GRT_*`, etc.)
+        if id.hasPrefix("INT_") { return true }
+        return false
+    }
+
+    /// Intro-only: `-MM:SS` countdown until meditation `00:00`.
+    private func introCountdownClock(sessionSecond: Int, introPrefixSeconds: Int) -> String {
+        if sessionSecond < introPrefixSeconds {
+            let remaining = introPrefixSeconds - sessionSecond
+            return "-\(formatTimelineMMSS(remaining))"
+        }
+        if sessionSecond == introPrefixSeconds {
+            return "00:00"
+        }
+        return formatTimelineMMSS(sessionSecond - introPrefixSeconds)
+    }
+
+    /// `IM_FRAC` / `NF_FRAC` with `fractionalDuration` equal to session length: module starts at practice clock 00:00.
+    private func isFullSessionFocusModule(_ setting: CueSetting) -> Bool {
+        guard let fd = setting.fractionalDuration, fd == config.minutes else { return false }
+        switch setting.cue.id {
+        case "IM_FRAC", "NF_FRAC":
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func formatTimelineMMSS(_ totalSeconds: Int) -> String {
+        let m = totalSeconds / 60
+        let s = totalSeconds % 60
+        return String(format: "%02d:%02d", m, s)
     }
 }
 

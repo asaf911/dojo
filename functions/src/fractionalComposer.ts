@@ -337,43 +337,66 @@ function triggerToSeconds(trigger: string | number): number | null {
 }
 
 /**
- * When the session-derived intro block is longer than the gap to the next cue (e.g. PB @ 1:00),
- * shift that cue and everything after it forward so the intro can use the full budget (up to 90s).
+ * Intro (`INT_FRAC`) is a prefix: practice-length is chosen by the user; intro audio is added **before**
+ * the practice timeline. Numeric minute triggers are practice-relative (0 = practice start); they become
+ * absolute `s{sec}` on the playback clock (introPrefix + minuteIndex * 60).
  */
-function shiftSubsequentCuesForIntroEnd(
+export function applyPracticeRelativeIntroPrefix(
   cues: ResolvedCue[],
-  introIndex: number,
-  introEndSec: number
-): ResolvedCue[] {
-  const out = cues.map((c) => ({ ...c }));
-  const originals = cues.map((c) => ({ ...c }));
-  const startSec = triggerToSeconds(originals[introIndex]!.trigger) ?? 0;
+  practiceDurationMinutes: number
+): {
+  cues: ResolvedCue[];
+  practiceDurationSec: number;
+  introPrefixSec: number;
+  sessionDurationSec: number;
+} {
+  const practiceDurationSec = practiceDurationMinutes * 60;
+  const hasIntroFrac = cues.some(
+    (c) =>
+      c.id === "INT_FRAC" &&
+      (c.trigger === "start" || c.trigger === 0 || c.trigger === "0")
+  );
+  const introPrefixSec = hasIntroFrac
+    ? introWindowSecFromSessionDurationSec(practiceDurationSec)
+    : 0;
+  const sessionDurationSec = practiceDurationSec + introPrefixSec;
 
-  let firstAfter: number | null = null;
-  let firstT: number | null = null;
-  for (let j = introIndex + 1; j < originals.length; j++) {
-    const t = triggerToSeconds(originals[j]!.trigger);
-    if (t !== null && t > startSec) {
-      firstAfter = j;
-      firstT = t;
-      break;
+  if (introPrefixSec === 0) {
+    return {
+      cues: cues.map((c) => ({ ...c })),
+      practiceDurationSec,
+      introPrefixSec,
+      sessionDurationSec,
+    };
+  }
+
+  const out = cues.map((c) => {
+    if (c.id === "INT_FRAC") {
+      return { ...c, trigger: "start" as const };
     }
-  }
-  if (firstAfter === null || firstT === null || firstT >= introEndSec) {
-    return out;
-  }
-
-  const delta = introEndSec - firstT;
-
-  for (let j = firstAfter; j < originals.length; j++) {
-    const origT = triggerToSeconds(originals[j]!.trigger);
-    if (origT === null) continue;
-    if (origT >= firstT) {
-      const newSec = origT + delta;
-      out[j] = { ...out[j]!, trigger: `s${Math.round(newSec)}` };
+    if (c.trigger === "end") {
+      return { ...c };
     }
-  }
-  return out;
+    if (c.trigger === "start") {
+      // INT_FRAC is handled above. Any other `start` is practice 00:00 (after intro prefix).
+      return { ...c, trigger: `s${introPrefixSec}` };
+    }
+    if (typeof c.trigger === "number") {
+      const minuteIndex = c.trigger;
+      return {
+        ...c,
+        trigger: `s${introPrefixSec + minuteIndex * 60}`,
+      };
+    }
+    return { ...c };
+  });
+
+  return {
+    cues: out,
+    practiceDurationSec,
+    introPrefixSec,
+    sessionDurationSec,
+  };
 }
 
 /** Optional breath SFX (or second layer) played in parallel with the primary cue at the same session second. */
@@ -409,19 +432,11 @@ export function expandFractionalCues(
   const hasFractional = cues.some((c) => FRACTIONAL_MODULE_MAP[c.id]);
   if (!hasFractional) return cues;
 
-  const durationSec = durationMinutes * 60;
-  let workingCues = cues.map((c) => ({ ...c }));
-  const introIdx = workingCues.findIndex((c) => c.id === "INT_FRAC");
-  if (introIdx >= 0) {
-    const introStart = triggerToSeconds(workingCues[introIdx]!.trigger) ?? 0;
-    const desiredIntro = Math.min(
-      introWindowSecFromSessionDurationSec(durationSec),
-      INT_FRAC_PLAN_MAX_DURATION_SEC,
-      durationSec - introStart
-    );
-    const introEnd = introStart + desiredIntro;
-    workingCues = shiftSubsequentCuesForIntroEnd(workingCues, introIdx, introEnd);
-  }
+  const {
+    cues: workingCues,
+    practiceDurationSec,
+    sessionDurationSec: durationSec,
+  } = applyPracticeRelativeIntroPrefix(cues, durationMinutes);
 
   const result: ResolvedCue[] = [];
   /** First `*_FRAC` row in this cue list (avoids a second fractional row with a bogus `start` trigger). */
@@ -450,7 +465,7 @@ export function expandFractionalCues(
 
     let endSec: number;
     if (cue.id === "INT_FRAC") {
-      const desiredIntro = introWindowSecFromSessionDurationSec(durationSec);
+      const desiredIntro = introWindowSecFromSessionDurationSec(practiceDurationSec);
       let boundary = durationSec;
       for (let j = i + 1; j < workingCues.length; j++) {
         const nextSec = triggerToSeconds(workingCues[j].trigger);
@@ -541,7 +556,7 @@ export function expandFractionalCues(
       );
     } else if (cue.id === "INT_FRAC") {
       plan = composeIntroFractionalPlan(resolvedClips, windowSec, voiceId, cue.id, {
-        sessionDurationSec: durationSec,
+        sessionDurationSec: practiceDurationSec,
       });
     } else {
       plan = composeFractionalPlan(

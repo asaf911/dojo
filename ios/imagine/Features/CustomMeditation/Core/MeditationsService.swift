@@ -16,6 +16,8 @@ struct MeditationPackage: Codable {
     let title: String?
     let duration: Int
     let description: String?
+    /// Total playback length in seconds (practice + intro prelude). Omitted by older servers; client falls back to `duration * 60`.
+    let playbackDurationSec: Int?
     let backgroundSound: MeditationAsset
     let binauralBeat: MeditationAsset?
     let cues: [MeditationCue]
@@ -156,6 +158,7 @@ extension MeditationPackage {
         }
         return TimerSessionConfig(
             minutes: duration,
+            playbackDurationSeconds: playbackDurationSec,
             backgroundSound: backgroundSound,
             binauralBeat: binauralBeat,
             cueSettings: cueSettings,
@@ -361,6 +364,7 @@ extension MeditationsService {
                 title: nil,
                 duration: duration,
                 description: nil,
+                playbackDurationSec: nil,
                 backgroundSound: MeditationAsset(id: backgroundSoundId, name: "Preview Sound", url: "gs://preview", description: nil),
                 binauralBeat: binauralBeatId.map { MeditationAsset(id: $0, name: "Preview Beat", url: "gs://preview", description: nil) },
                 cues: cues.map { c in
@@ -381,6 +385,7 @@ extension MeditationsService {
                 title: "Preview AI Meditation",
                 duration: 10,
                 description: "Preview meditation from AI path.",
+                playbackDurationSec: nil,
                 backgroundSound: MeditationAsset(id: "SP", name: "Preview Sound", url: "gs://preview", description: nil),
                 binauralBeat: MeditationAsset(id: "BB10", name: "Preview Beat", url: "gs://preview", description: nil),
                 cues: [

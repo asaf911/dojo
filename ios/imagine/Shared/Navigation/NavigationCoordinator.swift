@@ -50,6 +50,8 @@ class NavigationCoordinator: ObservableObject {
 
     // Timer session properties
     @Published var timerMinutes: Int = 0
+    /// When non-nil, session length includes intro prelude (seconds). Otherwise `timerMinutes * 60`.
+    @Published var timerPlaybackDurationSeconds: Int? = nil
     @Published var timerBackgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: "")
     @Published var timerCueSettings: [CueSetting] = []
     @Published var timerBinauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
@@ -62,6 +64,7 @@ class NavigationCoordinator: ObservableObject {
         guard playerSessionType == .timer else { return nil }
         return TimerSessionConfig(
             minutes: timerMinutes,
+            playbackDurationSeconds: timerPlaybackDurationSeconds,
             backgroundSound: timerBackgroundSound,
             binauralBeat: timerBinauralBeat,
             cueSettings: timerCueSettings,
@@ -235,7 +238,7 @@ class NavigationCoordinator: ObservableObject {
     }
     
     /// Show timer session via unified player sheet
-    func showTimerPlayerSheet(minutes: Int, backgroundSound: BackgroundSound, cueSettings: [CueSetting], binauralBeat: BinauralBeat, isDeepLinked: Bool = false, title: String? = nil, description: String? = nil) {
+    func showTimerPlayerSheet(minutes: Int, playbackDurationSeconds: Int? = nil, backgroundSound: BackgroundSound, cueSettings: [CueSetting], binauralBeat: BinauralBeat, isDeepLinked: Bool = false, title: String? = nil, description: String? = nil) {
         logger.eventMessage("NavigationCoordinator: Showing unified timer player sheet with duration: \(minutes) minutes, title: \(title ?? "nil")")
 
         // Capture the current tab for analytics purposes
@@ -243,6 +246,7 @@ class NavigationCoordinator: ObservableObject {
 
         self.playerSessionType = .timer
         self.timerMinutes = minutes
+        self.timerPlaybackDurationSeconds = playbackDurationSeconds
         self.timerBackgroundSound = backgroundSound
         self.timerCueSettings = cueSettings
         self.timerBinauralBeat = binauralBeat
@@ -257,6 +261,7 @@ class NavigationCoordinator: ObservableObject {
     func showTimerPlayerSheet(timerConfig: TimerSessionConfig) {
         showTimerPlayerSheet(
             minutes: timerConfig.minutes,
+            playbackDurationSeconds: timerConfig.playbackDurationSeconds,
             backgroundSound: timerConfig.backgroundSound,
             cueSettings: timerConfig.cueSettings,
             binauralBeat: timerConfig.binauralBeat,
@@ -294,13 +299,13 @@ class NavigationCoordinator: ObservableObject {
     }
 
     // Updated method to show timer via unified player sheet
-    func navigateToTimerCountdown(totalMinutes: Int, backgroundSound: BackgroundSound, cueSettings: [CueSetting], binauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil), isDeepLinked: Bool = false, title: String? = nil, description: String? = nil) {
+    func navigateToTimerCountdown(totalMinutes: Int, playbackDurationSeconds: Int? = nil, backgroundSound: BackgroundSound, cueSettings: [CueSetting], binauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil), isDeepLinked: Bool = false, title: String? = nil, description: String? = nil) {
         logger.eventMessage("NavigationCoordinator: Showing Timer via unified player sheet with duration: \(totalMinutes) minutes, title: \(title ?? "nil")")
 
         logger.eventMessage("NavigationCoordinator: Source tab before timer: \(sourceTab ?? -1), name: \(sourceTabName ?? "unknown")")
 
         // Use unified player sheet for timer sessions
-        showTimerPlayerSheet(minutes: totalMinutes, backgroundSound: backgroundSound, cueSettings: cueSettings, binauralBeat: binauralBeat, isDeepLinked: isDeepLinked, title: title, description: description)
+        showTimerPlayerSheet(minutes: totalMinutes, playbackDurationSeconds: playbackDurationSeconds, backgroundSound: backgroundSound, cueSettings: cueSettings, binauralBeat: binauralBeat, isDeepLinked: isDeepLinked, title: title, description: description)
     }
 
     // Legacy method to show timer as separate sheet (for backward compatibility)
@@ -354,6 +359,7 @@ class NavigationCoordinator: ObservableObject {
 
         showTimerPlayerSheet(
             minutes: timerConfig.minutes,
+            playbackDurationSeconds: timerConfig.playbackDurationSeconds,
             backgroundSound: timerConfig.backgroundSound,
             cueSettings: timerConfig.cueSettings,
             binauralBeat: timerConfig.binauralBeat,

@@ -503,6 +503,11 @@
       "priority": 100
     },
     {
+      "id": "im_nf_full_session_at_meditation_start",
+      "rule": "When IM_FRAC or NF_FRAC has durationMinutes equal to the full session length (entire practice is that fractional module, often with only INT_FRAC before it), use trigger 'start' so it begins at meditation clock 00:00 after the intro — not minute 1. Minute numbers are practice-minute positions; a full-session focus module is not 'one minute into practice'.",
+      "priority": 96
+    },
+    {
       "id": "always_bg_and_bb",
       "rule": "Always include a background sound and binaural beat unless user explicitly asks for silence",
       "priority": 90

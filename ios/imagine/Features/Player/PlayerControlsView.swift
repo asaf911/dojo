@@ -57,7 +57,7 @@ struct PlayerControlsView: View {
         case .guided:
             return AppFunctions.formatTime(audioPlayerManager.currentTime)
         case .timer:
-            return timerSession?.elapsedTimeDisplay ?? "00:00"
+            return timerSession?.playerElapsedTimeDisplay ?? "00:00"
         }
     }
     
@@ -67,7 +67,7 @@ struct PlayerControlsView: View {
         case .guided:
             return AppFunctions.formatTime(audioPlayerManager.totalDuration)
         case .timer:
-            return timerSession?.totalTimeDisplay ?? "00:00"
+            return timerSession?.playerTotalTimeDisplay ?? "00:00"
         }
     }
     
@@ -117,10 +117,11 @@ struct PlayerControlsView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white.opacity(0.9))
             
-            // Custom gradient progress bar
+            // Custom gradient progress bar (full session); optional tick at practice start (00:00)
             GradientProgressBar(
                 value: progressValue,
-                total: progressTotal
+                total: progressTotal,
+                practiceStartFraction: sessionType == .timer ? timerSession?.practiceStartBarFraction : nil
             )
             .frame(height: 2)
             
@@ -295,6 +296,8 @@ struct PlayerControlsView: View {
 struct GradientProgressBar: View {
     let value: Double
     let total: Double
+    /// 0...1 along the bar where the meditation (practice) clock starts at 00:00; drawn as a small dot on the track.
+    var practiceStartFraction: CGFloat? = nil
     
     private var progress: Double {
         guard total > 0 else { return 0 }
@@ -303,6 +306,7 @@ struct GradientProgressBar: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let w = geometry.size.width
             ZStack(alignment: .leading) {
                 // Background track (dark color)
                 Rectangle()
@@ -314,7 +318,7 @@ struct GradientProgressBar: View {
                 if progress > 0 {
                     Rectangle()
                         .fill(Color(red: 0.88, green: 0.88, blue: 0.88))
-                        .frame(width: max(0, geometry.size.width * progress - 19), height: 2)
+                        .frame(width: max(0, w * progress - 19), height: 2)
                         .cornerRadius(1)
                 }
                 
@@ -322,7 +326,7 @@ struct GradientProgressBar: View {
                 if progress > 0 {
                     Rectangle()
                         .foregroundColor(.clear)
-                        .frame(width: min(20, geometry.size.width * progress), height: 2)
+                        .frame(width: min(20, w * progress), height: 2)
                         .background(
                             LinearGradient(
                                 stops: [
@@ -334,7 +338,16 @@ struct GradientProgressBar: View {
                             )
                         )
                         .cornerRadius(1)
-                        .offset(x: max(0, geometry.size.width * progress - 20))
+                        .offset(x: max(0, w * progress - 20))
+                }
+
+                // Practice start (00:00) — 2pt dot centered on the track
+                if let frac = practiceStartFraction, frac > 0, frac < 1 {
+                    Circle()
+                        .fill(Color.white.opacity(0.95))
+                        .frame(width: 2, height: 2)
+                        .offset(x: w * frac - 1)
+                        .zIndex(2)
                 }
             }
         }

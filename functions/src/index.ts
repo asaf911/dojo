@@ -5,6 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { processAIRequest } from "./aiRequest";
 import {
+  applyPracticeRelativeIntroPrefix,
   composeFractionalPlan,
   expandFractionalCues,
   type FractionalClip,
@@ -931,6 +932,10 @@ export const postMeditations = functions.runWith({
           }
         }
 
+        const timelineMeta = applyPracticeRelativeIntroPrefix(
+          resolvedCues,
+          meditation.duration
+        );
         const expandedCues = expandFractionalCues(
           resolvedCues,
           meditation.duration,
@@ -941,6 +946,7 @@ export const postMeditations = functions.runWith({
           id: randomUUID(),
           title: meditation.title,
           duration: meditation.duration,
+          playbackDurationSec: timelineMeta.sessionDurationSec,
           description: meditation.description ?? meditation.title,
           backgroundSound: {
             id: bg.id,
@@ -1094,6 +1100,10 @@ export const postMeditations = functions.runWith({
         });
       }
 
+      const timelineMeta = applyPracticeRelativeIntroPrefix(
+        resolvedCues,
+        duration
+      );
       // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
       const expandedCues = expandFractionalCues(resolvedCues, duration, voiceId);
 
@@ -1101,6 +1111,7 @@ export const postMeditations = functions.runWith({
         id: randomUUID(),
         title: null,
         duration,
+        playbackDurationSec: timelineMeta.sessionDurationSec,
         description: null,
         backgroundSound: {
           id: backgroundSound.id,

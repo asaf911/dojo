@@ -103,6 +103,8 @@ struct CueConfigurationView: View {
                     if CueSetting(cue: cue).isFractional {
                         if cue.id == "INT_FRAC" {
                             cueSettings[index].fractionalDuration = nil
+                            cueSettings[index].triggerType = .start
+                            cueSettings[index].minute = nil
                         } else {
                             let cap = max(1, selectedMinutes)
                             let prior = cueSettings[index].fractionalDuration
@@ -129,32 +131,38 @@ struct CueConfigurationView: View {
 
     @ViewBuilder
     private func fractionalOrAutoRow(index: Int) -> some View {
-        if cueSettings[index].allowsManualFractionalDuration {
-            FractionalDurationStepper(
-                duration: Binding(
-                    get: {
-                        let cap = max(1, selectedMinutes)
-                        return min(cueSettings[index].fractionalDuration ?? cap, cap)
-                    },
-                    set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
-                ),
-                range: 1...min(20, max(1, selectedMinutes))
-            )
-
-            Text("at")
+        if cueSettings[index].cue.id == "INT_FRAC" {
+            Text("Start (prelude)")
                 .nunitoFont(size: 16, style: .medium)
                 .foregroundColor(.foregroundLightGray)
         } else {
-            Text("length from session")
-                .nunitoFont(size: 14, style: .regular)
-                .foregroundColor(.foregroundLightGray.opacity(0.9))
+            if cueSettings[index].allowsManualFractionalDuration {
+                FractionalDurationStepper(
+                    duration: Binding(
+                        get: {
+                            let cap = max(1, selectedMinutes)
+                            return min(cueSettings[index].fractionalDuration ?? cap, cap)
+                        },
+                        set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
+                    ),
+                    range: 1...min(20, max(1, selectedMinutes))
+                )
 
-            Text("at")
-                .nunitoFont(size: 16, style: .medium)
-                .foregroundColor(.foregroundLightGray)
+                Text("at")
+                    .nunitoFont(size: 16, style: .medium)
+                    .foregroundColor(.foregroundLightGray)
+            } else {
+                Text("length from session")
+                    .nunitoFont(size: 14, style: .regular)
+                    .foregroundColor(.foregroundLightGray.opacity(0.9))
+
+                Text("at")
+                    .nunitoFont(size: 16, style: .medium)
+                    .foregroundColor(.foregroundLightGray)
+            }
+
+            triggerMenu(index: index)
         }
-
-        triggerMenu(index: index)
     }
 
     @ViewBuilder
@@ -170,8 +178,9 @@ struct CueConfigurationView: View {
     @ViewBuilder
     private func triggerMenu(index: Int) -> some View {
         Menu {
+            // Intro uses `INT_FRAC` @ Start (prelude). Other modules may use Start for meditation 00:00.
             let isStartTaken = cueSettings.enumerated().contains { (i, cs) in
-                i != index && cs.triggerType == .start
+                i != index && cs.triggerType == .start && cs.cue.id != "INT_FRAC"
             }
             Button("Start") {
                 cueSettings[index].triggerType = .start

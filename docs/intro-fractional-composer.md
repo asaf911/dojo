@@ -6,7 +6,7 @@ Layered opening segment for meditation: **Greeting**, **Arrival**, and **Orienta
 
 - **First speech** starts **7 seconds** after the module window begins (background music at second 0 of the block).
 - **End pause:** **5 seconds** of silence after the last clip ends, before the next cue/module (fits within the allocated intro window).
-- **Intro window length (dev):** Derived from **total session duration** — shortest target (~18s) for a **1-minute** session, up to **90s** for **10+ minute** sessions. Implemented by [`introWindowSecFromSessionDurationSec`](../functions/src/introFractionalPlan.ts). When the next cue would start before that intro budget ends (e.g. Perfect Breath at 1:00), [`expandFractionalCues`](../functions/src/fractionalComposer.ts) **shifts** that cue and all later timed cues forward so the intro can use the full budget (up to 90s). Manual per-cue duration is not used for `INT_FRAC`.
+- **Intro window length (dev):** Derived from **practice duration** (the timer minutes the user chose) — shortest target (~18s) for a **1-minute** practice, up to **90s** for **10+ minute** practice. Implemented by [`introWindowSecFromSessionDurationSec`](../functions/src/introFractionalPlan.ts). **Timeline model:** intro is a **prefix** — total playback = practice length + intro length. Numeric minute triggers in `postMeditations` are **practice-relative** (minute `1` = first minute of practice); [`applyPracticeRelativeIntroPrefix`](../functions/src/fractionalComposer.ts) maps them to absolute `s{sec}` on the session clock (`introPrefix + minute×60`). Manual per-cue duration is not used for `INT_FRAC`.
 - **Selection:** **≤1 minute** sessions use **one clip only** (orientation preferred, then arrival, then greeting). Longer sessions **greedily** add greeting → arrivals in catalog order (skipping lines that no longer fit) → orientation, within the window. At most one greeting (mutually exclusive families: good morning / good evening / welcome / welcome back); arrivals remain **compatible** (never both posture variants `INT_ARR_120` and `INT_ARR_122`; never both `INT_ARR_124` and `INT_ARR_126`); at most one orientation (`INT_ORI_140`).
 - **Composer:** [`functions/src/introFractionalPlan.ts`](../functions/src/introFractionalPlan.ts) (`composeIntroFractionalPlan`).
 
@@ -22,7 +22,7 @@ Bounds on the composed intro block: [`INT_FRAC_PLAN_MIN_DURATION_SEC` / `INT_FRA
 
 ## Inline expansion
 
-Session builders resolve `INT_FRAC` from catalogs (see [`functions/catalogs/introduction.json`](../functions/catalogs/introduction.json)); [`expandFractionalCues`](../functions/src/fractionalComposer.ts) expands it using the same session-derived intro window and passes **total session length** into `composeIntroFractionalPlan` for selection (dev project only; see [`deploymentMode.ts`](../functions/src/deploymentMode.ts)).
+Session builders resolve `INT_FRAC` from catalogs (see [`functions/catalogs/introduction.json`](../functions/catalogs/introduction.json)); [`expandFractionalCues`](../functions/src/fractionalComposer.ts) applies the intro prefix, then expands using **practice duration** for intro composition and **full playback duration** for module windows (dev project only; see [`deploymentMode.ts`](../functions/src/deploymentMode.ts)). `POST /meditations` responses include optional **`playbackDurationSec`** (practice + intro seconds).
 
 ## MP3 durations
 

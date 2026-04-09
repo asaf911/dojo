@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { expandFractionalCues } from "./fractionalComposer";
 import { INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC } from "./introFractionalPlan";
 
-test("expandFractionalCues: long session shifts next cue after 90s intro (not stuck at 1:00)", () => {
+test("expandFractionalCues: long session — intro prefix then PB at practice minute 1 (90s + 60s)", () => {
   const out = expandFractionalCues(
     [
       {
@@ -26,11 +26,11 @@ test("expandFractionalCues: long session shifts next cue after 90s intro (not st
     20,
     "Asaf"
   );
-  // PB is not first fractional row — OPEN may be omitted; any PB atomic should start after the shifted block.
-  const pbAt90 = out.find(
-    (c) => c.trigger === "s90" && String(c.id).startsWith("PBV_")
+  // Practice-relative minute 1 → absolute 90 (intro) + 60 = 150s on playback timeline.
+  const pbAt150 = out.find(
+    (c) => c.trigger === "s150" && String(c.id).startsWith("PBV_")
   );
-  assert.ok(pbAt90, "expected a Perfect Breath clip at 90s after intro shift");
+  assert.ok(pbAt150, "expected a Perfect Breath clip at 150s (intro prefix + 1 practice min)");
 });
 
 test("expandFractionalCues: INT_FRAC first atomic cue at 7s", () => {

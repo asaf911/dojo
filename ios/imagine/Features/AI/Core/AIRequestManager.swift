@@ -569,6 +569,7 @@ class AIRequestManager: ObservableObject {
             if resolvedBeat.id != "None" {
                 timerConfig = TimerSessionConfig(
                     minutes: timerConfig.minutes,
+                    playbackDurationSeconds: timerConfig.playbackDurationSeconds,
                     backgroundSound: timerConfig.backgroundSound,
                     binauralBeat: resolvedBeat,
                     cueSettings: timerConfig.cueSettings,
