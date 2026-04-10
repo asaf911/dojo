@@ -101,6 +101,14 @@ export interface FractionalPlan {
 const REMINDER_THRESHOLD_SEC = 120;
 const OUTRO_THRESHOLD_SEC = 120;
 
+/** IM_FRAC: cap reminders so mantra blocks keep longer silent practice. */
+function maxImMantraReminders(durationSec: number): number {
+  if (durationSec < 150) return 2;
+  if (durationSec < 240) return 3;
+  if (durationSec < 360) return 4;
+  return 5;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -190,6 +198,9 @@ function selectClips(
       reminderCount = r;
     }
     reminderCount = Math.max(1, reminderCount);
+    if (moduleId === "IM_FRAC") {
+      reminderCount = Math.min(reminderCount, maxImMantraReminders(durationSec));
+    }
   }
 
   selected.push(...pickRandom(reminders, reminderCount));
