@@ -18,6 +18,10 @@ extension FractionalModules {
         "BS_FRAC_DOWN": "Body Scan Down",
         "PB_FRAC": "Perfect Breath",
         "INT_FRAC": "Intro",
+        "VC": "Vision Clarity",
+        "RT": "Retrospection",
+        "GB": "Gentle Bell",
+        "OH": "Open Heart",
     ]
 
     static func displayTitle(forModuleId id: String) -> String {

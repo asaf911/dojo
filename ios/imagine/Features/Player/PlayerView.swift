@@ -467,7 +467,7 @@ struct PlayerView: View {
     
     /// Dismiss the player and navigate to the Timer view with the current session config pre-filled for editing
     private func handleCustomize(config: TimerSessionConfig) {
-        let editorCues = config.cueSettings.collapsedFractionalCues(meditationMinutes: config.minutes)
+        let editorCues = config.cueSettingsForTimerEditor()
         let configuration = MeditationConfiguration(
             duration: config.minutes,
             backgroundSound: config.backgroundSound,

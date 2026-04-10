@@ -125,6 +125,15 @@ extension TimerSessionConfig {
         let scheduleFloor = maxStart + Self.scheduledCueTailSecondsAfterLastStart
         return max(base, scheduleFloor)
     }
+
+    /// Cues for the Create / Timer editor: practice-minute rows and fractional modules, not expanded clips or wall-clock seconds.
+    /// Call this when opening the editor from the player (playback config uses `.second` and atomic clip IDs after server expansion / intro shift).
+    func cueSettingsForTimerEditor() -> [CueSetting] {
+        cueSettings
+            .normalizedPlaybackCuesForTimerEditor(introPrefixSeconds: introPrefixSeconds, practiceMinutes: minutes)
+            .collapsedFractionalCues(meditationMinutes: minutes)
+            .convertingNonFractionalSecondTriggersForTimerEditor(practiceMinutes: minutes)
+    }
 }
 
 /// Timer meditation session that wraps MeditationSessionTimer and audio layers

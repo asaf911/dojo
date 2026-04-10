@@ -76,3 +76,67 @@ test("buildCuesFromAllocation (dev project): NF focus emits NF_FRAC", () => {
     }
   }
 });
+
+test("buildCuesFromAllocation (dev): practiceDurationMinutes 4 omits INT_FRAC", () => {
+  const prev = process.env.GCLOUD_PROJECT;
+  process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+  try {
+    const cues = buildCuesFromAllocation(
+      {
+        intro: 0,
+        breath: 1,
+        relax: 2,
+        focus: 5,
+        insight: 0,
+        focusType: "NF",
+      },
+      {
+        noBreathwork: false,
+        isSleep: false,
+        isMorning: false,
+        isEvening: false,
+      },
+      { bodyScanDirection: "down", practiceDurationMinutes: 4 }
+    );
+    assert.equal(cues[0]?.id, "PB_FRAC");
+    assert.ok(!cues.some((c) => c.id === "INT_FRAC"));
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GCLOUD_PROJECT;
+    } else {
+      process.env.GCLOUD_PROJECT = prev;
+    }
+  }
+});
+
+test("buildCuesFromAllocation (dev): practiceDurationMinutes 5 includes INT_FRAC", () => {
+  const prev = process.env.GCLOUD_PROJECT;
+  process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+  try {
+    const cues = buildCuesFromAllocation(
+      {
+        intro: 0,
+        breath: 1,
+        relax: 2,
+        focus: 5,
+        insight: 0,
+        focusType: "NF",
+      },
+      {
+        noBreathwork: false,
+        isSleep: false,
+        isMorning: false,
+        isEvening: false,
+      },
+      { bodyScanDirection: "down", practiceDurationMinutes: 5 }
+    );
+    assert.equal(cues[0]?.id, "INT_FRAC");
+    assert.ok(cues.some((c) => c.id === "INT_FRAC"));
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GCLOUD_PROJECT;
+    } else {
+      process.env.GCLOUD_PROJECT = prev;
+    }
+  }
+});

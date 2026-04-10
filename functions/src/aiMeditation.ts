@@ -366,6 +366,7 @@ export async function generateAIMeditation(
 
   const cues = buildCuesFromAllocation(allocation, prefs, {
     bodyScanDirection: bodyScanDirectionForCue,
+    practiceDurationMinutes: duration,
   });
 
   const structureContext = cues.map((c) => `${c.id}@${c.trigger}`).join(", ");

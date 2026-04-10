@@ -19,6 +19,11 @@ export interface BuildCuesFromAllocationOptions {
    * Omit for pseudo-random cue choice.
    */
   bodyScanDirection?: "up" | "down";
+  /**
+   * Practice duration in minutes. When set to 1–4, fractional AI sessions omit `INT_FRAC`; 5+ include it.
+   * Omit to default to 10 (preserves prior behavior for callers that do not pass duration).
+   */
+  practiceDurationMinutes?: number;
 }
 
 const PB_CAP = 5;
@@ -101,16 +106,25 @@ function buildCuesFromAllocationLegacy(
   return cues;
 }
 
+/**
+ * Dev/fractional path: `INT_FRAC@start` is included only when `practiceDurationMinutes` is 5 or higher
+ * (default 10 when omitted). For AI sessions 1–4 minutes, omit the option or pass 1–4 so the first
+ * content cue sits at practice minute 0 without a fractional intro row.
+ */
 function buildCuesFromAllocationFractional(
   allocation: PhaseAllocation,
   prefs: SessionPreferences,
   options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
   const cues: CueWithTrigger[] = [];
-  /// Practice-minute index: 0 = first module at meditation 00:00 (intro is a separate prefix).
+  /// Practice-minute index: 0 = first module at meditation 00:00 (or first content when INT_FRAC omitted for short AI sessions).
   let currentMinute = 0;
 
-  cues.push({ id: "INT_FRAC", trigger: "start" });
+  const practiceMin = options?.practiceDurationMinutes ?? 10;
+  const includeIntroFrac = practiceMin >= 5;
+  if (includeIntroFrac) {
+    cues.push({ id: "INT_FRAC", trigger: "start" });
+  }
 
   const breath = Math.min(PB_CAP, Math.max(0, allocation.breath));
   const relax = Math.min(BS_CAP, Math.max(0, allocation.relax));
