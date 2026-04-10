@@ -1,8 +1,8 @@
 //
-//  TimerView.swift
+//  TimerCreationView.swift
 //  Dojo
 //
-//  Created by Asaf Shamir on 2025-03-01
+//  Create screen: `TimerView` — duration, cues, soundscape, binaural, play/share.
 //
 
 import SwiftUI
@@ -175,8 +175,7 @@ struct TimerView: View {
             selectedBackgroundSound = timerSetting.backgroundSound
             cueSettings = timerSetting.cueSettings
             meditationTitle = timerSetting.title
-            // Use reflection to safely access binauralBeat when available, else fallback to forced navigation beat
-            if let beat = (Mirror(reflecting: timerSetting).children.first { $0.label == "binauralBeat" }?.value as? BinauralBeat) {
+            if let beat = timerSetting.binauralBeat {
                 selectedBinauralBeat = beat
                 logger.eventMessage("TimerView: Applied deep link binaural beat: \(beat.name)")
             } else {
@@ -312,25 +311,15 @@ struct TimerView: View {
         #if DEBUG
         print("[TimerCreationView] buildLocalTimerConfig offline voiceId=\(voiceId) cueCount=\(cueSettings.count)")
         #endif
-        let resolvedCueSettings = cueSettings.map { cs in
-            let resolvedCue = Cue(
-                id: cs.cue.id,
-                name: cs.cue.name,
-                url: cs.cue.url(forVoice: voiceId)
-            )
-            return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
-        }
-        let shifted = resolvedCueSettings.applyingIntroPrefixIfNeeded(practiceMinutes: selectedMinutes)
-        let hasIntro = shifted.contains { $0.cue.id == "INT_FRAC" }
-        let playbackSec = hasIntro
-            ? IntroPrefixTimeline.playbackSeconds(practiceMinutes: selectedMinutes, hasIntroFrac: true)
-            : nil
-        return TimerSessionConfig(
-            minutes: selectedMinutes,
-            playbackDurationSeconds: playbackSec,
+        return MeditationConfiguration.makeTimerSessionConfig(
+            durationMinutes: selectedMinutes,
             backgroundSound: selectedBackgroundSound,
             binauralBeat: selectedBinauralBeat,
-            cueSettings: shifted
+            cueSettings: cueSettings,
+            title: nil,
+            voiceId: voiceId,
+            isDeepLinked: false,
+            description: nil
         )
     }
 

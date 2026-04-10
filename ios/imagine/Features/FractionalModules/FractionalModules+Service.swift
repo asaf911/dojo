@@ -67,13 +67,15 @@ extension FractionalModules.Service {
 
     static let live = FractionalModules.Service(
         fetchPlan: { moduleId, durationSec, voiceId, bodyScan, atTimelineStart, triggerContext in
-            let tag = "🧠 AI_DEBUG [Fractional][Service]"
             let trigger = triggerContext ?? "unknown"
             let bsLog: String = {
                 guard let b = bodyScan else { return "nil" }
                 return "\(b.direction) introShort=\(b.introShort) introLong=\(b.introLong) entry=\(b.includeEntry)"
             }()
+            #if DEBUG
+            let tag = "🧠 AI_DEBUG [Fractional][Service]"
             print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) atTimelineStart=\(atTimelineStart) bodyScan=\(bsLog)")
+            #endif
 
             var request = URLRequest(url: Config.fractionalPlanURL)
             request.httpMethod = "POST"
@@ -95,22 +97,30 @@ extension FractionalModules.Service {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let http = response as? HTTPURLResponse else {
-                print("\(tag) fetchPlan: failure trigger=\(trigger) - invalid response type")
+                #if DEBUG
+                print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) - invalid response type")
+                #endif
                 throw NSError(domain: "FractionalModules", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
             }
 
             if http.statusCode != 200 {
                 let bodyStr = String(data: data, encoding: .utf8) ?? ""
-                print("\(tag) fetchPlan: failure trigger=\(trigger) status=\(http.statusCode) body=\(String(bodyStr.prefix(200)))")
+                #if DEBUG
+                print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) status=\(http.statusCode) body=\(String(bodyStr.prefix(200)))")
+                #endif
                 throw NSError(domain: "FractionalModules", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(http.statusCode)"])
             }
 
             do {
                 let plan = try JSONDecoder().decode(FractionalModules.Plan.self, from: data)
-                print("\(tag) fetchPlan: success trigger=\(trigger) planId=\(plan.planId) items=\(plan.items.count)")
+                #if DEBUG
+                print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: success trigger=\(trigger) planId=\(plan.planId) items=\(plan.items.count)")
+                #endif
                 return plan
             } catch {
-                print("\(tag) fetchPlan: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
+                #if DEBUG
+                print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
+                #endif
                 throw error
             }
         }

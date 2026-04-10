@@ -72,16 +72,58 @@ extension TimerSessionConfig {
     }
 
     /// Seconds of intro prelude before the practice clock reads `00:00`.
-    /// When `playbackDurationSeconds` is unset (legacy paths), infers the same intro length used for cue shifting
-    /// whenever `INT_FRAC` is present at `start`.
+    /// When `playbackDurationSeconds` is set, derives from total − practice. Otherwise matches server intro curve
+    /// for `INT_FRAC@start` or for **expanded** intro clips (`INT_GRT_*`, `INT_ARR_*`, …) after `expandFractionalCues`.
     var introPrefixSeconds: Int {
         if let playback = playbackDurationSeconds {
             let practice = minutes * 60
             return max(0, playback - practice)
         }
-        let hasIntroFrac = cueSettings.contains { $0.cue.id == "INT_FRAC" && $0.triggerType == .start }
-        guard hasIntroFrac else { return 0 }
-        return IntroPrefixTimeline.introPrefixSeconds(practiceDurationSec: minutes * 60)
+        let practiceSec = minutes * 60
+        if cueSettings.contains(where: { $0.cue.id == "INT_FRAC" && $0.triggerType == .start }) {
+            return IntroPrefixTimeline.introPrefixSeconds(practiceDurationSec: practiceSec)
+        }
+        if cueSettings.contains(where: { $0.cue.id.hasPrefix("INT_") }) {
+            return IntroPrefixTimeline.introPrefixSeconds(practiceDurationSec: practiceSec)
+        }
+        return 0
+    }
+
+    /// Latest absolute session second at which any cue **starts** (expanded server cues use `.second` wall-clock times).
+    func maxAbsoluteScheduledCueSecond() -> Int {
+        let intro = introPrefixSeconds
+        var m = 0
+        for cs in cueSettings {
+            switch cs.triggerType {
+            case .second:
+                m = max(m, cs.minute ?? 0)
+            case .minute:
+                m = max(m, intro + (cs.minute ?? 0) * 60)
+            case .start:
+                m = max(m, 0)
+            case .end:
+                m = max(m, intro + minutes * 60)
+            }
+        }
+        return m
+    }
+
+    /// Seconds after the last scheduled cue start to allow the final fractional clip to finish (composer may pack starts near the end).
+    private static let scheduledCueTailSecondsAfterLastStart = 30
+
+    /// Wall-clock countdown length: honors `playbackDurationSeconds` when set; otherwise practice + inferred intro (see `introPrefixSeconds`).
+    /// Never shorter than the expanded cue schedule plus a short tail so the last clip can finish.
+    func resolvedTimerTotalSeconds() -> Int {
+        let practiceSec = minutes * 60
+        let base: Int
+        if let playback = playbackDurationSeconds {
+            base = playback
+        } else {
+            base = practiceSec + introPrefixSeconds
+        }
+        let maxStart = maxAbsoluteScheduledCueSecond()
+        let scheduleFloor = maxStart + Self.scheduledCueTailSecondsAfterLastStart
+        return max(base, scheduleFloor)
     }
 }
 
@@ -233,12 +275,18 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     // MARK: - Private
     
     private var cancellables = Set<AnyCancellable>()
+
+#if DEBUG
+    private func traceTimerSession(_ message: String) { print(message) }
+#else
+    private func traceTimerSession(_ message: String) {}
+#endif
     
     // MARK: - Initialization
     
     init(config: TimerSessionConfig) {
         self.config = config
-        let totalSec = config.playbackDurationSeconds ?? (config.minutes * 60)
+        let totalSec = config.resolvedTimerTotalSeconds()
         self.timerManager = MeditationSessionTimer(
             totalSeconds: totalSec,
             cueSettings: config.cueSettings,
@@ -322,7 +370,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             name: AVAudioSession.interruptionNotification,
             object: AVAudioSession.sharedInstance()
         )
-        print("🧠 AI_DEBUG [SESSION] Audio interruption handling configured")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] Audio interruption handling configured")
     }
     
     /// Handles audio session interruptions (phone calls, Siri, alarms, etc.)
@@ -336,7 +384,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         switch type {
         case .began:
             // Interruption began (e.g., incoming call)
-            print("🧠 AI_DEBUG [SESSION] Audio interruption BEGAN - wasPlaying=\(isPlaying)")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Audio interruption BEGAN - wasPlaying=\(isPlaying)")
             wasPlayingBeforeInterruption = isPlaying
             if isPlaying {
                 // Use full pause() - AVAudioEngine/AVAudioPlayerNode (cues) are NOT auto-paused by iOS
@@ -346,12 +394,12 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         case .ended:
             // Interruption ended
             guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else {
-                print("🧠 AI_DEBUG [SESSION] Audio interruption ENDED - no options")
+                traceTimerSession("🧠 AI_DEBUG [SESSION] Audio interruption ENDED - no options")
                 return
             }
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
             
-            print("🧠 AI_DEBUG [SESSION] Audio interruption ENDED - shouldResume=\(options.contains(.shouldResume)), wasPlaying=\(wasPlayingBeforeInterruption)")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Audio interruption ENDED - shouldResume=\(options.contains(.shouldResume)), wasPlaying=\(wasPlayingBeforeInterruption)")
             
             if options.contains(.shouldResume) && wasPlayingBeforeInterruption {
                 // Audio session reactivation is handled by AppAudioLifecycleController
@@ -366,7 +414,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     
     /// Resumes all audio layers after an interruption ends
     private func resumeAfterInterruption() {
-        print("🧠 AI_DEBUG [SESSION] Resuming after interruption...")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] Resuming after interruption...")
         
         timerManager.start()
         resumeAllAudio()
@@ -374,7 +422,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
         
-        print("🧠 AI_DEBUG [SESSION] All audio layers resumed after interruption")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] All audio layers resumed after interruption")
     }
     
     /// Pauses all audio layers (background, binaural, cues). Single place for coordination.
@@ -431,7 +479,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     func pause() {
         // Guard against interactions during session completion
         guard !isCompleting else {
-            print("🧠 AI_DEBUG [SESSION] Ignoring pause - session is completing")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Ignoring pause - session is completing")
             return
         }
         
@@ -445,16 +493,16 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     func resume() {
         // Guard against interactions during session completion
         guard !isCompleting else {
-            print("🧠 AI_DEBUG [SESSION] Ignoring resume - session is completing")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Ignoring resume - session is completing")
             return
         }
         
-        print("🧠 AI_DEBUG [SESSION] resume() called - timerRunning=\(timerManager.isRunning), hasStarted=\(hasStarted), cueActive=\(CuePlaybackManager.shared.currentCueId ?? "none")")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] resume() called - timerRunning=\(timerManager.isRunning), hasStarted=\(hasStarted), cueActive=\(CuePlaybackManager.shared.currentCueId ?? "none")")
         
         // If session was never started (e.g., user skipped before pressing play),
         // initialize audio layers from the current position instead of resuming
         if !hasStarted {
-            print("🧠 AI_DEBUG [SESSION] resume() - session not started yet, initializing audio layers")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] resume() - session not started yet, initializing audio layers")
             startFromCurrentPosition()
             return
         }
@@ -465,7 +513,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         // Update lock screen
         LockScreenMediaService.shared.updatePlaybackState(isPlaying: true)
         
-        print("🧠 AI_DEBUG [SESSION] resume() complete")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] resume() complete")
     }
     
     /// Starts the session from the current position (used when user skipped before first play)
@@ -508,7 +556,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 }
             }
             self.checkAndPlayCueAtPosition(newElapsed: elapsedNow, startPaused: false)
-            print("🧠 AI_DEBUG [SESSION] startFromCurrentPosition() complete (after cue preload)")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] startFromCurrentPosition() complete (after cue preload)")
         }
         
         LockScreenMediaService.shared.registerSession(self)
@@ -536,7 +584,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     func skipForward(seconds: Int = 15) {
         // Guard against interactions during session completion
         guard !isCompleting else {
-            print("🧠 AI_DEBUG [SKIP] Ignoring skipForward - session is completing")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Ignoring skipForward - session is completing")
             return
         }
         
@@ -545,14 +593,14 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         let newElapsed = totalSeconds - newRemaining
         let wasPaused = !isPlaying
         
-        print("🧠 AI_DEBUG [SKIP] Forward: \(oldElapsed)s -> \(newElapsed)s (remaining: \(newRemaining)s, paused=\(wasPaused))")
-        print("🧠 AI_DEBUG [SKIP] Cues configured: \(config.cueSettings.map { "\($0.cue.id)@\($0.triggerType.rawValue)\($0.minute.map { ":\($0)m" } ?? "")" }.joined(separator: ", "))")
-        print("🧠 AI_DEBUG [SKIP] Already played cues: \(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
-        print("🧠 AI_DEBUG [SKIP] Audio layers: ambience=\(hasBackgroundSound), binaural=\(hasBinauralBeat)")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Forward: \(oldElapsed)s -> \(newElapsed)s (remaining: \(newRemaining)s, paused=\(wasPaused))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Cues configured: \(config.cueSettings.map { "\($0.cue.id)@\($0.triggerType.rawValue)\($0.minute.map { ":\($0)m" } ?? "")" }.joined(separator: ", "))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Already played cues: \(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Audio layers: ambience=\(hasBackgroundSound), binaural=\(hasBinauralBeat)")
         
         // CRITICAL: If skipping to or past the end, immediately trigger session completion
         if newRemaining <= 0 {
-            print("🧠 AI_DEBUG [SKIP] Skipped to end - triggering immediate session completion")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Skipped to end - triggering immediate session completion")
             timerManager.setRemainingSeconds(0)
             handleSessionComplete()
             return
@@ -563,7 +611,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         if !wasPaused && newRemaining <= 10 && !fadeOutStarted && (hasBackgroundSound || hasBinauralBeat) {
             fadeOutStarted = true
             let fadeOutDuration = TimeInterval(max(1, newRemaining))
-            print("🧠 AI_DEBUG [SKIP] Starting fade-out (\(fadeOutDuration)s)")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Starting fade-out (\(fadeOutDuration)s)")
             if hasBackgroundSound {
                 backgroundSoundManager.stop(withFadeOutDuration: fadeOutDuration)
             }
@@ -584,7 +632,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 let triggerTime = min * 60
                 if triggerTime > oldElapsed && triggerTime <= newElapsed {
                     playedCues.insert(setting.id)
-                    print("🧠 AI_DEBUG [SKIP] Marked cue \(setting.cue.id) as played (skipped past trigger at \(triggerTime)s)")
+                    traceTimerSession("🧠 AI_DEBUG [SKIP] Marked cue \(setting.cue.id) as played (skipped past trigger at \(triggerTime)s)")
                 }
             }
         }
@@ -594,7 +642,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             if let sec = setting.minute {
                 if sec > oldElapsed && sec <= newElapsed {
                     playedCues.insert(setting.id)
-                    print("🧠 AI_DEBUG [Fractional][Player] ⏭️ skipForward: marked \(setting.cue.id) as played (trigger=\(sec)s, window=\(oldElapsed)-\(newElapsed))")
+                    traceTimerSession("🧠 AI_DEBUG [Fractional][Player] ⏭️ skipForward: marked \(setting.cue.id) as played (trigger=\(sec)s, window=\(oldElapsed)-\(newElapsed))")
                 }
             }
         }
@@ -606,7 +654,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 // If we skipped from within the window to past it, mark as played
                 if TimeInterval(oldElapsed) < cueDuration && TimeInterval(newElapsed) >= cueDuration {
                     playedCues.insert(setting.id)
-                    print("🧠 AI_DEBUG [SKIP] Marked start cue \(setting.cue.id) as played (skipped past end at \(String(format: "%.1f", cueDuration))s)")
+                    traceTimerSession("🧠 AI_DEBUG [SKIP] Marked start cue \(setting.cue.id) as played (skipped past end at \(String(format: "%.1f", cueDuration))s)")
                 }
             }
         }
@@ -628,7 +676,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     func skipBackward(seconds: Int = 15) {
         // Guard against interactions during session completion
         guard !isCompleting else {
-            print("🧠 AI_DEBUG [SKIP] Ignoring skipBackward - session is completing")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Ignoring skipBackward - session is completing")
             return
         }
         
@@ -637,10 +685,10 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         let newElapsed = totalSeconds - newRemaining
         let wasPaused = !isPlaying
         
-        print("🧠 AI_DEBUG [SKIP] Backward: \(oldElapsed)s -> \(newElapsed)s (remaining: \(newRemaining)s, paused=\(wasPaused))")
-        print("🧠 AI_DEBUG [SKIP] Cues configured: \(config.cueSettings.map { "\($0.cue.id)@\($0.triggerType.rawValue)\($0.minute.map { ":\($0)m" } ?? "")" }.joined(separator: ", "))")
-        print("🧠 AI_DEBUG [SKIP] Already played cues: \(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
-        print("🧠 AI_DEBUG [SKIP] Audio layers: ambience=\(hasBackgroundSound), binaural=\(hasBinauralBeat)")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Backward: \(oldElapsed)s -> \(newElapsed)s (remaining: \(newRemaining)s, paused=\(wasPaused))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Cues configured: \(config.cueSettings.map { "\($0.cue.id)@\($0.triggerType.rawValue)\($0.minute.map { ":\($0)m" } ?? "")" }.joined(separator: ", "))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Already played cues: \(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Audio layers: ambience=\(hasBackgroundSound), binaural=\(hasBinauralBeat)")
         
         // Seek background audio layers to new position (respects paused state internally)
         seekAudioLayers(to: TimeInterval(newElapsed))
@@ -660,7 +708,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             }
         }
         if !removedFromPlayed.isEmpty {
-            print("🧠 AI_DEBUG [SKIP] Reset minute cues for replay: \(removedFromPlayed.joined(separator: ", "))")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Reset minute cues for replay: \(removedFromPlayed.joined(separator: ", "))")
         }
 
         // Allow second-based cues that are now "in the future" to fire again (fractional modules)
@@ -674,7 +722,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             }
         }
         if !removedSecondCues.isEmpty {
-            print("🧠 AI_DEBUG [Fractional][Player] ⏮️ skipBackward: reset cues for replay: \(removedSecondCues.joined(separator: ", "))")
+            traceTimerSession("🧠 AI_DEBUG [Fractional][Player] ⏮️ skipBackward: reset cues for replay: \(removedSecondCues.joined(separator: ", "))")
         }
         
         // For start cues: reset if we skipped back into or before their window
@@ -683,7 +731,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 // If we were past the start cue window and now we're inside or before it
                 if TimeInterval(oldElapsed) >= cueDuration && TimeInterval(newElapsed) < cueDuration && playedCues.contains(setting.id) {
                     playedCues.remove(setting.id)
-                    print("🧠 AI_DEBUG [SKIP] Reset start cue \(setting.cue.id) for replay (back inside window 0-\(String(format: "%.1f", cueDuration))s)")
+                    traceTimerSession("🧠 AI_DEBUG [SKIP] Reset start cue \(setting.cue.id) for replay (back inside window 0-\(String(format: "%.1f", cueDuration))s)")
                 }
             }
         }
@@ -696,7 +744,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         // Reset fade-out if we jumped back out of final 10 seconds
         if newRemaining > 10 && fadeOutStarted {
             fadeOutStarted = false
-            print("🧠 AI_DEBUG [SKIP] Reset fade-out flag")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Reset fade-out flag")
         }
         
         // Update timer
@@ -712,23 +760,23 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         
         // Don't start a new cue if one is already active (playing or paused)
         if cueManager.isPlaying || cueManager.currentCueId != nil {
-            print("🧠 AI_DEBUG [SKIP] Cue already active, not starting new one")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Cue already active, not starting new one")
             return
         }
         
-        print("🧠 AI_DEBUG [SKIP] checkAndPlayCueAtPosition: newElapsed=\(String(format: "%.1f", newElapsed))s, startPaused=\(startPaused)")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] checkAndPlayCueAtPosition: newElapsed=\(String(format: "%.1f", newElapsed))s, startPaused=\(startPaused)")
         
         // Check start cues first (they trigger at elapsed=0, window is 0 to duration)
         for setting in config.cueSettings where setting.triggerType == .start {
             guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
-                print("🧠 AI_DEBUG [SKIP] No preloaded duration for start cue \(setting.cue.id)")
+                traceTimerSession("🧠 AI_DEBUG [SKIP] No preloaded duration for start cue \(setting.cue.id)")
                 continue
             }
             
             // Start cue window is 0 to cueDuration
             if newElapsed >= 0 && newElapsed < cueDuration {
                 let positionInCue = newElapsed
-                print("🧠 AI_DEBUG [SKIP] Landed inside START cue \(setting.cue.id) window (0s-\(String(format: "%.1f", cueDuration))s), \(startPaused ? "loading paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
+                traceTimerSession("🧠 AI_DEBUG [SKIP] Landed inside START cue \(setting.cue.id) window (0s-\(String(format: "%.1f", cueDuration))s), \(startPaused ? "loading paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
                 
                 // Play the cue (or load it paused)
                 cueManager.play(cue: setting.cue, sessionElapsedTime: 0, startPaused: startPaused)
@@ -754,7 +802,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             
             // Get the cue's duration from preloaded data
             guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
-                print("🧠 AI_DEBUG [SKIP] No preloaded duration for cue \(setting.cue.id)")
+                traceTimerSession("🧠 AI_DEBUG [SKIP] No preloaded duration for cue \(setting.cue.id)")
                 continue
             }
             
@@ -763,7 +811,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             // Check if newElapsed is within the cue's time window
             if newElapsed >= triggerTime && newElapsed < cueEndTime {
                 let positionInCue = newElapsed - triggerTime
-                print("🧠 AI_DEBUG [SKIP] Landed inside MINUTE cue \(setting.cue.id) window (\(String(format: "%.1f", triggerTime))s-\(String(format: "%.1f", cueEndTime))s), \(startPaused ? "loading paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
+                traceTimerSession("🧠 AI_DEBUG [SKIP] Landed inside MINUTE cue \(setting.cue.id) window (\(String(format: "%.1f", triggerTime))s-\(String(format: "%.1f", cueEndTime))s), \(startPaused ? "loading paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
                 
                 // Play the cue (or load it paused)
                 cueManager.play(cue: setting.cue, sessionElapsedTime: triggerTime, startPaused: startPaused)
@@ -788,7 +836,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             let triggerTime = TimeInterval(sec)
 
             guard let cueDuration = cueManager.getPreloadedDuration(for: setting.cue) else {
-                print("🧠 AI_DEBUG [Fractional][Player] seek: no preloaded duration for \(setting.cue.id)")
+                traceTimerSession("🧠 AI_DEBUG [Fractional][Player] seek: no preloaded duration for \(setting.cue.id)")
                 continue
             }
 
@@ -796,7 +844,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
 
             if newElapsed >= triggerTime && newElapsed < cueEndTime {
                 let positionInCue = newElapsed - triggerTime
-                print("🧠 AI_DEBUG [Fractional][Player] 🎯 seek: landed inside \(setting.cue.id) window (\(String(format: "%.1f", triggerTime))s-\(String(format: "%.1f", cueEndTime))s), \(startPaused ? "paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
+                traceTimerSession("🧠 AI_DEBUG [Fractional][Player] 🎯 seek: landed inside \(setting.cue.id) window (\(String(format: "%.1f", triggerTime))s-\(String(format: "%.1f", cueEndTime))s), \(startPaused ? "paused" : "playing") from \(String(format: "%.1f", positionInCue))s")
 
                 cueManager.play(cue: setting.cue, sessionElapsedTime: triggerTime, startPaused: startPaused)
 
@@ -811,7 +859,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             }
         }
         
-        print("🧠 AI_DEBUG [SKIP] No cue window contains elapsed=\(String(format: "%.1f", newElapsed))s")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] No cue window contains elapsed=\(String(format: "%.1f", newElapsed))s")
     }
     
     /// Handles seeking within a currently playing (or paused) cue, or stopping it if we've seeked outside its window.
@@ -822,10 +870,10 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         let cueIsActive = cueManager.isPlaying || cueManager.currentCueId != nil
         let cueInfo = cueManager.getCurrentCueInfo()
         
-        print("🧠 AI_DEBUG [SKIP] handleCueSeek: cueActive=\(cueIsActive), isPaused=\(isPaused), cueInfo=\(cueInfo.map { "\($0.id) start=\($0.startTime) dur=\($0.duration)" } ?? "nil")")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] handleCueSeek: cueActive=\(cueIsActive), isPaused=\(isPaused), cueInfo=\(cueInfo.map { "\($0.id) start=\($0.startTime) dur=\($0.duration)" } ?? "nil")")
         
         guard cueIsActive, let cueInfo = cueInfo else {
-            print("🧠 AI_DEBUG [SKIP] No cue currently active")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] No cue currently active")
             return
         }
         
@@ -836,7 +884,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         // Calculate where we'd be in the cue at the new elapsed time
         let newPositionInCue = newElapsed - cueStartTime
         
-        print("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): window=\(cueStartTime)s-\(cueEndTime)s, newPositionInCue=\(String(format: "%.1f", newPositionInCue))s")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): window=\(cueStartTime)s-\(cueEndTime)s, newPositionInCue=\(String(format: "%.1f", newPositionInCue))s")
         
         if newPositionInCue < 0 {
             // We've seeked to before the cue started - stop it
@@ -845,16 +893,16 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             if let setting = config.cueSettings.first(where: { $0.cue.id == cueInfo.id }) {
                 playedCues.remove(setting.id)
             }
-            print("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeked before start, stopped and reset for replay")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeked before start, stopped and reset for replay")
         } else if newPositionInCue >= cueDuration {
             // We've seeked past the cue's end - stop it, keep it marked as played
             cueManager.stop()
-            print("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeked past end, stopped")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeked past end, stopped")
         } else {
             // We're still within the cue's duration - seek to the correct position
             // This works whether playing or paused - just updates the position
             cueManager.seek(to: newPositionInCue)
-            print("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeking to \(String(format: "%.2f", newPositionInCue))s (paused=\(isPaused))")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Cue \(cueInfo.id): seeking to \(String(format: "%.2f", newPositionInCue))s (paused=\(isPaused))")
             
             // IMPORTANT: If we seeked a START cue back to position 0, also reset its playedCues status
             // This ensures it will play again if start() is called instead of resume()
@@ -862,7 +910,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
                 if let setting = config.cueSettings.first(where: { $0.cue.id == cueInfo.id && $0.triggerType == .start }) {
                     if playedCues.contains(setting.id) {
                         playedCues.remove(setting.id)
-                        print("🧠 AI_DEBUG [SKIP] Reset start cue \(cueInfo.id) playedCues status (seeked to beginning)")
+                        traceTimerSession("🧠 AI_DEBUG [SKIP] Reset start cue \(cueInfo.id) playedCues status (seeked to beginning)")
                     }
                 }
             }
@@ -879,15 +927,15 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         // Use 8 seconds for fade-in (same as initial session start for binaural, 10s for ambience)
         let fadeInDuration: TimeInterval = 8.0
         
-        print("🧠 AI_DEBUG [SKIP] seekAudioLayers(to: \(sessionElapsed)s, isBeginning=\(isSeekingToBeginning))")
+        traceTimerSession("🧠 AI_DEBUG [SKIP] seekAudioLayers(to: \(sessionElapsed)s, isBeginning=\(isSeekingToBeginning))")
         
         if hasBackgroundSound {
-            print("🧠 AI_DEBUG [SKIP] Calling backgroundSoundManager.seekToSessionTime(\(sessionElapsed), fadeIn=\(isSeekingToBeginning))")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Calling backgroundSoundManager.seekToSessionTime(\(sessionElapsed), fadeIn=\(isSeekingToBeginning))")
             backgroundSoundManager.seekToSessionTime(sessionElapsed, withFadeIn: isSeekingToBeginning, fadeInDuration: fadeInDuration)
         }
         
         if hasBinauralBeat {
-            print("🧠 AI_DEBUG [SKIP] Calling binauralBeatManager.seekToSessionTime(\(sessionElapsed), fadeIn=\(isSeekingToBeginning))")
+            traceTimerSession("🧠 AI_DEBUG [SKIP] Calling binauralBeatManager.seekToSessionTime(\(sessionElapsed), fadeIn=\(isSeekingToBeginning))")
             binauralBeatManager.seekToSessionTime(sessionElapsed, withFadeIn: isSeekingToBeginning, fadeInDuration: fadeInDuration)
         }
     }
@@ -956,7 +1004,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         for setting in config.cueSettings where setting.triggerType == .second {
             if let sec = setting.minute, elapsed >= sec, !playedCues.contains(setting.id) {
                 playedCues.insert(setting.id)
-                print("🧠 AI_DEBUG [Fractional][Player] ▶️ cue FIRED: \(setting.cue.id) at elapsed=\(elapsed)s (trigger=\(sec)s) text=\"\(String(setting.cue.name.prefix(50)))\"")
+                traceTimerSession("🧠 AI_DEBUG [Fractional][Player] ▶️ cue FIRED: \(setting.cue.id) at elapsed=\(elapsed)s (trigger=\(sec)s) text=\"\(String(setting.cue.name.prefix(50)))\"")
                 playCue(setting.cue)
             }
         }
@@ -1016,10 +1064,10 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
     }
     
     private func playStartCues() {
-        print("🧠 AI_DEBUG [SESSION] playStartCues() - playedCues=\(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
+        traceTimerSession("🧠 AI_DEBUG [SESSION] playStartCues() - playedCues=\(playedCues.map { $0.uuidString.prefix(8) }.joined(separator: ", "))")
         for setting in config.cueSettings where setting.triggerType == .start {
             let alreadyPlayed = playedCues.contains(setting.id)
-            print("🧠 AI_DEBUG [SESSION] Start cue \(setting.cue.id): alreadyPlayed=\(alreadyPlayed)")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Start cue \(setting.cue.id): alreadyPlayed=\(alreadyPlayed)")
             if !alreadyPlayed {
                 playedCues.insert(setting.id)
                 playCue(setting.cue)
@@ -1052,7 +1100,7 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
         if !isEndCuePlaying() {
             CuePlaybackManager.shared.fadeOutCurrentCue(withDuration: fadeOutDuration)
         } else {
-            print("🧠 AI_DEBUG [SESSION] Skipping cue fade-out - end cue is playing")
+            traceTimerSession("🧠 AI_DEBUG [SESSION] Skipping cue fade-out - end cue is playing")
         }
     }
     

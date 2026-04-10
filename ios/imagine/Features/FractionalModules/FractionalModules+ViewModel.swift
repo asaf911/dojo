@@ -50,19 +50,26 @@ extension FractionalModules {
             isLoading = true
             errorMessage = nil
 
+            #if DEBUG
             let tag = "🧠 AI_DEBUG [Fractional][ViewModel]"
             let sessionSec = selectedMinutes * 60
             print("\(tag) play tapped moduleId=\(moduleId) sessionDurationSec=\(sessionSec)")
+            #endif
 
             Task {
                 do {
+                    #if DEBUG
+                    let vmDebugTag = "🧠 AI_DEBUG [Fractional][ViewModel]"
+                    #endif
                     let voiceId = SharedUserStorage.retrieve(
                         forKey: .narrationVoiceId,
                         as: String.self,
                         defaultValue: "Asaf"
                     )
                     let durationSec = selectedMinutes * 60
-                    print("\(tag) fetchPlan: requesting moduleId=\(moduleId) sessionDurationSec=\(durationSec) voiceId=\(voiceId)")
+                    #if DEBUG
+                    print("\(vmDebugTag) fetchPlan: requesting moduleId=\(moduleId) sessionDurationSec=\(durationSec) voiceId=\(voiceId)")
+                    #endif
 
                     let bodyScan: (
                         direction: String,
@@ -89,18 +96,26 @@ extension FractionalModules {
                         "FractionalModules|play"
                     )
 
-                    print("\(tag) fetchPlan: received planId=\(plan.planId) items=\(plan.items.count)")
+                    #if DEBUG
+                    print("\(vmDebugTag) fetchPlan: received planId=\(plan.planId) items=\(plan.items.count)")
+                    #endif
 
                     let config = plan.toTimerSessionConfig()
-                    print("\(tag) mapped to TimerSessionConfig: minutes=\(config.minutes) cueSettings=\(config.cueSettings.count)")
+                    #if DEBUG
+                    print("\(vmDebugTag) mapped to TimerSessionConfig: minutes=\(config.minutes) cueSettings=\(config.cueSettings.count)")
+                    #endif
 
                     isLoading = false
                     onAction?(.playSession(config))
-                    print("\(tag) action emitted -> navigating to player")
+                    #if DEBUG
+                    print("\(vmDebugTag) action emitted -> navigating to player")
+                    #endif
                 } catch {
                     isLoading = false
                     errorMessage = error.localizedDescription
-                    print("\(tag) ERROR fetchPlan failed: \(error.localizedDescription)")
+                    #if DEBUG
+                    print("🧠 AI_DEBUG [Fractional][ViewModel] ERROR fetchPlan failed: \(error.localizedDescription)")
+                    #endif
                 }
             }
         }

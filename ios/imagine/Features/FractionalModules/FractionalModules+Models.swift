@@ -7,6 +7,24 @@ import Foundation
 
 enum FractionalModules {}
 
+extension FractionalModules {
+
+    /// Human-readable titles for fractional `moduleId` values (dev UI + `TimerSessionConfig.title`).
+    static let moduleDisplayTitles: [String: String] = [
+        "NF_FRAC": "Nostril Focus",
+        "IM_FRAC": "I AM Mantra",
+        "BS_FRAC": "Body Scan",
+        "BS_FRAC_UP": "Body Scan Up",
+        "BS_FRAC_DOWN": "Body Scan Down",
+        "PB_FRAC": "Perfect Breath",
+        "INT_FRAC": "Intro",
+    ]
+
+    static func displayTitle(forModuleId id: String) -> String {
+        moduleDisplayTitles[id] ?? id
+    }
+}
+
 // MARK: - Server Response Models
 
 extension FractionalModules {

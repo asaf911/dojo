@@ -58,7 +58,7 @@ extension Array where Element == CueSetting {
         while i < count {
             let setting = self[i]
 
-            guard let prefix = Self.fractionalClipPrefix(of: setting.cue.id) else {
+            guard let prefix = FractionalCueID.fractionalCollapsePrefix(of: setting.cue.id) else {
                 result.append(setting)
                 i += 1
                 continue
@@ -66,7 +66,7 @@ extension Array where Element == CueSetting {
 
             let startSec = Self.triggerSeconds(of: setting)
             var j = i + 1
-            while j < count, Self.fractionalClipPrefix(of: self[j].cue.id) == prefix {
+            while j < count, FractionalCueID.fractionalCollapsePrefix(of: self[j].cue.id) == prefix {
                 j += 1
             }
 
@@ -97,14 +97,6 @@ extension Array where Element == CueSetting {
         }
 
         return result
-    }
-
-    /// Extracts the module prefix from a fractional clip ID (e.g. "NF" from "NF_C001", "PB" from "PBV_…").
-    private static func fractionalClipPrefix(of cueId: String) -> String? {
-        if cueId.hasPrefix("PBV_") || cueId.hasPrefix("PBS_") { return "PB" }
-        guard let range = cueId.range(of: #"_C\d+$"#, options: .regularExpression) else { return nil }
-        let prefix = String(cueId[cueId.startIndex..<range.lowerBound])
-        return prefix.isEmpty ? nil : prefix
     }
 
     private static func triggerSeconds(of setting: CueSetting) -> Int {

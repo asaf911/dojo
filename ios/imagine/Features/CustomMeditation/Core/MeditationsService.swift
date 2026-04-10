@@ -246,6 +246,11 @@ struct MeditationsService {
 extension MeditationsService {
     /// Create a meditation from app CueSettings. Converts to request format internally.
     /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|Create tapped").
+    ///
+    /// **Manual POST `/meditations` contract:** `CueRequestItem` only encodes `start` / `end` / minute indices.
+    /// Editor cues with `.second` triggers (e.g. after intro shifting) are sent as `.start` so the server
+    /// receives a valid manual payload; the server expands layout and returns second-based `CueTrigger` in
+    /// `MeditationPackage`. Do not change this mapping without updating the Cloud Function manual path.
     func createMeditationManual(
         duration: Int,
         backgroundSoundId: String,

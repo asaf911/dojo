@@ -18,13 +18,7 @@ extension FractionalModules {
         case intro = "INT_FRAC"
 
         var displayName: String {
-            switch self {
-            case .nostrilFocus: "Nostril Focus"
-            case .iAmMantra: "I AM Mantra"
-            case .bodyScan: "Body Scan"
-            case .perfectBreath: "Perfect Breath"
-            case .intro: "Intro"
-            }
+            FractionalModules.displayTitle(forModuleId: rawValue)
         }
     }
 

@@ -41,16 +41,9 @@ class CuePlaybackManager {
         pow(10.0, db / 20.0)
     }
     
-    /// Same rule as `CueSetting.collapsedFractionalCues`: `IM_C001`, `NF_C007`, etc.
-    private static func isFractionalAtomicMantraOrNostrilClip(_ moduleId: String) -> Bool {
-        guard let range = moduleId.range(of: #"_C\d+$"#, options: .regularExpression) else { return false }
-        let prefix = String(moduleId[moduleId.startIndex..<range.lowerBound])
-        return prefix == "IM" || prefix == "NF"
-    }
-    
     /// Legacy table boost only when not an atomic fractional IM/NF clip (those align with BS_* loudness).
     private static func boostGainForLegacyModule(for moduleId: String) -> Float {
-        if isFractionalAtomicMantraOrNostrilClip(moduleId) { return 1.0 }
+        if FractionalCueID.isAtomicMantraOrNostrilClip(moduleId) { return 1.0 }
         for (prefix, db) in moduleVolumeBoostDB {
             if moduleId.hasPrefix(prefix) {
                 return linearGain(forDB: db)
@@ -364,7 +357,7 @@ class CuePlaybackManager {
             if currentBoostGain > 1.0 {
                 let tableDB = Self.moduleVolumeBoostDB.first { cue.id.hasPrefix($0.key) }?.value
                 let legacyDB: Float? = {
-                    guard let db = tableDB, !Self.isFractionalAtomicMantraOrNostrilClip(cue.id) else { return nil }
+                    guard let db = tableDB, !FractionalCueID.isAtomicMantraOrNostrilClip(cue.id) else { return nil }
                     return db
                 }()
                 let source = legacyDB.map { "legacy +\(Int($0))dB" } ?? "Asaf voice +\(Int(Self.asafVoiceBoostDB))dB"

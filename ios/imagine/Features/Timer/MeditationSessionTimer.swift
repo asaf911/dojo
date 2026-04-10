@@ -1,3 +1,11 @@
+//
+//  MeditationSessionTimer.swift
+//  Dojo
+//
+//  Countdown timer for custom (timer) meditations: tick, milestones, silent keep-alive,
+//  and session completion hooks. Used by TimerMeditationSession and app lifecycle.
+//
+
 import SwiftUI
 import Combine
 import AVFoundation

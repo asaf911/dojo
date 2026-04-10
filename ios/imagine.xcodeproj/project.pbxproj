@@ -138,11 +138,12 @@
 		A56A5E002D6D962800508EB1 /* CueConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */; };
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
+		B5F1E0172E9A000300508EB1 /* FractionalCueID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */; };
 		A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */; };
 		B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */; };
 		A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */; };
 		A56B87AA2D35EE00002BEAD2 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */; };
-		A56B87AE2D3637FB002BEAD2 /* TimerCreationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AD2D3637FB002BEAD2 /* TimerCreationManager.swift */; };
+		A56B87AE2D3637FB002BEAD2 /* MeditationSessionTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */; };
 		A56B87B02D363A09002BEAD2 /* SharedUIElements.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AF2D363A09002BEAD2 /* SharedUIElements.swift */; };
 		A56B88632D40C615002BEAD2 /* CustomWheelPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B88622D40C60E002BEAD2 /* CustomWheelPicker.swift */; };
 		A56B89882D41B7EF002BEAD2 /* ImagineWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A56B89652D41B7EE002BEAD2 /* ImagineWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -539,11 +540,12 @@
 		A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueConfigurationView.swift; sourceTree = "<group>"; };
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
+		B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalCueID.swift; sourceTree = "<group>"; };
 		A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationConfiguration.swift; sourceTree = "<group>"; };
 		B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPrefixTimeline.swift; sourceTree = "<group>"; };
 		A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationView.swift; sourceTree = "<group>"; };
 		A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
-		A56B87AD2D3637FB002BEAD2 /* TimerCreationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationManager.swift; sourceTree = "<group>"; };
+		A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationSessionTimer.swift; sourceTree = "<group>"; };
 		A56B87AF2D363A09002BEAD2 /* SharedUIElements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUIElements.swift; sourceTree = "<group>"; };
 		A56B88622D40C60E002BEAD2 /* CustomWheelPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomWheelPicker.swift; sourceTree = "<group>"; };
 		A56B89652D41B7EE002BEAD2 /* ImagineWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ImagineWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1318,7 +1320,7 @@
 			isa = PBXGroup;
 			children = (
 				A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */,
-				A56B87AD2D3637FB002BEAD2 /* TimerCreationManager.swift */,
+				A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */,
 				A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */,
 				A56B88622D40C60E002BEAD2 /* CustomWheelPicker.swift */,
 				A514337D2D5462EA00105271 /* BackgroundSoundSelectionView.swift */,
@@ -1495,6 +1497,7 @@
 			children = (
 				A56A5DFB2D6D95CF00508EB1 /* Cue.swift */,
 				A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */,
+				B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */,
 			);
 			path = Cues;
 			sourceTree = "<group>";
@@ -2236,6 +2239,7 @@
 				A5D07D162C8C033900594459 /* AppDelegate.swift in Sources */,
 				A54F93902C66A41500EB91B7 /* ExploreGalleryView.swift in Sources */,
 				A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */,
+				B5F1E0172E9A000300508EB1 /* FractionalCueID.swift in Sources */,
 				A54E5E322B203CA70052FF18 /* PlayerScreenView.swift in Sources */,
 				A5EBC8922D08F86F00443273 /* PushNotificationManager.swift in Sources */,
 				A585FB062D6921A900535A62 /* UIDevice+Extensions.swift in Sources */,
@@ -2316,7 +2320,7 @@
 				UNIFIED1003000000000001 /* TimerMeditationSession.swift in Sources */,
 				UNIFIED1004000000000001 /* VolumeControlsView.swift in Sources */,
 				A54F938E2C66A11200EB91B7 /* PracticeItemView.swift in Sources */,
-				A56B87AE2D3637FB002BEAD2 /* TimerCreationManager.swift in Sources */,
+				A56B87AE2D3637FB002BEAD2 /* MeditationSessionTimer.swift in Sources */,
 				A5B3A1882DBC41BD004496FF /* PathStep.swift in Sources */,
 				CDA623BF2CB618F80063D812 /* Fonts.swift in Sources */,
 				A54F937D2C618EBB00EB91B7 /* SubscriptionView.swift in Sources */,

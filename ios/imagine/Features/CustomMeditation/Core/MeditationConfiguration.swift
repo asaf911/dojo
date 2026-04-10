@@ -153,23 +153,53 @@ extension MeditationConfiguration {
         return CueSetting(triggerType: triggerType, minute: minute, cue: cue)
     }
 
-    /// Converts to TimerSessionConfig with cue URLs resolved for the given voice.
+    /// Converts to `TimerSessionConfig` with cue URLs resolved for the given voice, intro shifting, and playback length.
     func toTimerSessionConfig(voiceId: String, isDeepLinked: Bool = true, description: String? = nil) -> TimerSessionConfig {
+        Self.makeTimerSessionConfig(
+            durationMinutes: duration,
+            backgroundSound: backgroundSound,
+            binauralBeat: binauralBeat,
+            cueSettings: cueSettings,
+            title: title,
+            voiceId: voiceId,
+            isDeepLinked: isDeepLinked,
+            description: description
+        )
+    }
+
+    /// Shared pipeline: resolve voice URLs on cues, apply intro-prefix timeline, build `TimerSessionConfig`.
+    /// Used by `toTimerSessionConfig` and the create screen offline path so behavior stays in one place.
+    static func makeTimerSessionConfig(
+        durationMinutes: Int,
+        backgroundSound: BackgroundSound,
+        binauralBeat: BinauralBeat?,
+        cueSettings: [CueSetting],
+        title: String?,
+        voiceId: String,
+        isDeepLinked: Bool,
+        description: String?
+    ) -> TimerSessionConfig {
         let resolvedCueSettings = cueSettings.map { cs in
             let resolvedCue = Cue(
                 id: cs.cue.id,
                 name: cs.cue.name,
                 url: cs.cue.url(forVoice: voiceId)
             )
-            return CueSetting(id: cs.id, triggerType: cs.triggerType, minute: cs.minute, cue: resolvedCue)
+            return CueSetting(
+                id: cs.id,
+                triggerType: cs.triggerType,
+                minute: cs.minute,
+                cue: resolvedCue,
+                fractionalDuration: cs.fractionalDuration
+            )
         }
-        let shifted = resolvedCueSettings.applyingIntroPrefixIfNeeded(practiceMinutes: duration)
+        let shifted = resolvedCueSettings.applyingIntroPrefixIfNeeded(practiceMinutes: durationMinutes)
         let hasIntro = shifted.contains { $0.cue.id == "INT_FRAC" }
         let playbackSec = hasIntro
-            ? IntroPrefixTimeline.playbackSeconds(practiceMinutes: duration, hasIntroFrac: true)
+            ? IntroPrefixTimeline.playbackSeconds(practiceMinutes: durationMinutes, hasIntroFrac: true)
             : nil
         return TimerSessionConfig(
-            minutes: duration,
+            minutes: durationMinutes,
             playbackDurationSeconds: playbackSec,
             backgroundSound: backgroundSound,
             binauralBeat: binauralBeat ?? BinauralBeat(id: "None", name: "None", url: "", description: nil),
