@@ -33,7 +33,7 @@ class AIRequestManager: ObservableObject {
     private var lastSuggestedIdea: String? = nil
     private let alternativeSuggestions: [String] = [
         "How about a 8 min relaxation with a short body scan?",
-        "How about a 10 min calm-breathing session with gentle bell?",
+        "How about a 10 min calm-breathing reset?",
         "How about a 12 min mantra focus to reset attention?",
         "How about a 15 min visualization for clarity and motivation?",
         "How about a 9 min open-heart compassion practice?",

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { FractionalClip } from "./fractionalComposer";
+import { FRACTIONAL_FIRST_SPEECH_OFFSET_SEC } from "./fractionalSessionConstants";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
 
 const D = 3;
@@ -105,7 +106,9 @@ test("composePerfectBreathPlan 120s omits OPEN when not at timeline start", () =
 
 test("composePerfectBreathPlan 120s includes OPEN when at timeline start", () => {
   const plan = composePerfectBreathPlan(mockCatalog(), 120, "Asaf", "PB_FRAC", true);
-  assert.ok(plan.items.some((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF"));
+  const open = plan.items.find((i) => i.clipId === "PBV_OPEN_000_INTRO_ASAF");
+  assert.ok(open);
+  assert.equal(open!.atSec, FRACTIONAL_FIRST_SPEECH_OFFSET_SEC);
 });
 
 test("composePerfectBreathPlan 300s includes OPEN when not at timeline start", () => {

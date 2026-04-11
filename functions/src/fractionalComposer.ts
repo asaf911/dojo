@@ -24,6 +24,7 @@ import {
   introWindowSecFromSessionDurationSec,
 } from "./introFractionalPlan";
 import {
+  FRACTIONAL_FIRST_SPEECH_OFFSET_SEC,
   FRACTIONAL_INTRO_MIN_DURATION_SEC,
   INT_FRAC_PLAN_MAX_DURATION_SEC,
   INT_FRAC_PLAN_MIN_DURATION_SEC,
@@ -143,6 +144,10 @@ function selectClips(
   atTimelineStart: boolean,
   moduleId: string
 ): FractionalClip[] {
+  const scheduleBudgetSec = atTimelineStart
+    ? Math.max(1, durationSec - FRACTIONAL_FIRST_SPEECH_OFFSET_SEC)
+    : durationSec;
+
   const sorted = [...clips]
     .filter((c) => NF_IM_CLIP_ROLES.has(c.role))
     .sort((a, b) => a.order - b.order);
@@ -172,7 +177,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Trim instructions that don't fit (never remove P0 or intro)
-  while (!nfImSelectionFits(selected, durationSec, moduleId) && selected.length > 1) {
+  while (!nfImSelectionFits(selected, scheduleBudgetSec, moduleId) && selected.length > 1) {
     let removeIdx = -1;
     for (let i = selected.length - 1; i >= 0; i--) {
       if (selected[i].priority === "p2") { removeIdx = i; break; }
@@ -192,7 +197,7 @@ function selectClips(
     for (let r = 1; r <= reminders.length; r++) {
       const trial = [...selected, ...pickRandom(reminders, r)];
       trial.sort((a, b) => a.order - b.order);
-      if (!nfImSelectionFits(trial, durationSec, moduleId)) {
+      if (!nfImSelectionFits(trial, scheduleBudgetSec, moduleId)) {
         break;
       }
       reminderCount = r;
@@ -207,7 +212,7 @@ function selectClips(
   selected.sort((a, b) => a.order - b.order);
 
   // Safety-net trim in case the combined list still exceeds the budget
-  while (!nfImSelectionFits(selected, durationSec, moduleId) && selected.length > 1) {
+  while (!nfImSelectionFits(selected, scheduleBudgetSec, moduleId) && selected.length > 1) {
     let removeIdx = -1;
     for (let i = selected.length - 1; i >= 0; i--) {
       if (selected[i].role === "reminder") { removeIdx = i; break; }
@@ -228,7 +233,7 @@ function selectClips(
 
   if (durationSec >= OUTRO_THRESHOLD_SEC && outros.length > 0) {
     selected.push(outros[0]);
-    if (!nfImSelectionFits(selected, durationSec, moduleId)) {
+    if (!nfImSelectionFits(selected, scheduleBudgetSec, moduleId)) {
       selected.pop();
     }
   }
@@ -249,9 +254,21 @@ export function composeFractionalPlan(
 ): FractionalPlan {
   const TAG = "[FractionalComposer]";
 
+  const scheduleBudgetSec = atTimelineStart
+    ? Math.max(1, durationSec - FRACTIONAL_FIRST_SPEECH_OFFSET_SEC)
+    : durationSec;
   const selected = selectClips(clips, durationSec, atTimelineStart, moduleId);
-  const scheduled = scheduleNfImPlan(selected, durationSec, voiceId, moduleId);
-  const items: FractionalPlanItem[] = scheduled.items.map((it) => ({ ...it }));
+  const scheduled = scheduleNfImPlan(
+    selected,
+    scheduleBudgetSec,
+    voiceId,
+    moduleId
+  );
+  const speechOffset = atTimelineStart ? FRACTIONAL_FIRST_SPEECH_OFFSET_SEC : 0;
+  const items: FractionalPlanItem[] = scheduled.items.map((it) => ({
+    ...it,
+    atSec: it.atSec + speechOffset,
+  }));
   if (!scheduled.fits) {
     functions.logger.warn(
       `${TAG} schedule reported fits=false moduleId=${moduleId} duration=${durationSec}s — check fractionalTimeline`

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { FractionalClip } from "./fractionalComposer";
 import { composeFractionalPlan } from "./fractionalComposer";
+import { FRACTIONAL_FIRST_SPEECH_OFFSET_SEC } from "./fractionalSessionConstants";
 
 const intro: FractionalClip = {
   clipId: "NF_INTRO",
@@ -30,4 +31,5 @@ test("composeFractionalPlan includes framing intro under 5 min when at timeline 
   const plan = composeFractionalPlan([intro, p0], 180, "Asaf", "NF_FRAC", true);
   assert.ok(plan.items.some((i) => i.role === "intro"));
   assert.equal(plan.items[0]?.clipId, "NF_INTRO");
+  assert.equal(plan.items[0]?.atSec, FRACTIONAL_FIRST_SPEECH_OFFSET_SEC);
 });

@@ -36,7 +36,7 @@ iOS picker “Up” sends API `"down"`; “Down” sends `"up"` (see `Fractional
 - Variable gap count = **`nBody + nIntegration`** (one slot after each part, including after the last).
 - Budget = `durationSec − audio − bridges`; split with **`distributeGapsEqual`** (integer fair split).
 - **Minimum** silence for feasibility: `minVariableSilenceBudget` (stricter when integrations > 0).
-- **Bridges:** `BRIDGE_SEC` (7s) after each intro and after entry (if present).
+- **Bridges:** `BRIDGE_SEC` (7s) after each intro and after entry (if present). This is **only** spacing between intro/entry segments — not the same as **`FRACTIONAL_FIRST_SPEECH_OFFSET_SEC`** (global 7s lead-in before the first voice when `atTimelineStart` is true; see [`fractional-module-intro-rule.md`](./fractional-module-intro-rule.md)).
 
 ## API (`postFractionalPlan`)
 

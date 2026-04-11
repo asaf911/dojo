@@ -1,7 +1,7 @@
 {
-  "version": "4.1.0",
-  "last_updated": "2026-02-11",
-  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus). For AI sessions 1-4 minutes, omit INT_FRAC; for 5+ minutes, include INT_FRAC@start.",
+  "version": "4.2.0",
+  "last_updated": "2026-04-10",
+  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus). For AI sessions 1-4 minutes, omit INT_FRAC; for 5+ minutes, include INT_FRAC@start. Do not include Gentle Bell (GB) at the end unless the user explicitly asks for a closing bell; users can add GB in the Timer builder.",
 
   "priority_detection": {
     "description": "When user explicitly requests a specific exercise, give it 50% of session time",
@@ -40,8 +40,8 @@
     "when_priority_detected": {
       "action": "Give priority exercise 50% of total session time",
       "other_modules": "Reduce to minimum (1m each)",
-      "example_10m_bodyscan": "INT_FRAC@start, PB_FRAC@1 (durationMinutes=1), BS5@2, IM_FRAC@7, GB@end",
-      "example_3m_short_ai": "PB_FRAC@0 (durationMinutes=2), IM_FRAC@2, GB@end — no INT_FRAC for AI sessions under 5 minutes"
+      "example_10m_bodyscan": "INT_FRAC@start, PB_FRAC@1 (durationMinutes=1), BS5@2, IM_FRAC@7 — no GB unless user asks",
+      "example_3m_short_ai": "PB_FRAC@0 (durationMinutes=2), IM_FRAC@2 — no INT_FRAC for AI sessions under 5 minutes; omit GB unless user asks"
     }
   },
 
@@ -76,7 +76,8 @@
     },
     "GB": {
       "position": "end",
-      "skip_for": ["sleep", "bedtime", "night", "fall asleep", "drift off", "slumber"]
+      "skip_for": ["sleep", "bedtime", "night", "fall asleep", "drift off", "slumber"],
+      "note": "Optional for AI: include only when the user explicitly requests a bell at the end. Default AI sessions omit GB."
     }
   },
 
@@ -84,25 +85,25 @@
     "description": "Rules for sessions 1-6 minutes. Simpler structure than 4-phase. AI sessions 1-4 minutes: do not use INT_FRAC; first fractional cue at practice minute 0 (trigger \"0\" or \"start\" as appropriate). AI 5+ minutes: include INT_FRAC@start as in longer examples.",
     "rules": {
       "1min": {
-        "structure": "GB (no INT_FRAC for AI under 5 min)",
-        "cues": ["GB@end"],
-        "notes": "Introduction-only 1m AI: omit INT_FRAC; use GB@end or a single fractional module at trigger 0 if it fits the prompt."
+        "structure": "One relaxation or focus fractional at minute 0 (no INT_FRAC for AI under 5 min)",
+        "cues": ["PB_FRAC@0 (durationMinutes=1) or BS1@0 or IM_FRAC/NF_FRAC@0"],
+        "notes": "Introduction-only 1m AI: omit INT_FRAC; omit GB unless user asks for a closing bell."
       },
       "2-3min": {
-        "structure": "ONE relaxation (PB or BS) at minute 0 + GB (no INT_FRAC for AI under 5 min)",
-        "cues_2m": ["PB_FRAC@0 (durationMinutes=2) or BS2@0", "GB@end"],
-        "cues_3m": ["PB_FRAC@0 (durationMinutes=3) or BS3@0", "GB@end"],
-        "notes": "Choose PB or BS based on prompt, not both"
+        "structure": "ONE relaxation (PB or BS) at minute 0 (no INT_FRAC for AI under 5 min)",
+        "cues_2m": ["PB_FRAC@0 (durationMinutes=2) or BS2@0"],
+        "cues_3m": ["PB_FRAC@0 (durationMinutes=3) or BS3@0"],
+        "notes": "Choose PB or BS based on prompt, not both. Omit GB unless user asks."
       },
       "4min": {
-        "structure": "PB + BS + GB at minute 0 onward (no INT_FRAC for AI under 5 min; no focus module)",
-        "cues": ["PB_FRAC@0 (durationMinutes=1)", "BS2@1", "GB@end"],
-        "notes": "Both breathing and body scan, but no focus module"
+        "structure": "PB + BS at minute 0 onward (no INT_FRAC for AI under 5 min; no focus module)",
+        "cues": ["PB_FRAC@0 (durationMinutes=1)", "BS2@1"],
+        "notes": "Both breathing and body scan, but no focus module. Omit GB unless user asks."
       },
       "5-6min": {
-        "structure": "INT_FRAC + PB + BS + focus + GB",
-        "cues_5m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS1@2", "IM_FRAC or NF_FRAC@3", "GB@end"],
-        "cues_6m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS2@2", "IM_FRAC or NF_FRAC@4", "GB@end"],
+        "structure": "INT_FRAC + PB + BS + focus",
+        "cues_5m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS1@2", "IM_FRAC or NF_FRAC@3"],
+        "cues_6m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS2@2", "IM_FRAC or NF_FRAC@4"],
         "focus_selection": {
           "default": "IM_FRAC or NF_FRAC (random)",
           "nostril": "NF_FRAC",
@@ -112,7 +113,7 @@
         "notes": "ONE fractional focus module (IM_FRAC or NF_FRAC randomly, OH for sleep, explicit request overrides)"
       }
     },
-    "gb_rule": "GB at end for ALL sessions (short and long) EXCEPT sleep sessions"
+    "gb_rule": "Omit GB (Gentle Bell) in default AI sessions. Include GB at trigger 'end' only if the user explicitly asks for a bell or chime at the end. Timer / custom builder still offers GB as an optional cue."
   },
 
   "composition_algorithm": {
@@ -147,8 +148,9 @@
         "note": "OH is NOT a visualization cue - use only VC or RT"
       },
       "closing": {
-        "modules": ["GB"],
-        "skip_for": ["sleep", "bedtime", "night"]
+        "modules": [],
+        "skip_for": ["sleep", "bedtime", "night"],
+        "note": "Default: no closing cue module. Optional GB only if the user explicitly requests an end bell."
       }
     },
     "steps": [
@@ -189,9 +191,9 @@
       },
       {
         "step": 7,
-        "action": "Add GB at end",
-        "details": "Add Gentle Bell at trigger 'end' unless this is a sleep meditation.",
-        "placement": "trigger 'end'"
+        "action": "End bell (optional only)",
+        "details": "Do not add GB unless the user explicitly asks for a gentle bell or chime at the end. Otherwise the session ends after the last guided module.",
+        "placement": "omit by default"
       }
     ]
   },
@@ -199,137 +201,127 @@
   "session_templates": {
     "description": "Pre-calculated examples. Short sessions (1-6m) use simplified structure, long sessions (>6m) use 4-phase blueprint.",
     "1min": {
-      "composition": "GB(end) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-1, 1m) — AI 1-4m: no INT_FRAC; no GB unless user asks",
       "cues": [
-        { "id": "GB", "trigger": "end" }
+        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 1 }
       ],
       "time_filled": 1,
       "percentage_filled": 100,
-      "notes": "AI under 5 min: omit INT_FRAC. Optional: one fractional cue at trigger 0 if it fits the prompt."
+      "notes": "AI under 5 min: omit INT_FRAC. Omit GB unless user asks for a closing bell."
     },
     "2min": {
-      "composition": "PB_FRAC(0-2, 2m) + GB(end) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-2, 2m) — AI 1-4m: no INT_FRAC",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 2 },
-        { "id": "GB", "trigger": "end" }
+        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 2 }
       ],
       "time_filled": 2,
       "percentage_filled": 100,
       "notes": "Could also use BS2@0 instead of PB_FRAC"
     },
     "3min": {
-      "composition": "PB_FRAC(0-3, 3m) + GB(end) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-3, 3m) — AI 1-4m: no INT_FRAC",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 3 },
-        { "id": "GB", "trigger": "end" }
+        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 3 }
       ],
       "time_filled": 3,
       "percentage_filled": 100,
       "notes": "Could also use BS3@0 instead of PB_FRAC"
     },
     "4min": {
-      "composition": "PB_FRAC(0-1, 1m) + BS2(1-4) + GB(end) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-1, 1m) + BS2(1-4) — AI 1-4m: no INT_FRAC",
       "cues": [
         { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 1 },
-        { "id": "BS2", "trigger": "1" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "BS2", "trigger": "1" }
       ],
       "time_filled": 4,
       "percentage_filled": 100,
       "notes": "No focus module for 4min"
     },
     "5min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
         { "id": "BS1", "trigger": "2" },
-        { "id": "IM_FRAC", "trigger": "3" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "IM_FRAC", "trigger": "3" }
       ],
       "time_filled": 5,
       "percentage_filled": 100,
       "notes": "ONE fractional focus module (IM_FRAC default, VC/RT for specific session types)"
     },
     "6min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS2(2-4) + IM_FRAC(4-6) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS2(2-4) + IM_FRAC(4-6)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
         { "id": "BS2", "trigger": "2" },
-        { "id": "IM_FRAC", "trigger": "4" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "IM_FRAC", "trigger": "4" }
       ],
       "time_filled": 6,
       "percentage_filled": 100,
       "notes": "ONE fractional focus module (IM_FRAC default, VC/RT for specific session types)"
     },
     "7min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5) + VC(5-7) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5) + VC(5-7)",
       "phases": "Intro(0-1) | Relax(1-3) | Focus(3-5) | Viz(5-7)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
         { "id": "BS1", "trigger": "2" },
         { "id": "IM_FRAC", "trigger": "3" },
-        { "id": "VC", "trigger": "5" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "VC", "trigger": "5" }
       ],
       "time_filled": 7,
       "percentage_filled": 100
     },
     "10min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-3, 2m) + BS2(3-5) + IM_FRAC(5-7) + VC(7-10) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-3, 2m) + BS2(3-5) + IM_FRAC(5-7) + VC(7-10)",
       "phases": "Intro(0-1) | Relax(1-5) | Focus(5-7) | Viz(7-10)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 2 },
         { "id": "BS2", "trigger": "3" },
         { "id": "IM_FRAC", "trigger": "5" },
-        { "id": "VC", "trigger": "7" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "VC", "trigger": "7" }
       ],
       "time_filled": 10,
       "percentage_filled": 100
     },
     "15min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-4, 3m) + BS3(4-7) + IM_FRAC(7-11) + VC(11-15) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-4, 3m) + BS3(4-7) + IM_FRAC(7-11) + VC(11-15)",
       "phases": "Intro(0-1) | Relax(1-7) | Focus(7-11) | Viz(11-15)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 3 },
         { "id": "BS3", "trigger": "4" },
         { "id": "IM_FRAC", "trigger": "7" },
-        { "id": "VC", "trigger": "11" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "VC", "trigger": "11" }
       ],
       "time_filled": 15,
       "percentage_filled": 100
     },
     "20min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-5, 4m) + BS5(5-10) + IM_FRAC(10-15) + VC(15-20) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-5, 4m) + BS5(5-10) + IM_FRAC(10-15) + VC(15-20)",
       "phases": "Intro(0-1) | Relax(1-10) | Focus(10-15) | Viz(15-20)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 4 },
         { "id": "BS5", "trigger": "5" },
         { "id": "IM_FRAC", "trigger": "10" },
-        { "id": "VC", "trigger": "15" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "VC", "trigger": "15" }
       ],
       "time_filled": 20,
       "percentage_filled": 100
     },
     "30min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-6, 5m) + BS9(6-15) + IM_FRAC(15-22) + RT(22-30) + GB(end)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-6, 5m) + BS9(6-15) + IM_FRAC(15-22) + RT(22-30)",
       "phases": "Intro(0-1) | Relax(1-15) | Focus(15-22) | Viz(22-30)",
       "cues": [
         { "id": "INT_FRAC", "trigger": "start" },
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 5 },
         { "id": "BS9", "trigger": "6" },
         { "id": "IM_FRAC", "trigger": "15" },
-        { "id": "RT", "trigger": "22" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "RT", "trigger": "22" }
       ],
       "time_filled": 30,
       "percentage_filled": 100
@@ -366,7 +358,7 @@
     "sleep": {
       "keywords": ["sleep", "sleepy", "bedtime", "night", "fall asleep", "drift off", "slumber", "insomnia", "rest"],
       "rules": [
-        "Skip GB (Gentle Bell) at end",
+        "Omit GB unless the user explicitly asks for a closing bell",
         "Use longer body scans",
         "Use calming background sounds (Ocean, Rain)"
       ],
@@ -481,8 +473,8 @@
       "priority": 100
     },
     {
-      "id": "gb_at_end",
-      "rule": "GB (Gentle Bell) must be at trigger 'end' for all non-sleep meditations",
+      "id": "gb_optional_ai",
+      "rule": "Do not include GB in AI-generated meditations unless the user explicitly requests a bell or chime at the end. If included, GB must use trigger 'end'.",
       "priority": 90
     },
     {
@@ -535,7 +527,7 @@
   },
 
   "json_output_format": {
-    "description": "The exact JSON format the AI must return",
+    "description": "The exact JSON format the AI must return. Omit GB (Gentle Bell) from cues unless the user explicitly requests an end bell; Timer still allows adding GB manually.",
     "template": {
       "duration": "N (integer, minutes)",
       "backgroundSoundId": "ID from available sounds (REQUIRED)",
@@ -555,8 +547,7 @@
         { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 2 },
         { "id": "BS2", "trigger": "3" },
         { "id": "IM_FRAC", "trigger": "5" },
-        { "id": "VC", "trigger": "7" },
-        { "id": "GB", "trigger": "end" }
+        { "id": "VC", "trigger": "7" }
       ],
       "title": "Morning Focus Meditation",
       "description": "A 10-minute session with breathwork, body scan, I AM mantra, and vision clarity."

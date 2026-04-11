@@ -14,6 +14,7 @@ import {
   FRACTIONAL_INSTRUCTION_PAIR_GAPS,
 } from "./fractionalTimeline";
 import {
+  FRACTIONAL_FIRST_SPEECH_OFFSET_SEC,
   INT_FRAC_PLAN_MAX_DURATION_SEC,
   INT_FRAC_PLAN_MIN_DURATION_SEC,
 } from "./fractionalSessionConstants";
@@ -23,8 +24,9 @@ const TAG = "[IntroFractionalPlan]";
 /** Target intro window at a 1-minute session (seconds); selection forces a single clip. */
 const INTRO_WINDOW_MIN_TARGET_SEC = 18;
 
-/** First spoken line starts this many seconds after the module window begins (music at 0). */
-export const INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC = 7;
+/** @deprecated Use FRACTIONAL_FIRST_SPEECH_OFFSET_SEC from fractionalSessionConstants. */
+export const INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC =
+  FRACTIONAL_FIRST_SPEECH_OFFSET_SEC;
 
 /** Silence after the last clip ends before the next module / block. */
 export const INTRO_FRAC_END_PAUSE_SEC = 5;
@@ -108,9 +110,9 @@ function gapBetween(
 }
 
 function timelineEndSec(sequence: FractionalClip[], moduleId: string): number {
-  if (sequence.length === 0) return INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC;
+  if (sequence.length === 0) return FRACTIONAL_FIRST_SPEECH_OFFSET_SEC;
 
-  let t = INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC;
+  let t = FRACTIONAL_FIRST_SPEECH_OFFSET_SEC;
   for (let i = 0; i < sequence.length; i++) {
     const c = sequence[i]!;
     t += clipDurationSec(c);
@@ -337,7 +339,7 @@ function toPlanItems(
 ): FractionalPlanItem[] {
   if (sequence.length === 0) return [];
 
-  let cursor = INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC;
+  let cursor = FRACTIONAL_FIRST_SPEECH_OFFSET_SEC;
   const items: FractionalPlanItem[] = [];
 
   for (let i = 0; i < sequence.length; i++) {

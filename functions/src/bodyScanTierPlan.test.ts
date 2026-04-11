@@ -4,6 +4,7 @@ import { test } from "node:test";
 import type { FractionalClip } from "./fractionalComposer";
 import {
   collectBodyInstructions,
+  composeBodyScanTierPlan,
   distributeGapsBetweenBounds,
   distributeGapsEqual,
   minVariableSilenceBudget,
@@ -13,6 +14,7 @@ import {
   stripEntryAnchorInstruction,
   variableGapSlotCount,
 } from "./bodyScanTierPlan";
+import { FRACTIONAL_FIRST_SPEECH_OFFSET_SEC } from "./fractionalSessionConstants";
 
 const macro = (zone: 1 | 2 | 3, id: string, ou: number, od: number): FractionalClip => ({
   clipId: id,
@@ -319,4 +321,59 @@ test("chooseBodyScanPlan skips first body when includeEntry", () => {
     moduleId: "BS_FRAC",
   });
   assert.ok(noEntry.bodyInstructions.some((c) => c.clipId === "M1"));
+});
+
+test("composeBodyScanTierPlan first cue at lead-in when at timeline start", () => {
+  const clips: FractionalClip[] = [
+    {
+      clipId: "INTRO_S",
+      role: "intro",
+      order: 0,
+      text: "",
+      voices: { Asaf: "gs://x" },
+      introVariant: "short",
+      durationSec: 5,
+    },
+    macro(1, "M1", 1, 1),
+    macro(2, "M2", 2, 2),
+    macro(3, "M3", 3, 3),
+    {
+      clipId: "I1",
+      role: "integration",
+      order: 99,
+      text: "",
+      voices: { Asaf: "gs://x" },
+      integrationOrder: 1,
+      durationSec: 5,
+    },
+    {
+      clipId: "I2",
+      role: "integration",
+      order: 100,
+      text: "",
+      voices: { Asaf: "gs://x" },
+      integrationOrder: 2,
+      durationSec: 5,
+    },
+  ];
+  const baseParams = {
+    durationSec: 600,
+    bodyScanDirection: "up" as const,
+    introShort: true,
+    introLong: false,
+    includeEntry: false,
+    voiceId: "Asaf",
+    moduleId: "BS_FRAC",
+  };
+  const planAt = composeBodyScanTierPlan(clips, {
+    ...baseParams,
+    atTimelineStart: true,
+  });
+  assert.equal(planAt.items[0]!.atSec, FRACTIONAL_FIRST_SPEECH_OFFSET_SEC);
+
+  const planNot = composeBodyScanTierPlan(clips, {
+    ...baseParams,
+    atTimelineStart: false,
+  });
+  assert.equal(planNot.items[0]!.atSec, 0);
 });

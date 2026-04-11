@@ -10,7 +10,10 @@ import type {
   FractionalPlan,
   FractionalPlanItem,
 } from "./fractionalComposer"; // type-only: no runtime cycle with fractionalComposer importing this module
-import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
+import {
+  FRACTIONAL_FIRST_SPEECH_OFFSET_SEC,
+  FRACTIONAL_INTRO_MIN_DURATION_SEC,
+} from "./fractionalSessionConstants";
 
 const TAG = "[PerfectBreathPlan]";
 
@@ -250,6 +253,10 @@ function estimateOneCycleSec(
   return t;
 }
 
+function firstSpeechLeadInSec(atTimelineStart: boolean): number {
+  return atTimelineStart ? FRACTIONAL_FIRST_SPEECH_OFFSET_SEC : 0;
+}
+
 function estimateSessionSec(
   map: Map<string, FractionalClip>,
   durationSec: number,
@@ -258,9 +265,10 @@ function estimateSessionSec(
   numCycles: number,
   atTimelineStart: boolean
 ): number {
-  let t = 0;
+  const leadIn = firstSpeechLeadInSec(atTimelineStart);
+  let t = leadIn;
   if (includePerfectBreathOpenVoice(durationSec, atTimelineStart)) {
-    t = afterScheduledVoiceCue(0, map, ID_OPEN);
+    t = afterScheduledVoiceCue(leadIn, map, ID_OPEN);
     t += introSilenceSec(durationSec);
   }
   for (let i = 0; i < numCycles; i++) {
@@ -384,7 +392,8 @@ export function composePerfectBreathPlan(
   }
 
   const items: FractionalPlanItem[] = [];
-  let cursor = 0;
+  const leadIn = firstSpeechLeadInSec(atTimelineStart);
+  let cursor = leadIn;
 
   if (includePerfectBreathOpenVoice(durationSec, atTimelineStart)) {
     cursor = pushVoice(items, cursor, map, voiceId, ID_OPEN, "intro");

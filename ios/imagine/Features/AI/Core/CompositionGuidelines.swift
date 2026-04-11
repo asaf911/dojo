@@ -413,7 +413,7 @@ final class CompositionGuidelinesLoader {
         // This ensures "anxious about my meeting" is detected as "anxiety" not just ignored
         // and "relaxing evening" is detected as "evening" not "relaxation"
         let priorityOrder = [
-            "sleep",      // Highest priority - sleep needs special handling (no GB)
+            "sleep",      // Highest priority - sleep needs special handling (GB omitted unless user asks)
             "anxiety",    // Emotional states - specific needs
             "stress",     // Emotional states
             "gratitude",  // Specific practice type
@@ -449,7 +449,7 @@ final class CompositionGuidelinesLoader {
         return rule.vizCue
     }
     
-    /// Check if GB should be skipped (for sleep meditations)
+    /// When true, prefer omitting GB (e.g. sleep keywords). AI sessions omit GB by default regardless; this only reflects guideline `skip_for` keywords.
     /// Prioritizes the actual "User request:" over profile context
     func shouldSkipGentleBell(prompt: String) -> Bool {
         // Extract just the user request if present (ignore profile goals like "Sleep better")

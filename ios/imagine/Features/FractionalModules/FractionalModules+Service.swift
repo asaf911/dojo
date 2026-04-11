@@ -200,12 +200,27 @@ extension FractionalModules.Service {
                 }
             }
 
+            /// Matches `FRACTIONAL_FIRST_SPEECH_OFFSET_SEC` on the server (INT_FRAC already encodes this in its timeline).
+            let firstSpeechLeadInSec = (atTimelineStart && moduleId != "INT_FRAC") ? 7 : 0
+            let shiftedItems: [FractionalModules.PlanItem] = firstSpeechLeadInSec == 0
+                ? items
+                : items.map {
+                    FractionalModules.PlanItem(
+                        atSec: $0.atSec + firstSpeechLeadInSec,
+                        clipId: $0.clipId,
+                        role: $0.role,
+                        text: $0.text,
+                        url: $0.url,
+                        parallel: $0.parallel
+                    )
+                }
+
             return FractionalModules.Plan(
                 planId: "preview-\(moduleId)-\(durationSec)",
                 moduleId: moduleId,
                 durationSec: durationSec,
                 voiceId: voiceId,
-                items: items
+                items: shiftedItems
             )
         }
     )

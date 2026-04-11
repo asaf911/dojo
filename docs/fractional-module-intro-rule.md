@@ -41,13 +41,23 @@ Constant: **`FRACTIONAL_INTRO_MIN_DURATION_SEC`** (`300`) in [`functions/src/fra
 
 ---
 
+## First narration offset (separate from framing intro)
+
+When **`atTimelineStart`** is **true**, the **first spoken voice cue** in `NF_FRAC`, `IM_FRAC`, body scan, and `PB_FRAC` is scheduled **`FRACTIONAL_FIRST_SPEECH_OFFSET_SEC`** (7 seconds) after the fractional block begins on the session clock. Background audio / timer may run from second 0; narration follows the same rule as layered intro (`INT_FRAC`), which already places first speech at 7s inside its window — **`INT_FRAC` does not receive a second offset.**
+
+When **`atTimelineStart`** is **false**, there is no extra lead-in for that block.
+
+Constant: **`FRACTIONAL_FIRST_SPEECH_OFFSET_SEC`** in [`functions/src/fractionalSessionConstants.ts`](../functions/src/fractionalSessionConstants.ts).
+
+---
+
 ## Implementation map (for agents)
 
 | Module | File | Notes |
 |--------|------|--------|
-| NF / IM | [`functions/src/fractionalComposer.ts`](../functions/src/fractionalComposer.ts) | `composeFractionalPlan(..., atTimelineStart)` → `selectClips` |
-| Body scan | [`functions/src/bodyScanTierPlan.ts`](../functions/src/bodyScanTierPlan.ts) | `BodyScanTierPlanParams.atTimelineStart` → `chooseBodyScanPlan` |
-| Perfect Breath | [`functions/src/perfectBreathPlan.ts`](../functions/src/perfectBreathPlan.ts) | `includePerfectBreathOpenVoice` + `composePerfectBreathPlan(..., atTimelineStart)` |
+| NF / IM | [`functions/src/fractionalComposer.ts`](../functions/src/fractionalComposer.ts) | `composeFractionalPlan(..., atTimelineStart)` → `selectClips` + `scheduleNfImPlan` on shortened budget, then shift `atSec` by `FRACTIONAL_FIRST_SPEECH_OFFSET_SEC` when at timeline start |
+| Body scan | [`functions/src/bodyScanTierPlan.ts`](../functions/src/bodyScanTierPlan.ts) | `BodyScanTierPlanParams.atTimelineStart` → feasibility uses `durationSec − offset`; timeline `t` starts at offset |
+| Perfect Breath | [`functions/src/perfectBreathPlan.ts`](../functions/src/perfectBreathPlan.ts) | `includePerfectBreathOpenVoice` + `composePerfectBreathPlan(..., atTimelineStart)`; cursor / estimates seed with offset when at timeline start |
 | Intro | [`functions/src/introFractionalPlan.ts`](../functions/src/introFractionalPlan.ts) | `composeIntroFractionalPlan` — **ignores** NF/IM framing intro rule |
 | HTTP entry | [`functions/src/index.ts`](../functions/src/index.ts) | `postFractionalPlan` parses `atTimelineStart`, passes into composers (not used by `INT_FRAC`) |
 | iOS (dev / standalone) | [`ios/imagine/Features/FractionalModules/FractionalModules+Service.swift`](../ios/imagine/Features/FractionalModules/FractionalModules+Service.swift) | Sends `atTimelineStart: true` from the Fractional Modules flow |

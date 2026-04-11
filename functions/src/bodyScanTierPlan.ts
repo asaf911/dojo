@@ -15,7 +15,10 @@
  */
 
 import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
-import { FRACTIONAL_INTRO_MIN_DURATION_SEC } from "./fractionalSessionConstants";
+import {
+  FRACTIONAL_FIRST_SPEECH_OFFSET_SEC,
+  FRACTIONAL_INTRO_MIN_DURATION_SEC,
+} from "./fractionalSessionConstants";
 
 export type BodyTier = "macro" | "regional" | "micro";
 export type BodyScanDirection = "up" | "down";
@@ -39,6 +42,7 @@ export interface BodyScanTierPlanParams {
 }
 
 const ESTIMATED_CLIP_SEC = 5;
+/** Silence between body-scan intro / entry segments (not the global first-speech offset). */
 const BRIDGE_SEC = 7;
 const BODY_GAP_MIN = 15;
 
@@ -333,6 +337,9 @@ export function chooseBodyScanPlan(
   } = params;
   const framingIntroAllowed =
     durationSec >= FRACTIONAL_INTRO_MIN_DURATION_SEC || atTimelineStart;
+  const fitSec = atTimelineStart
+    ? Math.max(1, durationSec - FRACTIONAL_FIRST_SPEECH_OFFSET_SEC)
+    : durationSec;
   const useIntroShort = framingIntroAllowed && introShort;
   const useIntroLong = framingIntroAllowed && introLong;
   const intros =
@@ -385,7 +392,7 @@ export function chooseBodyScanPlan(
             k,
             allInt
           );
-          if (minT <= durationSec) {
+          if (minT <= fitSec) {
             feasible.push({
               triple,
               kIntegration: k,
@@ -448,7 +455,9 @@ export function composeBodyScanTierPlan(
   clips: FractionalClip[],
   params: BodyScanTierPlanParams
 ): FractionalPlan {
-  const { durationSec, voiceId, moduleId, includeEntry } = params;
+  const { durationSec, voiceId, moduleId, includeEntry, atTimelineStart } =
+    params;
+  const leadInSec = atTimelineStart ? FRACTIONAL_FIRST_SPEECH_OFFSET_SEC : 0;
 
   const choice = chooseBodyScanPlan(clips, params);
   const { intros, entry, bodyInstructions, integrations } = choice;
@@ -465,11 +474,14 @@ export function composeBodyScanTierPlan(
   const bridges = bridgesSec(intros.length, Boolean(includeEntry && entry));
   const nVar = variableGapSlotCount(nB, kI);
   const fixedNonVar = audioTotal + bridges;
-  const budgetForVariableGaps = Math.max(0, durationSec - fixedNonVar);
+  const budgetForVariableGaps = Math.max(
+    0,
+    durationSec - leadInSec - fixedNonVar
+  );
   const varGaps = distributeGapsEqual(budgetForVariableGaps, nVar);
 
   const items: FractionalPlanItem[] = [];
-  let t = 0;
+  let t = leadInSec;
   let gi = 0;
   const gapBetweenPartsRole = new Set(["instruction", "integration"]);
 

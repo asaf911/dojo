@@ -1,6 +1,7 @@
 /**
  * AI meditation generation: deterministic structure + AI metadata only.
- * Structure is computed by phaseAllocation + cueBuilder; AI provides title, description, sounds.
+ * Structure is computed by phaseAllocation + cueBuilder (no automatic Gentle Bell; GB only if product adds it elsewhere).
+ * AI provides title, description, sounds.
  */
 
 import * as functions from "firebase-functions";

@@ -123,4 +123,11 @@ test("expandFractionalCues: sole PB_FRAC row still gets OPEN for 2m when first f
     out.some((c) => c.id === "PBV_OPEN_000_INTRO_ASAF"),
     "single PB row is first fractional — OPEN allowed for >60s window"
   );
+  const open = out.find((c) => c.id === "PBV_OPEN_000_INTRO_ASAF");
+  assert.ok(open);
+  assert.equal(
+    open!.trigger,
+    `s${INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC}`,
+    "first PB voice at global first-speech offset when first fractional"
+  );
 });

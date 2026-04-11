@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { test } from "node:test";
 import { composeFractionalPlan, type FractionalClip } from "./fractionalComposer";
+import { FRACTIONAL_FIRST_SPEECH_OFFSET_SEC } from "./fractionalSessionConstants";
 import { clipDurationSec } from "./fractionalTimeline";
 
 const catalogDir = path.join(__dirname, "..", "catalogs");
@@ -112,4 +113,11 @@ test("composeFractionalPlan NF includes intro under 5m when at timeline start (c
   const plan = composeFractionalPlan(nfClips, 180, "Asaf", "NF_FRAC", true);
   assert.ok(plan.items.some((i) => i.role === "intro"));
   assert.equal(plan.items[0]?.clipId, "NF_C001");
+  assert.equal(plan.items[0]?.atSec, FRACTIONAL_FIRST_SPEECH_OFFSET_SEC);
+});
+
+test("composeFractionalPlan NF first cue at 0 when not at timeline start (catalog)", () => {
+  const plan = composeFractionalPlan(nfClips, 180, "Asaf", "NF_FRAC", false);
+  assert.ok(plan.items.length > 0);
+  assert.equal(plan.items[0]?.atSec, 0);
 });

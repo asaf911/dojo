@@ -1,6 +1,6 @@
 /**
  * Maps phase allocation to cue IDs and triggers.
- * Flow: Intro > Breath > Relax > Focus > Insight > GB (unless sleep)
+ * Flow: Intro > Breath > Relax > Focus > Insight (AI path — no automatic end bell; users add GB in Timer if desired).
  */
 
 import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
@@ -99,10 +99,6 @@ function buildCuesFromAllocationLegacy(
     cues.push({ id: insightId, trigger: String(currentMinute) });
   }
 
-  if (!prefs.isSleep) {
-    cues.push({ id: "GB", trigger: "end" });
-  }
-
   return cues;
 }
 
@@ -172,10 +168,6 @@ function buildCuesFromAllocationFractional(
   if (insight > 0) {
     const insightId = prefs.isEvening ? "RT" : "VC";
     cues.push({ id: insightId, trigger: String(currentMinute) });
-  }
-
-  if (!prefs.isSleep) {
-    cues.push({ id: "GB", trigger: "end" });
   }
 
   return cues;
