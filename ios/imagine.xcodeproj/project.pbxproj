@@ -138,9 +138,7 @@
 		A56A5E002D6D962800508EB1 /* CueConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */; };
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
-		B5F1E0172E9A000300508EB1 /* FractionalCueID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */; };
 		A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */; };
-		B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */; };
 		A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */; };
 		A56B87AA2D35EE00002BEAD2 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */; };
 		A56B87AE2D3637FB002BEAD2 /* MeditationSessionTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */; };
@@ -225,6 +223,8 @@
 		B1A1A1A12F00000100AAAAAA /* ThinkingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */; };
 		B211CA907177F10959DD6D1D /* JourneyPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5EE1D42B8780FD4D6C1C08 /* JourneyPhase.swift */; };
 		B467EF59E98773AD292FECE4 /* SessionHistoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCDDD51DE98D6EB915C3639 /* SessionHistoryQuery.swift */; };
+		B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */; };
+		B5F1E0172E9A000300508EB1 /* FractionalCueID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */; };
 		B62F5D1141715141CDE098FC /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D57F3366E32AA6519AD0E5 /* HealthKitManager.swift */; };
 		B86AF82FAA4095CA7903AE1C /* PreviewEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 413FC5DED2755AAD9ABE5249 /* PreviewEnvironment.swift */; };
 		B90D3816EE4D55569B045F32 /* AnalyticsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */; };
@@ -540,9 +540,7 @@
 		A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueConfigurationView.swift; sourceTree = "<group>"; };
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
-		B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalCueID.swift; sourceTree = "<group>"; };
 		A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationConfiguration.swift; sourceTree = "<group>"; };
-		B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPrefixTimeline.swift; sourceTree = "<group>"; };
 		A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationView.swift; sourceTree = "<group>"; };
 		A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
 		A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationSessionTimer.swift; sourceTree = "<group>"; };
@@ -625,6 +623,8 @@
 		B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsServiceProtocol.swift; sourceTree = "<group>"; };
 		B36CFA61BDB83691B4FA7C13 /* ProductJourneyManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProductJourneyManager.swift; sourceTree = "<group>"; };
 		B3FB30E6D09AC203A37C5936 /* FitbitHRProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FitbitHRProvider.swift; sourceTree = "<group>"; };
+		B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPrefixTimeline.swift; sourceTree = "<group>"; };
+		B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalCueID.swift; sourceTree = "<group>"; };
 		B64A5BD069478A86C6E10B88 /* AuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		B6B6ED65E12C457BE929990D /* PushNotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		B81E5C5B0A6DC748DE2672C8 /* HeartRateResults.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartRateResults.swift; sourceTree = "<group>"; };
@@ -2846,7 +2846,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 238;
+				CURRENT_PROJECT_VERSION = 239;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -2890,7 +2890,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 238;
+				CURRENT_PROJECT_VERSION = 239;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
