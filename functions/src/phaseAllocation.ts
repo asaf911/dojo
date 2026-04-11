@@ -206,7 +206,7 @@ export function extractSessionPreferences(prompt: string): SessionPreferences {
       lower.includes("without breath") ||
       lower.includes("remove breath"),
     isSleep:
-      /sleep|nap|bedtime|night|fall asleep|drift off|slumber|insomnia|rest/.test(
+      /sleep|nap|bedtime|fall asleep|drift off|slumber|insomnia|good\s+night/.test(
         lower
       ),
     isMorning: /morning|wake up|start day|energize|sunrise/.test(lower),

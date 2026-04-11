@@ -18,6 +18,8 @@ struct AIServerRequestContext: Encodable {
     var lastMeditationDuration: Int?
     /// Last N background sound IDs used; server down-weights these for variety
     var recentBackgroundSounds: [String]?
+    /// Optional canonical theme tags (`morning`, `evening`, `noon`, `night`, `sleep`, `gratitude`); merged with prompt and `exploreInfo.timeOfDay` on the server
+    var meditationThemes: [String]?
 
     struct PathInfo: Encodable {
         let nextStepTitle: String

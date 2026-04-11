@@ -6,6 +6,7 @@
 import * as functions from "firebase-functions";
 import { generateAIMeditation } from "./aiMeditation";
 import type { LoadedCatalogs } from "./aiMeditation";
+import type { FractionalCompositionContext } from "./meditationThemes";
 import {
   applyPracticeRelativeIntroPrefix,
   expandFractionalCues,
@@ -28,6 +29,8 @@ export interface AIRequestContext {
   lastMeditationDuration?: number;
   /** Last N background sound IDs used; server down-weights these for variety */
   recentBackgroundSounds?: string[];
+  /** Optional canonical theme tags (morning, evening, noon, night, sleep, gratitude); merged with explore + prompt */
+  meditationThemes?: string[];
 }
 
 export interface AIRequestBody {
@@ -290,7 +293,8 @@ function buildMeditationPackage(
     description?: string | null;
   },
   catalogs: LoadedCatalogs,
-  voiceId: string
+  voiceId: string,
+  fractionalCompositionContext?: FractionalCompositionContext
 ): MeditationPackage {
   const soundMap = new Map(catalogs.backgroundSounds.map((s) => [s.id, s]));
   const beatMap = new Map(catalogs.binauralBeats.map((b) => [b.id, b]));
@@ -356,7 +360,12 @@ function buildMeditationPackage(
     meditation.duration
   );
   // Expand fractional modules (e.g. NF_FRAC) into second-precision clips
-  const expandedCues = expandFractionalCues(resolvedCues, meditation.duration, voiceId);
+  const expandedCues = expandFractionalCues(
+    resolvedCues,
+    meditation.duration,
+    voiceId,
+    fractionalCompositionContext
+  );
 
   return {
     id: randomUUID(),
@@ -399,15 +408,23 @@ export async function processAIRequest(
   if (intent === "meditation") {
     const catalogs = await loadCatalogs();
     const voiceId = body.voiceId ?? "Asaf";
-    const { meditation, usedFallback } = await generateAIMeditation({
-      prompt,
-      conversationHistory,
+    const { meditation, usedFallback, fractionalCompositionContext } =
+      await generateAIMeditation({
+        prompt,
+        conversationHistory,
+        catalogs,
+        apiKey,
+        lastMeditationDuration: context.lastMeditationDuration,
+        recentBackgroundSounds: context.recentBackgroundSounds,
+        exploreTimeOfDay: context.exploreInfo?.timeOfDay ?? null,
+        clientMeditationThemes: context.meditationThemes,
+      });
+    const pkg = buildMeditationPackage(
+      meditation,
       catalogs,
-      apiKey,
-      lastMeditationDuration: context.lastMeditationDuration,
-      recentBackgroundSounds: context.recentBackgroundSounds,
-    });
-    const pkg = buildMeditationPackage(meditation, catalogs, voiceId);
+      voiceId,
+      fractionalCompositionContext
+    );
     functions.logger.info(`${TAG} success intent=meditation id=${pkg.id} duration=${pkg.duration} usedFallback=${usedFallback}`);
     return { intent: "meditation", content: { type: "meditation", meditation: pkg } };
   }

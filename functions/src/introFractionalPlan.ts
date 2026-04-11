@@ -56,17 +56,25 @@ export function introWindowSecFromSessionDurationSec(
 /** Sessions ≤60s are treated as “1 minute” for intro: one clip only, minimal window. */
 const ULTRA_SHORT_SESSION_SEC = 60;
 
+export type GreetingFamily =
+  | "morning"
+  | "evening"
+  | "neutral"
+  | "returning";
+
 export type ComposeIntroFractionalPlanOptions = {
   /**
    * Total meditation length in seconds. Drives ultra-short (one clip) vs greedy fill.
    * When omitted, defaults to the intro `durationSec` argument (window budget).
    */
   sessionDurationSec?: number;
+  /**
+   * When set, greeting layer prefers this family; if no clip fits, falls back to random family behavior.
+   */
+  greetingFamilyHint?: GreetingFamily;
 };
 
 type Layer = "greeting" | "arrival" | "orientation";
-
-type GreetingFamily = "morning" | "evening" | "neutral" | "returning";
 
 const GREETING_FAMILY: Record<string, GreetingFamily> = {
   INT_GRT_100: "morning",
@@ -134,8 +142,17 @@ function fitsBudget(
 
 function pickGreeting(
   byLayer: Map<Layer, FractionalClip[]>,
-  rng: () => number
+  rng: () => number,
+  familyHint?: GreetingFamily
 ): FractionalClip | undefined {
+  if (familyHint) {
+    const hinted = (byLayer.get("greeting") ?? []).filter(
+      (c) => GREETING_FAMILY[c.clipId] === familyHint
+    );
+    if (hinted.length > 0) {
+      return hinted[Math.floor(rng() * hinted.length)]!;
+    }
+  }
   const families: GreetingFamily[] = [
     "morning",
     "evening",
@@ -211,11 +228,12 @@ const TEMPLATES: Template[] = [
 function buildSequenceForTemplate(
   tmpl: Template,
   byLayer: Map<Layer, FractionalClip[]>,
-  rng: () => number
+  rng: () => number,
+  greetingFamilyHint?: GreetingFamily
 ): FractionalClip[] {
   const out: FractionalClip[] = [];
   if (tmpl.g) {
-    const g = pickGreeting(byLayer, rng);
+    const g = pickGreeting(byLayer, rng, greetingFamilyHint);
     if (!g) return [];
     out.push(g);
   }
@@ -233,7 +251,8 @@ function selectSingleClipUltraShort(
   byLayer: Map<Layer, FractionalClip[]>,
   windowSec: number,
   moduleId: string,
-  rng: () => number
+  rng: () => number,
+  greetingFamilyHint?: GreetingFamily
 ): FractionalClip[] {
   const ori = pickOrientation(byLayer);
   if (ori && fitsBudget([ori], windowSec, moduleId)) return [ori];
@@ -241,6 +260,16 @@ function selectSingleClipUltraShort(
   const arrivals = shuffle(sortArrivalsNarrativeOrder(byLayer.get("arrival") ?? []), rng);
   for (const c of arrivals) {
     if (fitsBudget([c], windowSec, moduleId)) return [c];
+  }
+
+  if (greetingFamilyHint) {
+    const hinted = (byLayer.get("greeting") ?? []).filter(
+      (c) => GREETING_FAMILY[c.clipId] === greetingFamilyHint
+    );
+    const hintedShuffled = shuffle(hinted, rng);
+    for (const c of hintedShuffled) {
+      if (fitsBudget([c], windowSec, moduleId)) return [c];
+    }
   }
 
   const greetings = shuffle(byLayer.get("greeting") ?? [], rng);
@@ -258,7 +287,8 @@ function selectGreedySequential(
   byLayer: Map<Layer, FractionalClip[]>,
   windowSec: number,
   moduleId: string,
-  rng: () => number
+  rng: () => number,
+  greetingFamilyHint?: GreetingFamily
 ): FractionalClip[] {
   const seq: FractionalClip[] = [];
 
@@ -271,7 +301,7 @@ function selectGreedySequential(
     return true;
   };
 
-  const g = pickGreeting(byLayer, rng);
+  const g = pickGreeting(byLayer, rng, greetingFamilyHint);
   if (g) tryPush(g);
 
   for (const a of sortArrivalsNarrativeOrder(byLayer.get("arrival") ?? [])) {
@@ -290,7 +320,8 @@ function selectIntroSequence(
   windowSec: number,
   moduleId: string,
   rng: () => number,
-  sessionDurationSec: number
+  sessionDurationSec: number,
+  greetingFamilyHint?: GreetingFamily
 ): FractionalClip[] {
   const byLayer = new Map<Layer, FractionalClip[]>();
   for (const c of clips) {
@@ -301,16 +332,33 @@ function selectIntroSequence(
   }
 
   if (sessionDurationSec <= ULTRA_SHORT_SESSION_SEC) {
-    const one = selectSingleClipUltraShort(byLayer, windowSec, moduleId, rng);
+    const one = selectSingleClipUltraShort(
+      byLayer,
+      windowSec,
+      moduleId,
+      rng,
+      greetingFamilyHint
+    );
     if (one.length > 0) return one;
   } else {
-    const greedy = selectGreedySequential(byLayer, windowSec, moduleId, rng);
+    const greedy = selectGreedySequential(
+      byLayer,
+      windowSec,
+      moduleId,
+      rng,
+      greetingFamilyHint
+    );
     if (greedy.length > 0) return greedy;
   }
 
   for (const tmpl of TEMPLATES) {
     for (let trial = 0; trial < 25; trial++) {
-      const seq = buildSequenceForTemplate(tmpl, byLayer, rng);
+      const seq = buildSequenceForTemplate(
+        tmpl,
+        byLayer,
+        rng,
+        greetingFamilyHint
+      );
       if (seq.length === 0) continue;
       if (fitsBudget(seq, windowSec, moduleId)) return seq;
     }
@@ -397,7 +445,8 @@ export function composeIntroFractionalPlanWithRng(
     durationSec,
     moduleId,
     rng,
-    sessionSec
+    sessionSec,
+    options?.greetingFamilyHint
   );
   const items = toPlanItems(selected, voiceId, moduleId);
 

@@ -147,7 +147,7 @@ class AIRequestManager: ObservableObject {
                 logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
 
                 // Build context for path/explore guidance; capture step/session for notifications
-                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?) in
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds, exploreMeditationThemes) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?, [String]?) in
                     ExploreRecommendationManager.shared.loadAudioFiles()
                     let pm = PathProgressManager.shared
                     let em = ExploreRecommendationManager.shared
@@ -164,6 +164,7 @@ class AIRequestManager: ObservableObject {
                     }
                     var explore: AIServerRequestContext.ExploreInfo?
                     var session: AudioFile?
+                    var meditationThemes: [String]?
                     if em.shouldRecommendExplore() || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy),
                        let s = em.getTimeAppropriateSession() {
                         explore = AIServerRequestContext.ExploreInfo(
@@ -171,19 +172,26 @@ class AIRequestManager: ObservableObject {
                             timeOfDay: em.getCurrentTimeOfDayName()
                         )
                         session = s
+                        switch ExploreRecommendationManager.TimeOfDay.current() {
+                        case .morning: meditationThemes = ["morning"]
+                        case .noon: meditationThemes = ["noon"]
+                        case .evening: meditationThemes = ["evening"]
+                        case .night: meditationThemes = ["sleep"]
+                        }
                     }
                     let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
                         ? strongSelf.lastMeditation?.meditationConfiguration.duration
                         : nil
                     let recent: [String]? = strongSelf.recentBackgroundSoundIds.isEmpty ? nil : strongSelf.recentBackgroundSoundIds
-                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent)
+                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent, meditationThemes)
                 }
 
                 let context = AIServerRequestContext(
                     pathInfo: pathInfo,
                     exploreInfo: exploreInfo,
                     lastMeditationDuration: lastMeditationDuration,
-                    recentBackgroundSounds: recentBackgroundSounds
+                    recentBackgroundSounds: recentBackgroundSounds,
+                    meditationThemes: exploreMeditationThemes
                 )
                 let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
 

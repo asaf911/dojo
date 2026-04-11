@@ -62,6 +62,23 @@ test("INT_FRAC: first cue at 7s", () => {
   assert.equal(plan.items[0]!.atSec, INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC);
 });
 
+test("INT_FRAC: greetingFamilyHint morning only selects morning greeting clips", () => {
+  const plan = composeIntroFractionalPlanWithRng(
+    fullCatalog,
+    120,
+    "Asaf",
+    "INT_FRAC",
+    () => 0.99,
+    {
+      sessionDurationSec: 600,
+      greetingFamilyHint: "morning",
+    }
+  );
+  const grt = plan.items.filter((i) => i.clipId.startsWith("INT_GRT_"));
+  assert.ok(grt.length >= 1);
+  assert.ok(grt.every((i) => i.clipId === "INT_GRT_100"));
+});
+
 test("INT_FRAC: timeline respects end pause", () => {
   const plan = composeIntroFractionalPlanWithRng(
     fullCatalog,

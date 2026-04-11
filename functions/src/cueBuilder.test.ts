@@ -109,6 +109,40 @@ test("buildCuesFromAllocation (dev): practiceDurationMinutes 4 omits INT_FRAC", 
   }
 });
 
+test("buildCuesFromAllocation (dev): theme gratitude + focus uses MV_GR_FRAC when no IM/NF", () => {
+  const prev = process.env.GCLOUD_PROJECT;
+  process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+  try {
+    const cues = buildCuesFromAllocation(
+      {
+        intro: 0,
+        breath: 1,
+        relax: 2,
+        focus: 5,
+        insight: 0,
+        focusType: undefined,
+      },
+      {
+        noBreathwork: false,
+        isSleep: false,
+        isMorning: false,
+        isEvening: false,
+      },
+      {
+        practiceDurationMinutes: 10,
+        themeCueHints: { focusFractionalId: "MV_GR_FRAC" },
+      }
+    );
+    assert.ok(cues.some((c) => c.id === "MV_GR_FRAC"));
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GCLOUD_PROJECT;
+    } else {
+      process.env.GCLOUD_PROJECT = prev;
+    }
+  }
+});
+
 test("buildCuesFromAllocation (dev): practiceDurationMinutes 5 includes INT_FRAC", () => {
   const prev = process.env.GCLOUD_PROJECT;
   process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";

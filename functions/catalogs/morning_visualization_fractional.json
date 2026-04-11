@@ -5,8 +5,11 @@
   "clips": [
     {
       "clipId": "MVK_C001",
-      "role": "intro",
+      "role": "instruction",
       "order": 100,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Shift attention inward",
       "text": "Direct your attention to your mind's eye",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
@@ -16,8 +19,11 @@
     },
     {
       "clipId": "MVK_C002",
-      "role": "intro",
+      "role": "instruction",
       "order": 110,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Visualize current room",
       "text": "Visualize the room you are currently in",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3",
@@ -27,8 +33,11 @@
     },
     {
       "clipId": "MVK_C003",
-      "role": "intro",
+      "role": "instruction",
       "order": 120,
+      "priority": "p2",
+      "contentTrack": "Shared",
+      "flowPurpose": "Add environmental detail",
       "text": "Notice the colors, textures, light, and space around you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3",
@@ -98,6 +107,8 @@
       "clipId": "MVK_C009",
       "role": "reminder",
       "order": 420,
+      "contentTrack": "Key Moments",
+      "reminderPurpose": "Reinforce flow",
       "text": "Continue moving through your day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3",
@@ -162,8 +173,11 @@
     },
     {
       "clipId": "MVG_C001",
-      "role": "intro",
+      "role": "instruction",
       "order": 100,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Shift attention inward",
       "text": "Direct your attention to your mind's eye",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
@@ -173,8 +187,11 @@
     },
     {
       "clipId": "MVG_C002",
-      "role": "intro",
+      "role": "instruction",
       "order": 110,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Visualize current room",
       "text": "Visualize the room you are currently in",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3",
@@ -184,8 +201,11 @@
     },
     {
       "clipId": "MVG_C003",
-      "role": "intro",
+      "role": "instruction",
       "order": 120,
+      "priority": "p2",
+      "contentTrack": "Shared",
+      "flowPurpose": "Add environmental detail",
       "text": "Notice the colors, textures, light, and space around you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3",
@@ -255,6 +275,8 @@
       "clipId": "MVG_C009",
       "role": "reminder",
       "order": 420,
+      "contentTrack": "Morning Gratitude",
+      "reminderPurpose": "Reinforce flow",
       "text": "Continue moving through your day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3",

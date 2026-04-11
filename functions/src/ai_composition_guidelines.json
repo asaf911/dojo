@@ -1,7 +1,7 @@
 {
-  "version": "4.2.0",
-  "last_updated": "2026-04-10",
-  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus). For AI sessions 1-4 minutes, omit INT_FRAC; for 5+ minutes, include INT_FRAC@start. Do not include Gentle Bell (GB) at the end unless the user explicitly asks for a closing bell; users can add GB in the Timer builder.",
+  "version": "4.3.0",
+  "last_updated": "2026-04-11",
+  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus, MV: Morning Key Moments / Morning Gratitude fractional modules). Theme tags (morning, evening, noon, night, sleep, gratitude) from prompt, LLM extract, client context, and Explore time-of-day bias INT_FRAC greeting family and, when focus minutes > 0, may select MV_KM_FRAC or MV_GR_FRAC instead of IM_FRAC unless the user chose IM or NF. User IM/NF always wins. For AI sessions 1-4 minutes, omit INT_FRAC; for 5+ minutes, include INT_FRAC@start. Do not include Gentle Bell (GB) at the end unless the user explicitly asks for a closing bell; users can add GB in the Timer builder.",
 
   "priority_detection": {
     "description": "When user explicitly requests a specific exercise, give it 50% of session time",
@@ -50,7 +50,7 @@
       "description": "Full-duration guided audio. The audio file IS the exercise.",
       "time_allocation": "exact duration of the module",
       "behavior": "Occupies its full duration in the session timeline. No additional quiet time needed.",
-      "modules": ["INT_FRAC", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB_FRAC", "IM_FRAC", "NF_FRAC"]
+      "modules": ["INT_FRAC", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB_FRAC", "IM_FRAC", "NF_FRAC", "MV_KM_FRAC", "MV_GR_FRAC"]
     },
     "trigger_cue": {
       "description": "Short audio trigger that instructs user to BEGIN a practice. User continues in silence.",

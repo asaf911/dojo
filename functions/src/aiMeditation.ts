@@ -14,6 +14,12 @@ import {
   type UserStructureOverrides,
 } from "./phaseAllocation";
 import { buildCuesFromAllocation } from "./cueBuilder";
+import {
+  type FractionalCompositionContext,
+  normalizeThemeList,
+  resolveMeditationThemes,
+  themeCompositionHints,
+} from "./meditationThemes";
 
 export interface AIGeneratedTimer {
   duration: number;
@@ -90,6 +96,8 @@ interface AIStructureRequirements {
   focusType?: "IM" | "NF";
   /** Body scan direction when user specifies (head-to-toe vs feet-to-head). */
   bodyScanDirection?: "up" | "down";
+  /** Subset of canonical theme ids: morning, evening, noon, night, sleep, gratitude */
+  themes?: string[];
 }
 
 async function extractUserStructureRequirements(
@@ -100,7 +108,9 @@ async function extractUserStructureRequirements(
   const systemPrompt = `You extract meditation structure requirements from the user's message.
 The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath"), focus type.
 
-Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down").
+Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down"), themes (array of strings, optional).
+
+themes: optional array, each value one of: morning, evening, noon, night, sleep, gratitude. Set when the user clearly wants that theme (e.g. "morning gratitude" → ["gratitude","morning"] or ["morning","gratitude"]).
 - focusType "IM" = mantra, chant, affirmation, I AM
 - focusType "NF" = nostril, nostril focus, nostril breathing, alternate nostril, nasal focus, breath focus on nose
 IMPORTANT: If the user mentions nostril, nose, or nasal breathing/focus, ALWAYS set focusType to "NF".
@@ -167,12 +177,17 @@ Return ONLY valid JSON. No other text.`;
     s = s.replace(/,\s*}/g, "}");
     s = s.replace(/,\s*]/g, "]");
 
-    const raw = JSON.parse(s) as AIStructureRequirements;
+    const raw = JSON.parse(s) as AIStructureRequirements & { themes?: unknown };
     const bodyScanDirection =
       raw.bodyScanDirection === "up" || raw.bodyScanDirection === "down"
         ? raw.bodyScanDirection
         : undefined;
-    const result: AIStructureRequirements = { ...raw, bodyScanDirection };
+    const llmThemes = normalizeThemeList(raw.themes);
+    const result: AIStructureRequirements = {
+      ...raw,
+      bodyScanDirection,
+      themes: llmThemes.length > 0 ? llmThemes : undefined,
+    };
     functions.logger.info(`${TAG_AI} extractStructure raw=${JSON.stringify(result)}`);
     const hasOverride =
       result.mantraMinutes != null ||
@@ -180,7 +195,8 @@ Return ONLY valid JSON. No other text.`;
       result.breathMinutes != null ||
       result.focusType != null ||
       bodyScanDirection != null;
-    return hasOverride ? result : null;
+    const hasThemes = llmThemes.length > 0;
+    return hasOverride || hasThemes ? result : null;
   } catch (e) {
     functions.logger.warn(`${TAG_AI} extractStructure error: ${e}`);
     return null;
@@ -306,11 +322,21 @@ export interface GenerateAIMeditationInput {
   apiKey: string;
   /** Last N background sound IDs used; down-weighted for variety */
   recentBackgroundSounds?: string[];
+  /** iOS Explore context.displayName — merged into theme resolution on the server */
+  exploreTimeOfDay?: string | null;
+  /** Explicit theme tags from the client (canonical ids) */
+  clientMeditationThemes?: string[];
 }
+
+export type { FractionalCompositionContext } from "./meditationThemes";
 
 export async function generateAIMeditation(
   input: GenerateAIMeditationInput
-): Promise<{ meditation: AIGeneratedTimer; usedFallback: boolean }> {
+): Promise<{
+  meditation: AIGeneratedTimer;
+  usedFallback: boolean;
+  fractionalCompositionContext: FractionalCompositionContext;
+}> {
   const {
     prompt,
     conversationHistory = [],
@@ -319,6 +345,8 @@ export async function generateAIMeditation(
     catalogs,
     apiKey,
     recentBackgroundSounds,
+    exploreTimeOfDay,
+    clientMeditationThemes,
   } = input;
 
   let duration =
@@ -359,6 +387,18 @@ export async function generateAIMeditation(
     ? allocatePhasesFromOverrides(duration, overrides, prefs)
     : allocatePhases(duration, prefs);
 
+  const llmThemeTags = normalizeThemeList(userOverrides?.themes);
+  const themes = resolveMeditationThemes({
+    prompt,
+    conversationHistory,
+    clientThemes: clientMeditationThemes ?? [],
+    llmThemes: llmThemeTags,
+    exploreTimeOfDay: exploreTimeOfDay ?? null,
+    prefs,
+  });
+  const { fractionalContext: fractionalCompositionContext, cueHints } =
+    themeCompositionHints(themes, prefs, overrides, allocation.focus);
+
   const bodyScanDirectionForCue =
     userOverrides?.bodyScanDirection === "up" ||
     userOverrides?.bodyScanDirection === "down"
@@ -368,6 +408,7 @@ export async function generateAIMeditation(
   const cues = buildCuesFromAllocation(allocation, prefs, {
     bodyScanDirection: bodyScanDirectionForCue,
     practiceDurationMinutes: duration,
+    themeCueHints: cueHints,
   });
 
   const structureContext = cues.map((c) => `${c.id}@${c.trigger}`).join(", ");
@@ -435,5 +476,5 @@ export async function generateAIMeditation(
     description: metadata.description,
   };
 
-  return { meditation, usedFallback };
+  return { meditation, usedFallback, fractionalCompositionContext };
 }

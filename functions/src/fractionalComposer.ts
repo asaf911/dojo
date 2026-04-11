@@ -38,6 +38,7 @@ import {
   composeMorningVisualizationPlan,
   isMorningVisualizationModuleId,
 } from "./morningVisualizationPlan";
+import type { FractionalCompositionContext } from "./meditationThemes";
 
 export { FRACTIONAL_INSTRUCTION_PAIR_GAPS } from "./fractionalTimeline";
 
@@ -73,6 +74,12 @@ export interface FractionalClip {
   integrationOrder?: number;
   /** INT_FRAC: greeting | arrival | orientation layer (see introFractionalPlan.ts). */
   layer?: "greeting" | "arrival" | "orientation";
+  /** Morning viz (MV_*): product track label for inventory / QA (e.g. Key Moments, Morning Gratitude). */
+  contentTrack?: string;
+  /** Morning viz reminder: intent within flow (e.g. Reinforce flow). */
+  reminderPurpose?: string;
+  /** Short product label for catalog / QA (e.g. orientation step intent). */
+  flowPurpose?: string;
 }
 
 /** Optional SFX (or second voice) played in parallel with the primary clip at the same session second. */
@@ -477,7 +484,8 @@ export type ResolvedCue = {
 export function expandFractionalCues(
   cues: ResolvedCue[],
   durationMinutes: number,
-  voiceId: string
+  voiceId: string,
+  compositionContext?: FractionalCompositionContext
 ): ResolvedCue[] {
   const TAG = "[FractionalExpand]";
   if (!useFractionalModulesInCatalogsAndAI()) {
@@ -611,6 +619,7 @@ export function expandFractionalCues(
     } else if (cue.id === "INT_FRAC") {
       plan = composeIntroFractionalPlan(resolvedClips, windowSec, voiceId, cue.id, {
         sessionDurationSec: practiceDurationSec,
+        greetingFamilyHint: compositionContext?.greetingFamilyHint,
       });
     } else if (isMorningVisualizationModuleId(cue.id)) {
       plan = composeMorningVisualizationPlan(

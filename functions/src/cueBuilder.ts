@@ -4,6 +4,7 @@
  */
 
 import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
+import type { ThemeCompositionHints } from "./meditationThemes";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
 export interface CueWithTrigger {
@@ -24,6 +25,10 @@ export interface BuildCuesFromAllocationOptions {
    * Omit to default to 10 (preserves prior behavior for callers that do not pass duration).
    */
   practiceDurationMinutes?: number;
+  /**
+   * Theme-driven focus/insight rows. User `allocation.focusType` IM/NF always wins over focus fractional hint.
+   */
+  themeCueHints?: ThemeCompositionHints;
 }
 
 const PB_CAP = 5;
@@ -157,16 +162,22 @@ function buildCuesFromAllocationFractional(
     cues.push({ id: "OH", trigger: String(currentMinute) });
     currentMinute += 1;
   } else if (focus > 0) {
-    if (allocation.focusType === "NF") {
-      cues.push({ id: "NF_FRAC", trigger: String(currentMinute) });
-    } else {
-      cues.push({ id: "IM_FRAC", trigger: String(currentMinute) });
-    }
+    const focusFrac =
+      options?.themeCueHints?.focusFractionalId &&
+      allocation.focusType !== "NF" &&
+      allocation.focusType !== "IM"
+        ? options.themeCueHints.focusFractionalId
+        : allocation.focusType === "NF"
+          ? "NF_FRAC"
+          : "IM_FRAC";
+    cues.push({ id: focusFrac, trigger: String(currentMinute) });
     currentMinute += Math.min(10, focus);
   }
 
   if (insight > 0) {
-    const insightId = prefs.isEvening ? "RT" : "VC";
+    const insightId =
+      options?.themeCueHints?.insightCueId ??
+      (prefs.isEvening ? "RT" : "VC");
     cues.push({ id: insightId, trigger: String(currentMinute) });
   }
 

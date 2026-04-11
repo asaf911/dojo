@@ -1,6 +1,8 @@
 /**
- * Morning Visualization (MV_KM_FRAC / MV_GR_FRAC): fixed intro chain, ordered instructions,
- * optional reminders, ordered multi-clip outro anchored at session end.
+ * Morning Visualization (MV_KM_FRAC / MV_GR_FRAC): **orientation** chain (shared room setup,
+ * orders 100–120, instruction role) → ordered body instructions → optional reminders → outro.
+ * Orientation is not `role: intro`: it always schedules with the module so it still plays when
+ * MV is not the first timeline block (no fractional “framing intro” gate).
  *
  * Catalog: `morning_visualization_fractional.json` — clips use MVK_* vs MVG_* prefixes per variant.
  */

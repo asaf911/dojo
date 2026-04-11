@@ -782,6 +782,8 @@ interface PostMeditationsRequest {
   prompt?: string;
   conversationHistory?: Array<{ role: string; content: string }>;
   maxDuration?: number;
+  /** Canonical theme tags merged server-side with prompt-derived themes */
+  meditationThemes?: string[];
 }
 
 function randomUUID(): string {
@@ -854,13 +856,15 @@ export const postMeditations = functions.runWith({
         const catalogs = loadCatalogs();
         const { generateAIMeditation } = await import("./aiMeditation");
 
-        const { meditation, usedFallback } = await generateAIMeditation({
-          prompt,
-          conversationHistory: body.conversationHistory ?? [],
-          maxDuration: body.maxDuration,
-          catalogs,
-          apiKey,
-        });
+        const { meditation, usedFallback, fractionalCompositionContext } =
+          await generateAIMeditation({
+            prompt,
+            conversationHistory: body.conversationHistory ?? [],
+            maxDuration: body.maxDuration,
+            catalogs,
+            apiKey,
+            clientMeditationThemes: body.meditationThemes,
+          });
 
         if (!useFractionalModulesInCatalogsAndAI()) {
           meditation.cues = normalizeFractionalSurfaceCueIdsForProd(
@@ -944,7 +948,8 @@ export const postMeditations = functions.runWith({
         const expandedCues = expandFractionalCues(
           resolvedCues,
           meditation.duration,
-          voiceId
+          voiceId,
+          fractionalCompositionContext
         );
 
         const response = {

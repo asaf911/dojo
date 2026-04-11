@@ -187,13 +187,13 @@ extension FractionalModules.Service {
                 items = list
             case "MV_KM_FRAC":
                 items = [
-                    FractionalModules.PlanItem(atSec: 0, clipId: "MVK_C001", role: "intro", text: "Mind's eye", url: "gs://preview/MVK_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 0, clipId: "MVK_C001", role: "instruction", text: "Mind's eye", url: "gs://preview/MVK_C001.mp3"),
                     FractionalModules.PlanItem(atSec: 12, clipId: "MVK_C004", role: "instruction", text: "Begin your day", url: "gs://preview/MVK_C004.mp3"),
                     FractionalModules.PlanItem(atSec: 28, clipId: "MVK_C010", role: "outro", text: "Return to breath", url: "gs://preview/MVK_C010.mp3"),
                 ]
             case "MV_GR_FRAC":
                 items = [
-                    FractionalModules.PlanItem(atSec: 0, clipId: "MVG_C001", role: "intro", text: "Mind's eye", url: "gs://preview/MVG_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 0, clipId: "MVG_C001", role: "instruction", text: "Mind's eye", url: "gs://preview/MVG_C001.mp3"),
                     FractionalModules.PlanItem(atSec: 12, clipId: "MVG_C004", role: "instruction", text: "Gratitude", url: "gs://preview/MVG_C004.mp3"),
                     FractionalModules.PlanItem(atSec: 30, clipId: "MVG_C010", role: "reminder", text: "Feel gratitude", url: "gs://preview/MVG_C010.mp3"),
                 ]

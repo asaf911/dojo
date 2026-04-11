@@ -34,7 +34,7 @@ function assertNoOverrun(
 
 const mvClips = loadCatalog("morning_visualization_fractional.json");
 
-test("MV_KM_FRAC 300s atTimelineStart: intros then instructions before outros", () => {
+test("MV_KM_FRAC 300s atTimelineStart: orientation chain then body instructions before outros", () => {
   const plan = composeMorningVisualizationPlan(
     mvClips,
     300,
@@ -45,13 +45,36 @@ test("MV_KM_FRAC 300s atTimelineStart: intros then instructions before outros", 
   assertNoOverrun(plan, mvClips);
   const sorted = [...plan.items].sort((a, b) => a.atSec - b.atSec);
   const firstOutroIdx = sorted.findIndex((i) => i.role === "outro");
-  const lastIntroIdx = sorted.map((i) => i.role).lastIndexOf("intro");
-  const lastInstrIdx = sorted.map((i) => i.role).lastIndexOf("instruction");
+  const instrIds = sorted
+    .filter((i) => i.role === "instruction")
+    .map((i) => i.clipId);
   assert.ok(firstOutroIdx >= 0, "has outro");
-  assert.ok(lastIntroIdx >= 0, "has intro");
-  assert.ok(lastInstrIdx >= 0, "has instruction");
-  assert.ok(lastIntroIdx < firstOutroIdx, "intros before outro");
+  assert.ok(instrIds.length >= 3, "has orientation + body instructions");
+  assert.equal(instrIds[0], "MVK_C001");
+  assert.equal(instrIds[1], "MVK_C002");
+  assert.ok(instrIds.includes("MVK_C003"), "orientation C003 when budget allows");
+  const lastInstrIdx = sorted.map((i) => i.role).lastIndexOf("instruction");
   assert.ok(lastInstrIdx < firstOutroIdx, "instructions before outro");
+  assert.ok(
+    !sorted.some((i) => i.role === "intro"),
+    "MV uses no fractional intro role; opening is orientation instructions"
+  );
+});
+
+test("MV_KM_FRAC 300s not at timeline start: still opens with shared orientation (MVK_C001)", () => {
+  const plan = composeMorningVisualizationPlan(
+    mvClips,
+    300,
+    "Asaf",
+    "MV_KM_FRAC",
+    false
+  );
+  assertNoOverrun(plan, mvClips);
+  const sorted = [...plan.items].sort((a, b) => a.atSec - b.atSec);
+  const first = sorted[0];
+  assert.ok(first, "non-empty plan");
+  assert.equal(first?.clipId, "MVK_C001");
+  assert.equal(first?.role, "instruction");
 });
 
 test("MV_KM_FRAC 60s: no reminders when under REMINDER_THRESHOLD", () => {
