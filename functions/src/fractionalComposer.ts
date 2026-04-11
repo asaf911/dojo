@@ -34,6 +34,10 @@ import {
   scheduleNfImPlan,
 } from "./fractionalTimeline";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
+import {
+  composeMorningVisualizationPlan,
+  isMorningVisualizationModuleId,
+} from "./morningVisualizationPlan";
 
 export { FRACTIONAL_INSTRUCTION_PAIR_GAPS } from "./fractionalTimeline";
 
@@ -308,6 +312,8 @@ const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   BS_FRAC_DOWN: "body_scan_fractional",
   PB_FRAC: "perfect_breath_fractional",
   INT_FRAC: "intro_fractional",
+  MV_KM_FRAC: "morning_visualization_fractional",
+  MV_GR_FRAC: "morning_visualization_fractional",
 };
 
 /** Inline expansion defaults for BS_FRAC* (see `docs/body-scan-tier-composer.md`). */
@@ -606,6 +612,14 @@ export function expandFractionalCues(
       plan = composeIntroFractionalPlan(resolvedClips, windowSec, voiceId, cue.id, {
         sessionDurationSec: practiceDurationSec,
       });
+    } else if (isMorningVisualizationModuleId(cue.id)) {
+      plan = composeMorningVisualizationPlan(
+        resolvedClips,
+        windowSec,
+        voiceId,
+        cue.id,
+        atFractModuleTimelineStart
+      );
     } else {
       plan = composeFractionalPlan(
         resolvedClips,

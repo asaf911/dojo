@@ -16,6 +16,8 @@ extension FractionalModules {
         case bodyScan = "BS_FRAC"
         case perfectBreath = "PB_FRAC"
         case intro = "INT_FRAC"
+        case morningVizKeyMoments = "MV_KM_FRAC"
+        case morningVizGratitude = "MV_GR_FRAC"
 
         var displayName: String {
             FractionalModules.displayTitle(forModuleId: rawValue)
@@ -80,6 +82,14 @@ extension FractionalModules {
 
                 if selectedModule == .intro {
                     Text("Intro length is chosen from total session time (shortest for 1m, up to 90s for 10m+).")
+                        .nunitoFont(size: 13, style: .regular)
+                        .foregroundColor(.foregroundLightGray.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+
+                if selectedModule == .morningVizKeyMoments || selectedModule == .morningVizGratitude {
+                    Text("Guided visualization: ordered intro, theme instructions, optional reminders (2m+), and closing outro.")
                         .nunitoFont(size: 13, style: .regular)
                         .foregroundColor(.foregroundLightGray.opacity(0.85))
                         .multilineTextAlignment(.center)

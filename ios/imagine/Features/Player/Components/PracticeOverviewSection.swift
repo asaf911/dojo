@@ -155,7 +155,7 @@ struct PracticeOverviewSection: View {
         let intro = config.introPrefixSeconds
         let practiceSec = config.minutes * 60
 
-        // Full-session focus modules (I AM / nostril) span the practice and begin at meditation 00:00,
+        // Full-session focus modules (I AM / nostril / morning visualization) span the practice and begin at meditation 00:00,
         // even if the editor stored `1 min` (slot index). Matches intro-relative playback after cue shift.
         if isFullSessionFocusModule(setting) {
             return "at 00:00"
@@ -209,11 +209,11 @@ struct PracticeOverviewSection: View {
         return formatTimelineMMSS(sessionSecond - introPrefixSeconds)
     }
 
-    /// `IM_FRAC` / `NF_FRAC` with `fractionalDuration` equal to session length: module starts at practice clock 00:00.
+    /// `IM_FRAC` / `NF_FRAC` / `MV_*_FRAC` with `fractionalDuration` equal to session length: module starts at practice clock 00:00.
     private func isFullSessionFocusModule(_ setting: CueSetting) -> Bool {
         guard let fd = setting.fractionalDuration, fd == config.minutes else { return false }
         switch setting.cue.id {
-        case "IM_FRAC", "NF_FRAC":
+        case "IM_FRAC", "NF_FRAC", "MV_KM_FRAC", "MV_GR_FRAC":
             return true
         default:
             return false

@@ -398,6 +398,8 @@ extension MeditationsService {
                     MeditationCue(id: "PB_FRAC", name: "Perfect Breath", url: "gs://preview", trigger: .minute(1), parallelSfx: nil),
                     MeditationCue(id: "BS_FRAC_UP", name: "Body Scan Up", url: "gs://preview", trigger: .minute(2)),
                     MeditationCue(id: "IM_FRAC", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
+                    MeditationCue(id: "MV_KM_FRAC", name: "Morning Key Moments", url: "gs://preview", trigger: .minute(4)),
+                    MeditationCue(id: "MV_GR_FRAC", name: "Morning Gratitude", url: "gs://preview", trigger: .minute(5)),
                     MeditationCue(id: "GB", name: "Gentle Bell", url: "gs://preview", trigger: .end),
                 ]
             )

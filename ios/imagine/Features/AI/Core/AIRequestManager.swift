@@ -843,6 +843,7 @@ extension AIRequestManager {
         case "BS": return 3
         case "OH", "VC", "RT": return 3
         case "INT_FRAC", "GB": return 1
+        case "MV_KM_FRAC", "MV_GR_FRAC": return 4
         case let id where id.hasPrefix("IM"):
             return Int(id.dropFirst(2)) ?? 3
         case let id where id.hasPrefix("NF"):

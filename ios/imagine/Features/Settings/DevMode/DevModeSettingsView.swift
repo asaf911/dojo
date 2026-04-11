@@ -97,7 +97,7 @@ struct DevModeSettingsView: View {
                 .nunitoFont(size: 16, style: .bold)
                 .foregroundColor(.dojoTurquoise)
 
-            Text("Test runtime-composed modules (Nostril Focus, I AM Mantra, Body Scan) from atomic clips.")
+            Text("Test runtime-composed modules (Nostril Focus, I AM Mantra, Morning Visualization, Body Scan) from atomic clips.")
                 .nunitoFont(size: 12, style: .regular)
                 .foregroundColor(.white.opacity(0.5))
 

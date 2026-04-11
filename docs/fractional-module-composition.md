@@ -7,6 +7,8 @@ This document serves as a reference for building new fractional modules.
 
 **Intro (`INT_FRAC`)** uses a dedicated layered composer (7s lead-in before first speech) — see [`intro-fractional-composer.md`](./intro-fractional-composer.md).
 
+**Morning Visualization (`MV_KM_FRAC` / `MV_GR_FRAC`)** uses a dedicated composer — [`functions/src/morningVisualizationPlan.ts`](../functions/src/morningVisualizationPlan.ts) — with one shared catalog [`functions/catalogs/morning_visualization_fractional.json`](../functions/catalogs/morning_visualization_fractional.json). Clips use the `MVK_*` prefix for Key Moments and `MVG_*` for Gratitude (duplicate shared intro/outro rows so Timer collapse stays theme-correct). The timeline is **Intro chain → ordered instructions → optional reminders (≥ 2 min) → ordered multi-clip outro** anchored at session end. Short sessions may drop framing intros and trim instructions; a tail-outro fallback keeps playback within budget. Tests: [`functions/src/morningVisualizationPlan.test.ts`](../functions/src/morningVisualizationPlan.test.ts).
+
 ## Module intro (1–4 min vs first on timeline)
 
 Every fractional module shares one **framing intro** policy: **no module intro for under 5 minutes** unless the block is **at meditation start (t=0)** **and** **first fractional row** **and** **no regular cue precedes it** (or standalone `postFractionalPlan` with `atTimelineStart`). Authoritative spec: [**`fractional-module-intro-rule.md`**](./fractional-module-intro-rule.md).

@@ -4,6 +4,7 @@
 //
 //  Dev/QA: composes fractional playback via POST /postFractionalPlan.
 //  Sends atTimelineStart=true (module is first on the session timeline). See docs/fractional-module-intro-rule.md.
+//  Morning Visualization: MV_KM_FRAC / MV_GR_FRAC (server `morningVisualizationPlan.ts`).
 //  Body scan (BS_FRAC): server doc `docs/body-scan-tier-composer.md` — picker “Up”/“Down” maps to composer
 //  direction (see `apiDirection`). State + `play()` only; no SwiftUI import (.cursorrules).
 //

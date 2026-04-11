@@ -2,7 +2,7 @@
 //  FractionalModules+Service.swift
 //  Dojo
 //
-//  POST /postFractionalPlan — second-precision `Plan` JSON for NF_FRAC, IM_FRAC, BS_FRAC.
+//  POST /postFractionalPlan — second-precision `Plan` JSON for NF_FRAC, IM_FRAC, MV_*_FRAC, BS_FRAC.
 //  BS_FRAC request fields: `bodyScanDirection`, `introShort`, `introLong`, `includeEntry` (see server doc
 //  `docs/body-scan-tier-composer.md`). Logs: filter "[Fractional]".
 //
@@ -185,6 +185,18 @@ extension FractionalModules.Service {
                 t += 5 + 20
                 list.append(FractionalModules.PlanItem(atSec: t, clipId: "BS_MAC_140_LEGS_FEET_ASAF", role: "instruction", text: "Relax your legs and feet", url: "gs://preview/m3.mp3"))
                 items = list
+            case "MV_KM_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "MVK_C001", role: "intro", text: "Mind's eye", url: "gs://preview/MVK_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 12, clipId: "MVK_C004", role: "instruction", text: "Begin your day", url: "gs://preview/MVK_C004.mp3"),
+                    FractionalModules.PlanItem(atSec: 28, clipId: "MVK_C010", role: "outro", text: "Return to breath", url: "gs://preview/MVK_C010.mp3"),
+                ]
+            case "MV_GR_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "MVG_C001", role: "intro", text: "Mind's eye", url: "gs://preview/MVG_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 12, clipId: "MVG_C004", role: "instruction", text: "Gratitude", url: "gs://preview/MVG_C004.mp3"),
+                    FractionalModules.PlanItem(atSec: 30, clipId: "MVG_C010", role: "reminder", text: "Feel gratitude", url: "gs://preview/MVG_C010.mp3"),
+                ]
             default:
                 if framingIntroAllowed {
                     items = [

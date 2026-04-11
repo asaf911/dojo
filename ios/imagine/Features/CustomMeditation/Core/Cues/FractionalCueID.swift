@@ -29,6 +29,8 @@ enum FractionalCueID {
         if let range = cueId.range(of: #"_C\d+$"#, options: .regularExpression) {
             let prefix = String(cueId[cueId.startIndex..<range.lowerBound])
             if prefix == "IM" || prefix == "NF" { return "\(prefix)_FRAC" }
+            if prefix == "MVK" { return "MV_KM_FRAC" }
+            if prefix == "MVG" { return "MV_GR_FRAC" }
         }
         if isBodyScanTierAtomicId(cueId) { return bodyScanTierGroupKey }
         return nil
@@ -61,10 +63,10 @@ enum FractionalCueID {
         return "BS_FRAC_DOWN"
     }
 
-    /// Atomic expanded IM/NF clips (`IM_C###`, `NF_C###`) — same loudness pipeline as body scan; no legacy monolithic boost.
+    /// Atomic expanded IM/NF/Morning Viz clips (`IM_C###`, `NF_C###`, `MVK_C###`, `MVG_C###`) — same loudness pipeline as body scan; no legacy monolithic boost.
     static func isAtomicMantraOrNostrilClip(_ moduleId: String) -> Bool {
         guard let range = moduleId.range(of: #"_C\d+$"#, options: .regularExpression) else { return false }
         let prefix = String(moduleId[moduleId.startIndex..<range.lowerBound])
-        return prefix == "IM" || prefix == "NF"
+        return prefix == "IM" || prefix == "NF" || prefix == "MVK" || prefix == "MVG"
     }
 }

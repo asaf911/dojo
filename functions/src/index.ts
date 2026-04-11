@@ -10,6 +10,10 @@ import {
   expandFractionalCues,
   type FractionalClip,
 } from "./fractionalComposer";
+import {
+  composeMorningVisualizationPlan,
+  isMorningVisualizationModuleId,
+} from "./morningVisualizationPlan";
 import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
 import {
@@ -529,6 +533,7 @@ function getCueCatalogFileBasenames(): string[] {
       "perfect_breath",
       "i_am_mantra",
       "nostril_focus",
+      "morning_visualization",
     ];
   }
   return [
@@ -1379,11 +1384,14 @@ export const postFractionalPlan = functions.https.onRequest(
         IM_FRAC: "i_am_mantra_fractional",
         PB_FRAC: "perfect_breath_fractional",
         INT_FRAC: "intro_fractional",
+        MV_KM_FRAC: "morning_visualization_fractional",
+        MV_GR_FRAC: "morning_visualization_fractional",
       };
 
       let catalogSlug: string | undefined;
       let isBodyScanTier = false;
       const isPerfectBreath = moduleId === "PB_FRAC";
+      const isMorningViz = isMorningVisualizationModuleId(moduleId);
 
       if (isBodyScanModuleId(moduleId)) {
         catalogSlug = "body_scan_fractional";
@@ -1457,6 +1465,14 @@ export const postFractionalPlan = functions.https.onRequest(
           voiceId,
           moduleId,
           { sessionDurationSec: durationSec }
+        );
+      } else if (isMorningViz) {
+        plan = composeMorningVisualizationPlan(
+          resolvedClips,
+          durationSec,
+          voiceId,
+          moduleId,
+          atTimelineStart
         );
       } else {
         plan = composeFractionalPlan(

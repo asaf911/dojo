@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "MV_KM_FRAC",
+      "name": "Morning Key Moments",
+      "path": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
+        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+      },
+      "fractional": true
+    },
+    {
+      "id": "MV_GR_FRAC",
+      "name": "Morning Gratitude",
+      "path": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
+        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+      },
+      "fractional": true
+    }
+  ]
+}

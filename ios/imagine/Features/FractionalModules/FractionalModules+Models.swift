@@ -18,6 +18,8 @@ extension FractionalModules {
         "BS_FRAC_DOWN": "Body Scan Down",
         "PB_FRAC": "Perfect Breath",
         "INT_FRAC": "Intro",
+        "MV_KM_FRAC": "Morning Key Moments",
+        "MV_GR_FRAC": "Morning Gratitude",
         "VC": "Vision Clarity",
         "RT": "Retrospection",
         "GB": "Gentle Bell",
