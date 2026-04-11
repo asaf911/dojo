@@ -115,6 +115,75 @@ export function allocatePhases(
 }
 
 /**
+ * Minimum focus minutes when the user explicitly asked for morning/gratitude visualization,
+ * so MV_* fractional rows are schedulable even for short defaults (e.g. 4m table focus=0).
+ */
+export function minFocusMinutesForMorningVisualization(
+  duration: number,
+  prompt: string
+): number {
+  const d = Math.max(1, Math.min(60, Math.floor(duration)));
+  const ultraShort =
+    /\bultra[\s-]*short\b|\bvery\s+short\b|\b(super|extra)[\s-]*short\b/i.test(
+      prompt
+    );
+  if (d <= 2) return 1;
+  if (d <= 5) {
+    if (ultraShort) {
+      return Math.max(1, Math.min(2, Math.floor(d / 3)));
+    }
+    return Math.max(1, Math.min(2, Math.ceil(d / 3)));
+  }
+  return Math.max(2, Math.min(10, Math.ceil(d * 0.25)));
+}
+
+/**
+ * Steals minutes from relax, then breath, then insight until focus >= minFocus.
+ * Preserves total practice minutes (sum of breath+relax+focus+insight).
+ */
+export function rebalanceAllocationForMinimumFocus(
+  allocation: PhaseAllocation,
+  duration: number,
+  minFocus: number
+): PhaseAllocation {
+  const d = Math.max(1, Math.min(60, Math.floor(duration)));
+  let { breath, relax, focus, insight } = allocation;
+  const sum0 = breath + relax + focus + insight;
+  if (sum0 !== d) {
+    return allocation;
+  }
+  if (focus >= minFocus) {
+    return allocation;
+  }
+
+  let need = minFocus - focus;
+  while (need > 0 && relax > 0) {
+    relax--;
+    focus++;
+    need--;
+  }
+  while (need > 0 && breath > 0) {
+    breath--;
+    focus++;
+    need--;
+  }
+  while (need > 0 && insight > 0) {
+    insight--;
+    focus++;
+    need--;
+  }
+
+  return {
+    intro: allocation.intro,
+    breath: Math.min(5, breath),
+    relax: Math.min(10, relax),
+    focus: Math.min(10, focus),
+    insight: Math.min(10, insight),
+    focusType: allocation.focusType,
+  };
+}
+
+/**
  * Builds allocation from user-explicit overrides. User requests take highest priority.
  * Remaining time (after intro + user-specified modules) is distributed to other phases.
  */
@@ -209,7 +278,7 @@ export function extractSessionPreferences(prompt: string): SessionPreferences {
       /sleep|nap|bedtime|fall asleep|drift off|slumber|insomnia|good\s+night/.test(
         lower
       ),
-    isMorning: /morning|wake up|start day|energize|sunrise/.test(lower),
+    isMorning: /morning|moning|wake up|start day|energize|sunrise/.test(lower),
     isEvening: /evening|wind down|after work|sunset|end of day/.test(lower),
   };
 }

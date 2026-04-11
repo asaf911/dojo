@@ -96,6 +96,7 @@
       "clipId": "MVK_C008",
       "role": "reminder",
       "order": 410,
+      "reminderPriority": "secondary",
       "text": "If attention drifts, return to the scene",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3",
@@ -264,6 +265,7 @@
       "clipId": "MVG_C008",
       "role": "reminder",
       "order": 410,
+      "reminderPriority": "secondary",
       "text": "If attention drifts, return to the scene",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3",

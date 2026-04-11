@@ -19,6 +19,35 @@ const SESSION_END_PAD_SEC = 1;
 const MIN_GAP_BEFORE_OUTRO = 8;
 const OUTRO_CHAIN_GAP_SEC = 1.5;
 const REMINDER_THRESHOLD_SEC = 120;
+/** Minimum seconds between MV reminder clips when more than one is scheduled (wider = calmer). */
+const MIN_GAP_BETWEEN_REMINDERS_SEC = 18;
+/**
+ * "If attention drifts, return to the scene" — deprioritized: never scheduled below this MV
+ * window duration (seconds). Long blocks only.
+ */
+const RETURN_SCENE_REMINDER_MIN_DURATION_SEC = 360;
+
+const MV_RETURN_SCENE_REMINDER_IDS = new Set(["MVK_C008", "MVG_C008"]);
+
+/**
+ * Caps how many reminders we attempt for a given MV block length (sparse for short windows).
+ * 2–3 min blocks: none. 3–5 min: at most one. 5–7 min: at most two. Longer: all eligible.
+ */
+function reminderTierCap(durationSec: number): number {
+  if (durationSec < REMINDER_THRESHOLD_SEC) return 0;
+  if (durationSec < 180) return 0;
+  if (durationSec < 300) return 1;
+  if (durationSec < 420) return 2;
+  return 999;
+}
+
+function remindersPoolForDuration(
+  all: FractionalClip[],
+  durationSec: number
+): FractionalClip[] {
+  if (durationSec >= RETURN_SCENE_REMINDER_MIN_DURATION_SEC) return all;
+  return all.filter((c) => !MV_RETURN_SCENE_REMINDER_IDS.has(c.clipId));
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -88,15 +117,17 @@ export function composeMorningVisualizationPlan(
   const pool = filterPool(clips, moduleId);
   const introsAll = pool.filter((c) => c.role === "intro").sort(sortByOrder);
   const instructionsAll = pool.filter((c) => c.role === "instruction").sort(sortByOrder);
-  const remindersPool = pool.filter((c) => c.role === "reminder").sort(sortByOrder);
+  const remindersAll = pool.filter((c) => c.role === "reminder").sort(sortByOrder);
+  const remindersPool = remindersPoolForDuration(remindersAll, durationSec);
   const outrosAll = pool.filter((c) => c.role === "outro").sort(sortByOrder);
 
   const includeFramingIntro =
     (durationSec >= FRACTIONAL_INTRO_MIN_DURATION_SEC || atTimelineStart) &&
     introsAll.length > 0;
 
+  const tierCap = reminderTierCap(durationSec);
   const maxReminderCount =
-    durationSec >= REMINDER_THRESHOLD_SEC ? remindersPool.length : 0;
+    tierCap === 0 ? 0 : Math.min(tierCap, remindersPool.length);
 
   const pushFactory = (items: FractionalPlanItem[]) => {
     return (startFloat: number, clip: FractionalClip): number => {
@@ -152,7 +183,7 @@ export function composeMorningVisualizationPlan(
       }
       if (remSel.length > 1) {
         const gapBetween = spaceForGaps / (remSel.length - 1);
-        if (gapBetween < 8) {
+        if (gapBetween < MIN_GAP_BETWEEN_REMINDERS_SEC - 0.01) {
           return { items: [], fits: false, timelineEndSec: 0 };
         }
         for (let i = 0; i < remSel.length; i++) {

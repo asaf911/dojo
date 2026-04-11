@@ -90,10 +90,10 @@ test("MV_KM_FRAC 60s: no reminders when under REMINDER_THRESHOLD", () => {
   assert.equal(n, 0);
 });
 
-test("MV_GR_FRAC 300s can schedule gratitude-only reminder MVG_C010", () => {
+test("MV_GR_FRAC 420s can schedule gratitude-only reminder MVG_C010", () => {
   const plan = composeMorningVisualizationPlan(
     mvClips,
-    300,
+    420,
     "Asaf",
     "MV_GR_FRAC",
     true
@@ -103,6 +103,34 @@ test("MV_GR_FRAC 300s can schedule gratitude-only reminder MVG_C010", () => {
   assert.ok(
     ids.includes("MVG_C010"),
     "expected MVG_C010 (gratitude reminder) in long GR session"
+  );
+});
+
+test("MV_KM_FRAC 120s: no reminders (2m MV block stays orientation + instructions + outro)", () => {
+  const plan = composeMorningVisualizationPlan(
+    mvClips,
+    120,
+    "Asaf",
+    "MV_KM_FRAC",
+    true
+  );
+  assertNoOverrun(plan, mvClips);
+  const reminders = plan.items.filter((i) => i.role === "reminder");
+  assert.equal(reminders.length, 0);
+});
+
+test("MV_GR_FRAC 120s: no reminders", () => {
+  const plan = composeMorningVisualizationPlan(
+    mvClips,
+    120,
+    "Asaf",
+    "MV_GR_FRAC",
+    true
+  );
+  assertNoOverrun(plan, mvClips);
+  assert.equal(
+    plan.items.filter((i) => i.role === "reminder").length,
+    0
   );
 });
 

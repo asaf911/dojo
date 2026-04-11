@@ -11,12 +11,15 @@ import {
   extractDurationFromConversationHistory,
   extractDurationFromPrompt,
   extractSessionPreferences,
+  minFocusMinutesForMorningVisualization,
+  rebalanceAllocationForMinimumFocus,
   type UserStructureOverrides,
 } from "./phaseAllocation";
 import { buildCuesFromAllocation } from "./cueBuilder";
 import {
   type FractionalCompositionContext,
   normalizeThemeList,
+  resolveMorningVisualizationVariant,
   resolveMeditationThemes,
   themeCompositionHints,
 } from "./meditationThemes";
@@ -98,6 +101,8 @@ interface AIStructureRequirements {
   bodyScanDirection?: "up" | "down";
   /** Subset of canonical theme ids: morning, evening, noon, night, sleep, gratitude */
   themes?: string[];
+  /** Explicit morning visualization module (when wording is indirect). */
+  wantsMorningVisualization?: "key_moments" | "gratitude";
 }
 
 async function extractUserStructureRequirements(
@@ -108,9 +113,11 @@ async function extractUserStructureRequirements(
   const systemPrompt = `You extract meditation structure requirements from the user's message.
 The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath"), focus type.
 
-Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down"), themes (array of strings, optional).
+Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down"), themes (array of strings, optional), wantsMorningVisualization (optional string).
 
 themes: optional array, each value one of: morning, evening, noon, night, sleep, gratitude. Set when the user clearly wants that theme (e.g. "morning gratitude" → ["gratitude","morning"] or ["morning","gratitude"]).
+
+wantsMorningVisualization: set when the user clearly wants the guided morning visualization module even if they omit the word "visualization": "key_moments" (default morning viz / key moments of the day) or "gratitude" (gratitude visualization). Use with short sessions so structure can reserve focus time for MV.
 - focusType "IM" = mantra, chant, affirmation, I AM
 - focusType "NF" = nostril, nostril focus, nostril breathing, alternate nostril, nasal focus, breath focus on nose
 IMPORTANT: If the user mentions nostril, nose, or nasal breathing/focus, ALWAYS set focusType to "NF".
@@ -129,6 +136,8 @@ Examples:
 - "5 min nostril breathing" → {"totalDuration":5,"focusType":"NF"}
 - "just a quick 2 min" → {"totalDuration":2}
 - "5m" → {"totalDuration":5}
+- "4 min morning visualization" → {"totalDuration":4,"themes":["morning"],"wantsMorningVisualization":"key_moments"}
+- "ultra short gratitude visualization" → {"themes":["gratitude"],"wantsMorningVisualization":"gratitude"}
 
 Return ONLY valid JSON. No other text.`;
 
@@ -183,10 +192,14 @@ Return ONLY valid JSON. No other text.`;
         ? raw.bodyScanDirection
         : undefined;
     const llmThemes = normalizeThemeList(raw.themes);
+    const wm = raw.wantsMorningVisualization;
+    const wantsMorningVisualization =
+      wm === "gratitude" || wm === "key_moments" ? wm : undefined;
     const result: AIStructureRequirements = {
       ...raw,
       bodyScanDirection,
       themes: llmThemes.length > 0 ? llmThemes : undefined,
+      wantsMorningVisualization,
     };
     functions.logger.info(`${TAG_AI} extractStructure raw=${JSON.stringify(result)}`);
     const hasOverride =
@@ -194,7 +207,8 @@ Return ONLY valid JSON. No other text.`;
       result.bodyScanMinutes != null ||
       result.breathMinutes != null ||
       result.focusType != null ||
-      bodyScanDirection != null;
+      bodyScanDirection != null ||
+      wantsMorningVisualization != null;
     const hasThemes = llmThemes.length > 0;
     return hasOverride || hasThemes ? result : null;
   } catch (e) {
@@ -383,7 +397,7 @@ export async function generateAIMeditation(
     overrides.breathMinutes != null ||
     overrides.focusType != null;
 
-  const allocation = hasExplicitOverrides
+  let allocation = hasExplicitOverrides
     ? allocatePhasesFromOverrides(duration, overrides, prefs)
     : allocatePhases(duration, prefs);
 
@@ -396,8 +410,53 @@ export async function generateAIMeditation(
     exploreTimeOfDay: exploreTimeOfDay ?? null,
     prefs,
   });
+
+  const mvVariant = resolveMorningVisualizationVariant({
+    prompt,
+    llmWants: userOverrides?.wantsMorningVisualization ?? null,
+    mergedThemes: themes,
+  });
+
+  const userPinnedModuleMinutes =
+    overrides.mantraMinutes != null ||
+    overrides.bodyScanMinutes != null ||
+    overrides.breathMinutes != null;
+
+  const shouldReserveMorningViz =
+    mvVariant != null &&
+    !prefs.isSleep &&
+    overrides.focusType !== "IM" &&
+    overrides.focusType !== "NF" &&
+    !userPinnedModuleMinutes;
+
+  if (shouldReserveMorningViz) {
+    const minFocus = minFocusMinutesForMorningVisualization(duration, prompt);
+    allocation = rebalanceAllocationForMinimumFocus(
+      allocation,
+      duration,
+      minFocus
+    );
+    functions.logger.info(
+      `${TAG_AI} morningViz mvVariant=${mvVariant} minFocus=${minFocus} breath=${allocation.breath} relax=${allocation.relax} focus=${allocation.focus} insight=${allocation.insight}`
+    );
+  }
+
+  const themeHintOptions =
+    mvVariant != null && allocation.focus > 0
+      ? {
+          forcedFocusFractionalId:
+            mvVariant === "MV_GR" ? ("MV_GR_FRAC" as const) : ("MV_KM_FRAC" as const),
+        }
+      : undefined;
+
   const { fractionalContext: fractionalCompositionContext, cueHints } =
-    themeCompositionHints(themes, prefs, overrides, allocation.focus);
+    themeCompositionHints(
+      themes,
+      prefs,
+      overrides,
+      allocation.focus,
+      themeHintOptions
+    );
 
   const bodyScanDirectionForCue =
     userOverrides?.bodyScanDirection === "up" ||

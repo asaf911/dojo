@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  resolveMorningVisualizationVariant,
   resolveMeditationThemes,
   themeCompositionHints,
   themesFromExploreTimeOfDay,
@@ -62,6 +63,56 @@ test("themeCompositionHints: user focusType NF wins over gratitude MV", () => {
     5
   );
   assert.equal(cueHints.focusFractionalId, undefined);
+});
+
+test("resolveMorningVisualizationVariant: morning + visualization → MV_KM", () => {
+  assert.equal(
+    resolveMorningVisualizationVariant({
+      prompt: "4minutes moning visualization",
+      llmWants: null,
+      mergedThemes: [],
+    }),
+    "MV_KM"
+  );
+});
+
+test("resolveMorningVisualizationVariant: gratitude + visualization → MV_GR", () => {
+  assert.equal(
+    resolveMorningVisualizationVariant({
+      prompt: "short gratitude visualization",
+      llmWants: null,
+      mergedThemes: [],
+    }),
+    "MV_GR"
+  );
+});
+
+test("resolveMorningVisualizationVariant: LLM key_moments without viz word", () => {
+  assert.equal(
+    resolveMorningVisualizationVariant({
+      prompt: "4m session",
+      llmWants: "key_moments",
+      mergedThemes: [],
+    }),
+    "MV_KM"
+  );
+});
+
+test("themeCompositionHints: forced MV_KM when themes omit morning", () => {
+  const prefs = {
+    noBreathwork: false,
+    isSleep: false,
+    isMorning: false,
+    isEvening: false,
+  };
+  const { cueHints } = themeCompositionHints(
+    ["noon"],
+    prefs,
+    {},
+    2,
+    { forcedFocusFractionalId: "MV_KM_FRAC" }
+  );
+  assert.equal(cueHints.focusFractionalId, "MV_KM_FRAC");
 });
 
 test("themeCompositionHints: sleep suppresses morning greeting hint", () => {

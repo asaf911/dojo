@@ -15,7 +15,7 @@
     "scan:fractional-nf-im-durations": "node scripts/scanBodyScanDurations.mjs nostril_focus_fractional.json i_am_mantra_fractional.json",
     "scan:morning-viz-durations": "node scripts/scanBodyScanDurations.mjs morning_visualization_fractional.json",
     "scan:intro-frac-durations": "node scripts/scanBodyScanDurations.mjs intro_fractional.json",
-    "test": "tsc && node --test lib/bodyScanTierPlan.test.js lib/perfectBreathPlan.test.js lib/fractionalIntroTimeline.test.js lib/fractionalNfImTimeline.test.js lib/morningVisualizationPlan.test.js lib/expandFractionalCuesIntro.test.js lib/introFractionalPlan.test.js lib/meditationThemes.test.js lib/cueBuilder.test.js lib/fractionalSurfaceCueNormalize.test.js"
+    "test": "tsc && node --test lib/bodyScanTierPlan.test.js lib/perfectBreathPlan.test.js lib/fractionalIntroTimeline.test.js lib/fractionalNfImTimeline.test.js lib/morningVisualizationPlan.test.js lib/expandFractionalCuesIntro.test.js lib/introFractionalPlan.test.js lib/meditationThemes.test.js lib/phaseAllocation.test.js lib/cueBuilder.test.js lib/fractionalSurfaceCueNormalize.test.js"
   },
   "engines": {
     "node": "20"

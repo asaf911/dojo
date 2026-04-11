@@ -80,6 +80,8 @@ export interface FractionalClip {
   reminderPurpose?: string;
   /** Short product label for catalog / QA (e.g. orientation step intent). */
   flowPurpose?: string;
+  /** Morning viz: human hint; composer may deprioritize `secondary` reminders for short windows. */
+  reminderPriority?: "primary" | "secondary";
 }
 
 /** Optional SFX (or second voice) played in parallel with the primary clip at the same session second. */

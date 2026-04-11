@@ -50,7 +50,7 @@ export function extractThemesFromText(text: string): MeditationThemeId[] {
   const lower = text.toLowerCase();
   const found = new Set<MeditationThemeId>();
 
-  if (/morning|wake up|start (my |the )?day|sunrise|energize/.test(lower)) {
+  if (/morning|moning|wake up|start (my |the )?day|sunrise|energize/.test(lower)) {
     found.add("morning");
   }
   if (/evening|wind down|after work|sunset|end of day/.test(lower)) {
@@ -129,6 +129,48 @@ export function resolveMeditationThemes(args: {
   return THEME_PRIORITY.filter((t) => set.has(t));
 }
 
+export type MorningVisualizationVariant = "MV_KM" | "MV_GR";
+
+/**
+ * Detects explicit morning / gratitude visualization intent so we can reserve focus minutes
+ * and pick MV_KM vs MV_GR even when default phase tables leave focus at 0.
+ */
+export function resolveMorningVisualizationVariant(args: {
+  prompt: string;
+  llmWants?: "key_moments" | "gratitude" | null;
+  mergedThemes: MeditationThemeId[];
+}): MorningVisualizationVariant | null {
+  if (args.llmWants === "gratitude") return "MV_GR";
+  if (args.llmWants === "key_moments") return "MV_KM";
+
+  const lower = args.prompt.toLowerCase();
+  const vizCue =
+    /\bvisuali[sz]ations?\b|\bvisuali[sz]e\b|\bimagin(e|ing)\b|\benvision\b|\bkey\s+moments?\b|\bguided\s+imagery\b/.test(
+      lower
+    );
+  if (!vizCue) return null;
+
+  const gratitudeTheme = args.mergedThemes.includes("gratitude");
+  const morningTheme =
+    args.mergedThemes.includes("morning") ||
+    /morning|moning|\bmorn\b|wake\s+up|start\s+(my\s+|the\s+)?day|sunrise/.test(
+      lower
+    );
+
+  if (/gratitude|grateful|thankful/.test(lower) || gratitudeTheme) {
+    return "MV_GR";
+  }
+  if (morningTheme) {
+    return "MV_KM";
+  }
+  return null;
+}
+
+export type ThemeCompositionHintsOptions = {
+  /** When set, chooses MV fractional row even if theme ordering would not (e.g. LLM key_moments). */
+  forcedFocusFractionalId?: "MV_KM_FRAC" | "MV_GR_FRAC";
+};
+
 /**
  * Morning Gratitude: gratitude wins focus (MV_GR_FRAC); morning still biases intro greeting.
  * User focusType IM/NF overrides focus fractional choice.
@@ -137,7 +179,8 @@ export function themeCompositionHints(
   themes: MeditationThemeId[],
   prefs: SessionPreferences,
   overrides: UserStructureOverrides,
-  focusMinutes: number
+  focusMinutes: number,
+  options?: ThemeCompositionHintsOptions
 ): {
   fractionalContext: FractionalCompositionContext;
   cueHints: ThemeCompositionHints;
@@ -160,7 +203,9 @@ export function themeCompositionHints(
   const cueHints: ThemeCompositionHints = {};
 
   if (focusMinutes > 0 && !sleepish && !userChoseImNf) {
-    if (themes.includes("gratitude")) {
+    if (options?.forcedFocusFractionalId) {
+      cueHints.focusFractionalId = options.forcedFocusFractionalId;
+    } else if (themes.includes("gratitude")) {
       cueHints.focusFractionalId = "MV_GR_FRAC";
     } else if (themes.includes("morning")) {
       cueHints.focusFractionalId = "MV_KM_FRAC";
