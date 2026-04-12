@@ -7,7 +7,7 @@
       "path": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_100_MINDS_EYE_DAN.mp3"
       },
       "fractional": true
     },
@@ -17,7 +17,7 @@
       "path": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_100_MINDS_EYE_DAN.mp3"
       },
       "fractional": true
     }

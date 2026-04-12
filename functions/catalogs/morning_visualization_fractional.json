@@ -13,7 +13,7 @@
       "text": "Direct your attention to your mind's eye",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_100_MINDS_EYE_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -27,7 +27,7 @@
       "text": "Visualize the room you are currently in",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_110_PRESENT_ROOM_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -41,7 +41,7 @@
       "text": "Notice the colors, textures, light, and space around you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_120_ROOM_DETAILS_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -53,7 +53,7 @@
       "text": "Now see yourself leaving the room and beginning your day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_KM_INS_200_LEAVE_ROOM_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_KM_INS_200_LEAVE_ROOM_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_KM_INS_200_LEAVE_ROOM_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -65,7 +65,7 @@
       "text": "Imagine the key moments ahead",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_KM_INS_210_KEY_MOMENTS_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_KM_INS_210_KEY_MOMENTS_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_KM_INS_210_KEY_MOMENTS_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -77,7 +77,7 @@
       "text": "Handle each moment with calmness and confidence",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_KM_INS_220_HANDLE_WITH_CONFIDENCE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_KM_INS_220_HANDLE_WITH_CONFIDENCE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_KM_INS_220_HANDLE_WITH_CONFIDENCE_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -88,7 +88,7 @@
       "text": "Stay present with what you see and how it feels",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_400_STAY_PRESENT_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_400_STAY_PRESENT_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_400_STAY_PRESENT_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -100,7 +100,7 @@
       "text": "If attention drifts, return to the scene",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_410_RETURN_TO_SCENE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -113,7 +113,7 @@
       "text": "Continue moving through your day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_420_MOVE_WITH_EASE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -124,7 +124,7 @@
       "text": "Now return your awareness to your breath",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_500_RETURN_TO_BREATH_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_500_RETURN_TO_BREATH_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_500_RETURN_TO_BREATH_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -135,7 +135,7 @@
       "text": "Take a deep inhale and a slow exhale",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_510_DEEP_BREATH_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_510_DEEP_BREATH_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_510_DEEP_BREATH_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -146,7 +146,7 @@
       "text": "When you are ready, open your eyes",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_520_OPEN_EYES_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_520_OPEN_EYES_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_520_OPEN_EYES_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -157,7 +157,7 @@
       "text": "Carry this presence with you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_530_CARRY_PRESENCE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_530_CARRY_PRESENCE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_530_CARRY_PRESENCE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -168,7 +168,7 @@
       "text": "Have a wonderful day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_540_HAVE_WONDERFUL_DAY_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_540_HAVE_WONDERFUL_DAY_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_540_HAVE_WONDERFUL_DAY_DAN.mp3"
       },
       "durationSec": 3
     },
@@ -182,7 +182,7 @@
       "text": "Direct your attention to your mind's eye",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_100_MINDS_EYE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_100_MINDS_EYE_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -196,7 +196,7 @@
       "text": "Visualize the room you are currently in",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_110_PRESENT_ROOM_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_110_PRESENT_ROOM_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -210,7 +210,7 @@
       "text": "Notice the colors, textures, light, and space around you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_INT_120_ROOM_DETAILS_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_INT_120_ROOM_DETAILS_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -222,7 +222,7 @@
       "text": "Take a moment to feel gratitude for the simple fact that you can wake up, sit here, and meditate. It is a privilege",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_GR_INS_300_PRIVILEGE_TO_BE_HERE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_GR_INS_300_PRIVILEGE_TO_BE_HERE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_GR_INS_300_PRIVILEGE_TO_BE_HERE_DAN.mp3"
       },
       "durationSec": 8
     },
@@ -234,7 +234,7 @@
       "text": "Imagine yourself stepping out of the room, searching for more things to be grateful for",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_GR_INS_310_STEP_OUT_SEARCH_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_GR_INS_310_STEP_OUT_SEARCH_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_GR_INS_310_STEP_OUT_SEARCH_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -246,7 +246,7 @@
       "text": "These may be big or small, from the people you love to experiences waiting for you today.",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_GR_INS_320_PEOPLE_EXPERIENCES_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_GR_INS_320_PEOPLE_EXPERIENCES_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_GR_INS_320_PEOPLE_EXPERIENCES_DAN.mp3"
       },
       "durationSec": 7
     },
@@ -257,7 +257,7 @@
       "text": "Stay present with what you see and how it feels",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_400_STAY_PRESENT_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_400_STAY_PRESENT_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_400_STAY_PRESENT_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -269,7 +269,7 @@
       "text": "If attention drifts, return to the scene",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_410_RETURN_TO_SCENE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_410_RETURN_TO_SCENE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -282,7 +282,7 @@
       "text": "Continue moving through your day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_REM_420_MOVE_WITH_EASE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_420_MOVE_WITH_EASE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -293,7 +293,7 @@
       "text": "Let the feeling of gratitude grow",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_GR_REM_430_FEEL_GRATITUDE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_GR_REM_430_FEEL_GRATITUDE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_REM_430_FEEL_GRATITUDE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -304,7 +304,7 @@
       "text": "Now return your awareness to your breath",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_500_RETURN_TO_BREATH_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_500_RETURN_TO_BREATH_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_500_RETURN_TO_BREATH_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -315,7 +315,7 @@
       "text": "Take a deep inhale and a slow exhale",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_510_DEEP_BREATH_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_510_DEEP_BREATH_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_510_DEEP_BREATH_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -326,7 +326,7 @@
       "text": "When you are ready, open your eyes",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_520_OPEN_EYES_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_520_OPEN_EYES_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_520_OPEN_EYES_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -337,7 +337,7 @@
       "text": "Carry this presence with you",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_530_CARRY_PRESENCE_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_530_CARRY_PRESENCE_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_530_CARRY_PRESENCE_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -348,7 +348,7 @@
       "text": "Have a wonderful day",
       "voices": {
         "Asaf": "modules/morning_visualization_fractional/asaf/MV_OUT_540_HAVE_WONDERFUL_DAY_ASAF.mp3",
-        "Dan": "modules/morning_visualization_fractional/asaf/MV_OUT_540_HAVE_WONDERFUL_DAY_ASAF.mp3"
+        "Dan": "modules/morning_visualization_fractional/dan/MV_OUT_540_HAVE_WONDERFUL_DAY_DAN.mp3"
       },
       "durationSec": 3
     }
