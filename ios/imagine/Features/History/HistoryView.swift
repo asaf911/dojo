@@ -233,36 +233,51 @@ struct HistoryCardView: View {
         
         // For custom/AI-generated meditations, use the custom meditation player (MeditationPlayerView)
         if card.sessionType == .custom || card.sessionType == .aiGenerated {
-            // Get full session to access customConfig
             guard let session = SessionHistoryManager.shared.getSession(by: card.id) else {
                 logger.debugMessage("HistoryCardView: Cannot open custom meditation - session not found")
                 return
             }
-            
             let customConfig = session.customConfig
-            let durationMinutes = max(1, card.durationSeconds / 60)
-            let backgroundSound = MeditationConfiguration.backgroundSound(forID: customConfig?.backgroundSoundId ?? "None")
-            
-            let binauralBeat: BinauralBeat = {
-                if let beatId = customConfig?.binauralBeatId,
-                   let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
-                    return beat
+            Task { @MainActor in
+                if shouldPrefetchCatalogsForCustomReplay(customConfig: customConfig) {
+                    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                        CatalogsManager.shared.fetchCatalogs(triggerContext: "HistoryView|play") { _ in
+                            continuation.resume()
+                        }
+                    }
                 }
-                return BinauralBeat(id: "None", name: "None", url: "", description: nil)
-            }()
-            
-            let cueSettings = reconstructCueSettings(from: customConfig)
-            
-            // Navigate to custom meditation player with title and description
-            navigationCoordinator.navigateToTimerCountdown(
-                totalMinutes: durationMinutes,
-                backgroundSound: backgroundSound,
-                cueSettings: cueSettings,
-                binauralBeat: binauralBeat,
-                isDeepLinked: false,
-                title: session.title,
-                description: session.description
-            )
+                let cueSettings = cueSettingsForCustomSession(customConfig: customConfig)
+                let practiceMinutes = practiceMinutesForCustomSession(customConfig: customConfig)
+                let playbackSeconds = playbackDurationSecondsForCustomSession(customConfig: customConfig)
+                let backgroundSound = MeditationConfiguration.backgroundSound(forID: customConfig?.backgroundSoundId ?? "None")
+                let binauralBeat = resolveBinauralBeat(customConfig: customConfig)
+                let timerConfig = TimerSessionConfig(
+                    minutes: practiceMinutes,
+                    playbackDurationSeconds: playbackSeconds,
+                    backgroundSound: backgroundSound,
+                    binauralBeat: binauralBeat,
+                    cueSettings: cueSettings,
+                    isDeepLinked: false,
+                    title: session.title,
+                    description: session.description
+                )
+                SessionContextManager.shared.setupCustomMeditationSession(
+                    entryPoint: .history,
+                    timerConfig: timerConfig,
+                    origin: .userSelected,
+                    customizationLevel: .none
+                )
+                navigationCoordinator.navigateToTimerCountdown(
+                    totalMinutes: practiceMinutes,
+                    playbackDurationSeconds: playbackSeconds,
+                    backgroundSound: backgroundSound,
+                    cueSettings: cueSettings,
+                    binauralBeat: binauralBeat,
+                    isDeepLinked: false,
+                    title: session.title,
+                    description: session.description
+                )
+            }
         } else {
             // For guided meditations, use the regular player
             guard let practiceId = card.practiceId else {
@@ -286,7 +301,6 @@ struct HistoryCardView: View {
     private func handleOpenInTimer() {
         guard card.sessionType == .custom || card.sessionType == .aiGenerated else { return }
         
-        // Get full session to access customConfig
         guard let session = SessionHistoryManager.shared.getSession(by: card.id) else {
             logger.debugMessage("HistoryCardView: Cannot open in timer - session not found")
             return
@@ -294,34 +308,35 @@ struct HistoryCardView: View {
         
         let customConfig = session.customConfig
         
-        // Dismiss ProfileSheetView first
         presentationMode.wrappedValue.dismiss()
         
-        // Reconstruct timer settings for editing
-        let durationMinutes = max(1, card.durationSeconds / 60)
-        let backgroundSound = MeditationConfiguration.backgroundSound(forID: customConfig?.backgroundSoundId ?? "None")
-        
-        let binauralBeat: BinauralBeat? = {
-            if let beatId = customConfig?.binauralBeatId,
-               let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
-                return beat
+        Task { @MainActor in
+            if shouldPrefetchCatalogsForCustomReplay(customConfig: customConfig) {
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    CatalogsManager.shared.fetchCatalogs(triggerContext: "HistoryView|customize") { _ in
+                        continuation.resume()
+                    }
+                }
             }
-            return nil
-        }()
-        
-        let cueSettings = reconstructCueSettings(from: customConfig)
-        
-        // Create configuration for TimerView editing
-        let configuration = MeditationConfiguration(
-            duration: durationMinutes,
-            backgroundSound: backgroundSound,
-            cueSettings: cueSettings,
-            title: card.title,
-            binauralBeat: binauralBeat
-        )
-        
-        // Navigate to TimerView for editing
-        navigationCoordinator.applyDeepLinkMeditationConfiguration(configuration)
+            let cueSettings = cueSettingsForCustomSession(customConfig: customConfig)
+            let practiceMinutes = practiceMinutesForCustomSession(customConfig: customConfig)
+            let backgroundSound = MeditationConfiguration.backgroundSound(forID: customConfig?.backgroundSoundId ?? "None")
+            let binauralBeat: BinauralBeat? = {
+                if let beatId = customConfig?.binauralBeatId,
+                   let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
+                    return beat
+                }
+                return nil
+            }()
+            let configuration = MeditationConfiguration(
+                duration: practiceMinutes,
+                backgroundSound: backgroundSound,
+                cueSettings: cueSettings,
+                title: card.title,
+                binauralBeat: binauralBeat
+            )
+            navigationCoordinator.applyDeepLinkMeditationConfiguration(configuration)
+        }
     }
     
     private func handleDeleteSession() {
@@ -330,6 +345,40 @@ struct HistoryCardView: View {
     }
     
     // MARK: - Helper Methods
+    
+    /// True when legacy replay relies on catalog lookup and catalogs may not be loaded yet.
+    private func shouldPrefetchCatalogsForCustomReplay(customConfig: SessionCustomConfig?) -> Bool {
+        let snapshot = customConfig?.decodeCueSettingsSnapshot() ?? []
+        guard snapshot.isEmpty else { return false }
+        guard NetworkMonitor.shared.isConnected else { return false }
+        return CatalogsManager.shared.cues.isEmpty || CatalogsManager.shared.beats.isEmpty
+    }
+    
+    private func cueSettingsForCustomSession(customConfig: SessionCustomConfig?) -> [CueSetting] {
+        if let decoded = customConfig?.decodeCueSettingsSnapshot(), !decoded.isEmpty {
+            return decoded
+        }
+        return reconstructCueSettings(from: customConfig)
+    }
+    
+    private func practiceMinutesForCustomSession(customConfig: SessionCustomConfig?) -> Int {
+        if let m = customConfig?.practiceDurationMinutes, m > 0 {
+            return m
+        }
+        return max(1, card.durationSeconds / 60)
+    }
+    
+    private func playbackDurationSecondsForCustomSession(customConfig: SessionCustomConfig?) -> Int? {
+        customConfig?.playbackDurationSeconds
+    }
+    
+    private func resolveBinauralBeat(customConfig: SessionCustomConfig?) -> BinauralBeat {
+        if let beatId = customConfig?.binauralBeatId,
+           let beat = CatalogsManager.shared.beats.first(where: { $0.id == beatId }) {
+            return beat
+        }
+        return BinauralBeat(id: "None", name: "None", url: "", description: nil)
+    }
     
     private func reconstructCueSettings(from customConfig: SessionCustomConfig?) -> [CueSetting] {
         guard let customConfig = customConfig else { return [] }

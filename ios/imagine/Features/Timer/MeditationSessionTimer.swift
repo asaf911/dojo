@@ -43,6 +43,11 @@ class MeditationSessionTimer: ObservableObject {
     
     // Cue settings for this session.
     private let cueSettings: [CueSetting]
+
+    /// Persisted on history complete: `TimerSessionConfig.minutes` (practice length).
+    var historyPracticeDurationMinutes: Int?
+    /// Persisted on history complete: optional explicit wall-clock length from config.
+    var historyPlaybackDurationSeconds: Int?
     
     // Session metadata (from AI or user)
     var sessionTitle: String?
@@ -239,7 +244,7 @@ class MeditationSessionTimer: ObservableObject {
             switch context.entryPoint {
             case .aiChat:
                 return .aiChat
-            case .createScreen:
+            case .createScreen, .history:
                 return .timer
             case .deepLink:
                 return .deeplink
@@ -247,6 +252,8 @@ class MeditationSessionTimer: ObservableObject {
                 return .timer
             }
         }()
+
+        let cueSnapshot = SessionCustomConfig.encodeCueSettingsSnapshot(cueSettings)
         
         // Use AI-specific recording if this is an AI-generated meditation with a title
         if source == .aiChat, let title = sessionTitle {
@@ -259,7 +266,10 @@ class MeditationSessionTimer: ObservableObject {
                 binauralBeatId: binauralBeatUsed ? binauralBeatId : nil,
                 binauralBeatName: binauralBeatUsed ? binauralBeatName : nil,
                 cueIds: cueSettings.map { $0.cue.id },
-                cueNames: cueSettings.map { $0.cue.name }
+                cueNames: cueSettings.map { $0.cue.name },
+                practiceDurationMinutes: historyPracticeDurationMinutes,
+                playbackDurationSeconds: historyPlaybackDurationSeconds,
+                cueSettingsSnapshot: cueSnapshot
             )
         } else {
             SessionHistoryManager.shared.recordCustomMeditationCompletion(
@@ -271,7 +281,10 @@ class MeditationSessionTimer: ObservableObject {
                 binauralBeatName: binauralBeatUsed ? binauralBeatName : nil,
                 cueIds: cueSettings.map { $0.cue.id },
                 cueNames: cueSettings.map { $0.cue.name },
-                source: source
+                source: source,
+                practiceDurationMinutes: historyPracticeDurationMinutes,
+                playbackDurationSeconds: historyPlaybackDurationSeconds,
+                cueSettingsSnapshot: cueSnapshot
             )
         }
         

@@ -431,7 +431,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AudioPlaybackDelegate {
                             return .path
                         }
                         return .explore
-                    case .createScreen:
+                    case .createScreen, .history:
                         return .timer
                     case .deepLink:
                         return .deeplink

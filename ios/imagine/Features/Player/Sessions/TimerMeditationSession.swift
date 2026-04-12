@@ -302,6 +302,8 @@ class TimerMeditationSession: ObservableObject, PlayableSession {
             title: config.title,
             description: config.description
         )
+        timerManager.historyPracticeDurationMinutes = config.minutes
+        timerManager.historyPlaybackDurationSeconds = config.playbackDurationSeconds
         
         setupBindings()
         initializeVolumes()

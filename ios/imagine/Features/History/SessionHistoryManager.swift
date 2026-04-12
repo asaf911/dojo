@@ -89,7 +89,10 @@ final class SessionHistoryManager: ObservableObject {
         binauralBeatName: String? = nil,
         cueIds: [String] = [],
         cueNames: [String] = [],
-        source: MeditationSessionSource = .timer
+        source: MeditationSessionSource = .timer,
+        practiceDurationMinutes: Int? = nil,
+        playbackDurationSeconds: Int? = nil,
+        cueSettingsSnapshot: Data? = nil
     ) {
         let hrData = SessionHeartRateData.fromTracker()
         
@@ -99,7 +102,10 @@ final class SessionHistoryManager: ObservableObject {
             binauralBeatId: binauralBeatId,
             binauralBeatName: binauralBeatName,
             cueIds: cueIds,
-            cueNames: cueNames
+            cueNames: cueNames,
+            practiceDurationMinutes: practiceDurationMinutes,
+            playbackDurationSeconds: playbackDurationSeconds,
+            cueSettingsSnapshot: cueSettingsSnapshot
         )
         
         let session = MeditationSession(
@@ -129,7 +135,10 @@ final class SessionHistoryManager: ObservableObject {
         binauralBeatId: String?,
         binauralBeatName: String?,
         cueIds: [String],
-        cueNames: [String]
+        cueNames: [String],
+        practiceDurationMinutes: Int? = nil,
+        playbackDurationSeconds: Int? = nil,
+        cueSettingsSnapshot: Data? = nil
     ) {
         let hrData = SessionHeartRateData.fromTracker()
         
@@ -139,7 +148,10 @@ final class SessionHistoryManager: ObservableObject {
             binauralBeatId: binauralBeatId,
             binauralBeatName: binauralBeatName,
             cueIds: cueIds,
-            cueNames: cueNames
+            cueNames: cueNames,
+            practiceDurationMinutes: practiceDurationMinutes,
+            playbackDurationSeconds: playbackDurationSeconds,
+            cueSettingsSnapshot: cueSettingsSnapshot
         )
         
         let session = MeditationSession(

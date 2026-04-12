@@ -202,14 +202,23 @@ struct SessionCustomConfig: Codable, Equatable {
     let binauralBeatName: String?
     let cueIds: [String]
     let cueNames: [String]
-    
+    /// Practice length in minutes (`TimerSessionConfig.minutes`), not wall-clock timer length.
+    let practiceDurationMinutes: Int?
+    /// Wall-clock session length when intro/tail extend past practice (`TimerSessionConfig.playbackDurationSeconds`).
+    let playbackDurationSeconds: Int?
+    /// JSON-encoded `[CueSetting]` from the player at session end (triggers, URLs, fractional metadata).
+    let cueSettingsSnapshot: Data?
+
     init(
         backgroundSoundId: String? = nil,
         backgroundSoundName: String? = nil,
         binauralBeatId: String? = nil,
         binauralBeatName: String? = nil,
         cueIds: [String] = [],
-        cueNames: [String] = []
+        cueNames: [String] = [],
+        practiceDurationMinutes: Int? = nil,
+        playbackDurationSeconds: Int? = nil,
+        cueSettingsSnapshot: Data? = nil
     ) {
         self.backgroundSoundId = backgroundSoundId
         self.backgroundSoundName = backgroundSoundName
@@ -217,6 +226,20 @@ struct SessionCustomConfig: Codable, Equatable {
         self.binauralBeatName = binauralBeatName
         self.cueIds = cueIds
         self.cueNames = cueNames
+        self.practiceDurationMinutes = practiceDurationMinutes
+        self.playbackDurationSeconds = playbackDurationSeconds
+        self.cueSettingsSnapshot = cueSettingsSnapshot
+    }
+
+    /// Encodes playback timeline for history replay (fractional / AI expanded cues).
+    static func encodeCueSettingsSnapshot(_ settings: [CueSetting]) -> Data? {
+        try? JSONEncoder().encode(settings)
+    }
+
+    /// Decodes snapshot written at session complete; nil if missing or corrupt.
+    func decodeCueSettingsSnapshot() -> [CueSetting]? {
+        guard let cueSettingsSnapshot else { return nil }
+        return try? JSONDecoder().decode([CueSetting].self, from: cueSettingsSnapshot)
     }
 }
 

@@ -17,6 +17,7 @@ enum SessionEntryPoint: String, Codable, CaseIterable {
     case pathScreen = "path_screen"             // Started from Path tab/journey view
     case exploreScreen = "explore_screen"       // Started from Explore/library
     case createScreen = "create_screen"         // Started from Create (meditation customization) screen
+    case history = "history"                   // Replay from session history
     case postPracticeRec = "post_practice_rec"  // Started from post-practice recommendation
     case deepLink = "deep_link"                 // Started from external link
     case notification = "notification"          // Started from push notification

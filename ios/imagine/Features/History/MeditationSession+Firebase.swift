@@ -246,19 +246,33 @@ extension SessionCustomConfig {
         if let v = backgroundSoundName { data["backgroundSoundName"] = v }
         if let v = binauralBeatId { data["binauralBeatId"] = v }
         if let v = binauralBeatName { data["binauralBeatName"] = v }
+        if let v = practiceDurationMinutes { data["practiceDurationMinutes"] = v }
+        if let v = playbackDurationSeconds { data["playbackDurationSeconds"] = v }
+        if let snap = cueSettingsSnapshot {
+            data["cueSettingsSnapshotBase64"] = snap.base64EncodedString()
+        }
         
         return data
     }
     
     /// Create from Firestore document data
     static func fromFirestoreData(_ data: [String: Any]) -> SessionCustomConfig {
+        let snapshotData: Data? = {
+            if let b64 = data["cueSettingsSnapshotBase64"] as? String {
+                return Data(base64Encoded: b64)
+            }
+            return nil
+        }()
         return SessionCustomConfig(
             backgroundSoundId: data["backgroundSoundId"] as? String,
             backgroundSoundName: data["backgroundSoundName"] as? String,
             binauralBeatId: data["binauralBeatId"] as? String,
             binauralBeatName: data["binauralBeatName"] as? String,
             cueIds: data["cueIds"] as? [String] ?? [],
-            cueNames: data["cueNames"] as? [String] ?? []
+            cueNames: data["cueNames"] as? [String] ?? [],
+            practiceDurationMinutes: data["practiceDurationMinutes"] as? Int,
+            playbackDurationSeconds: data["playbackDurationSeconds"] as? Int,
+            cueSettingsSnapshot: snapshotData
         )
     }
 }
