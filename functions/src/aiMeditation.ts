@@ -123,6 +123,7 @@ wantsMorningVisualization: set when the user clearly wants the guided morning vi
 IMPORTANT: If the user mentions nostril, nose, or nasal breathing/focus, ALWAYS set focusType to "NF".
 - bodyScanDirection "down" = head to toe, top to bottom, crown to feet, start at head (matches cue BS_FRAC_DOWN)
 - bodyScanDirection "up" = feet to head, bottom to top, toes to crown, start at feet (matches cue BS_FRAC_UP)
+- If the user says "remove mantra", "no mantra", "without mantra", or "skip mantra": do NOT set mantraMinutes to 0; omit mantraMinutes entirely unless they give a positive mantra duration. Prefer themes like gratitude/morning and wantsMorningVisualization when they ask for gratitude visualization instead.
 
 Return JSON only with keys you can infer. Use null for unspecified.
 
@@ -138,6 +139,8 @@ Examples:
 - "5m" → {"totalDuration":5}
 - "4 min morning visualization" → {"totalDuration":4,"themes":["morning"],"wantsMorningVisualization":"key_moments"}
 - "ultra short gratitude visualization" → {"themes":["gratitude"],"wantsMorningVisualization":"gratitude"}
+- "Remove mantra, add morning gratitude" → {"themes":["morning","gratitude"],"wantsMorningVisualization":"gratitude"}
+- "No mantra, 5 min morning gratitude" → {"totalDuration":5,"themes":["morning","gratitude"],"wantsMorningVisualization":"gratitude"}
 
 Return ONLY valid JSON. No other text.`;
 
@@ -201,6 +204,12 @@ Return ONLY valid JSON. No other text.`;
       themes: llmThemes.length > 0 ? llmThemes : undefined,
       wantsMorningVisualization,
     };
+    if (
+      result.mantraMinutes === 0 &&
+      result.focusType !== "IM"
+    ) {
+      result.mantraMinutes = undefined;
+    }
     functions.logger.info(`${TAG_AI} extractStructure raw=${JSON.stringify(result)}`);
     const hasOverride =
       result.mantraMinutes != null ||

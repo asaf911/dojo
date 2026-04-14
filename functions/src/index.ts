@@ -1372,7 +1372,7 @@ export const postFractionalPlan = functions.https.onRequest(
         res.status(400).send(JSON.stringify({ error: "durationSec is required" }));
         return;
       }
-      /** For INT_FRAC, durationSec is total session length (same as other modules); intro length is derived. */
+      /** For INT_FRAC, durationSec is practice length in seconds (timer minutes × 60); intro length is derived from it. */
       if (durationSec < 60 || durationSec > 1200) {
         functions.logger.warn(
           `${TAG_FRACTIONAL} validation failed reason=invalid_durationSec value=${durationSec} trigger=${trigger}`

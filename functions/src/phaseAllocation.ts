@@ -204,7 +204,10 @@ export function allocatePhasesFromOverrides(
   if (remaining > 0) {
     const needBreath = (overrides.breathMinutes == null) && !prefs.noBreathwork;
     const needRelax = overrides.bodyScanMinutes == null;
-    const needFocus = overrides.mantraMinutes == null;
+    // Treat 0 as "no pinned mantra minutes" so focus can host MV / defaults (LLM may emit 0 for "remove mantra").
+    const needFocus =
+      overrides.mantraMinutes == null ||
+      (overrides.mantraMinutes === 0 && overrides.focusType !== "IM");
 
     if (needBreath && needRelax && needFocus) {
       const base = ALLOCATION_1_10[Math.min(d, 10)] ?? ALLOCATION_1_10[10];

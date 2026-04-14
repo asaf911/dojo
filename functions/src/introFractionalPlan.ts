@@ -21,8 +21,10 @@ import {
 
 const TAG = "[IntroFractionalPlan]";
 
-/** Target intro window at a 1-minute session (seconds); selection forces a single clip. */
-const INTRO_WINDOW_MIN_TARGET_SEC = 18;
+/** Practice length (seconds) at which intro length is minimum (`INT_FRAC_PLAN_MIN_DURATION_SEC`). */
+const INT_FRAC_INTRO_SCALE_LOW_PRACTICE_SEC = 60;
+/** Practice length (seconds) at which intro reaches `INT_FRAC_PLAN_MAX_DURATION_SEC` (10m+ stays capped). */
+const INT_FRAC_INTRO_SCALE_HIGH_PRACTICE_SEC = 600;
 
 /** @deprecated Use FRACTIONAL_FIRST_SPEECH_OFFSET_SEC from fractionalSessionConstants. */
 export const INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC =
@@ -34,18 +36,24 @@ export const INTRO_FRAC_END_PAUSE_SEC = 5;
 const MODULE_ID = "INT_FRAC";
 
 /**
- * Maps total session length to intro block duration: shortest for ~1m sessions, longest (capped) for 10m+.
- * Ignores explicit per-cue duration — used by expandFractionalCues and postFractionalPlan (dev).
+ * Maps **practice** length (seconds) to intro block duration: **20s** at **1m** (and shorter) practice,
+ * linear to **60s** at **10m** practice; **10m+** stays at **60s**.
+ * Used by `expandFractionalCues` and `postFractionalPlan` (dev).
  */
 export function introWindowSecFromSessionDurationSec(
-  sessionDurationSec: number
+  practiceDurationSec: number
 ): number {
-  const sessionMin = Math.max(sessionDurationSec / 60, 1);
-  const cappedMin = Math.min(sessionMin, 10);
-  const t = (cappedMin - 1) / 9;
+  const p = Math.min(
+    Math.max(practiceDurationSec, INT_FRAC_INTRO_SCALE_LOW_PRACTICE_SEC),
+    INT_FRAC_INTRO_SCALE_HIGH_PRACTICE_SEC
+  );
+  const t =
+    (p - INT_FRAC_INTRO_SCALE_LOW_PRACTICE_SEC) /
+    (INT_FRAC_INTRO_SCALE_HIGH_PRACTICE_SEC - INT_FRAC_INTRO_SCALE_LOW_PRACTICE_SEC);
   const raw =
-    INTRO_WINDOW_MIN_TARGET_SEC +
-    t * (INT_FRAC_PLAN_MAX_DURATION_SEC - INTRO_WINDOW_MIN_TARGET_SEC);
+    INT_FRAC_PLAN_MIN_DURATION_SEC +
+    t *
+      (INT_FRAC_PLAN_MAX_DURATION_SEC - INT_FRAC_PLAN_MIN_DURATION_SEC);
   const rounded = Math.round(raw);
   return Math.max(
     INT_FRAC_PLAN_MIN_DURATION_SEC,

@@ -6,7 +6,7 @@ Layered opening segment for meditation: **Greeting**, **Arrival**, and **Orienta
 
 - **First speech** starts **7 seconds** after the module window begins (background music at second 0 of the block). Same value as **`FRACTIONAL_FIRST_SPEECH_OFFSET_SEC`** in [`functions/src/fractionalSessionConstants.ts`](../functions/src/fractionalSessionConstants.ts) (used by other fractional composers when `atTimelineStart` is true; see [`fractional-module-intro-rule.md`](./fractional-module-intro-rule.md)).
 - **End pause:** **5 seconds** of silence after the last clip ends, before the next cue/module (fits within the allocated intro window).
-- **Intro window length (dev):** Derived from **practice duration** (the timer minutes the user chose) — shortest target (~18s) for a **1-minute** practice, up to **90s** for **10+ minute** practice. Implemented by [`introWindowSecFromSessionDurationSec`](../functions/src/introFractionalPlan.ts). **Timeline model:** intro is a **prefix** — total playback = practice length + intro length. Numeric minute triggers in `postMeditations` are **practice-relative** (minute `1` = first minute of practice); [`applyPracticeRelativeIntroPrefix`](../functions/src/fractionalComposer.ts) maps them to absolute `s{sec}` on the session clock (`introPrefix + minute×60`). Manual per-cue duration is not used for `INT_FRAC`.
+- **Intro window length (dev):** Derived from **practice duration** (the timer minutes the user chose) — **20s** for **1-minute** (and shorter) practice, linear to **60s** at **10 minutes**, capped at **60s** for longer sessions. Implemented by [`introWindowSecFromSessionDurationSec`](../functions/src/introFractionalPlan.ts). **Timeline model:** intro is a **prefix** — total playback = practice length + intro length. Numeric minute triggers in `postMeditations` are **practice-relative** (minute `1` = first minute of practice); [`applyPracticeRelativeIntroPrefix`](../functions/src/fractionalComposer.ts) maps them to absolute `s{sec}` on the session clock (`introPrefix + minute×60`). Manual per-cue duration is not used for `INT_FRAC`.
 - **Selection:** **≤1 minute** sessions use **one clip only** (orientation preferred, then arrival, then greeting). Longer sessions **greedily** add greeting → arrivals in catalog order (skipping lines that no longer fit) → orientation, within the window. At most one greeting (mutually exclusive families: good morning / good evening / welcome / welcome back); arrivals remain **compatible** (never both posture variants `INT_ARR_120` and `INT_ARR_122`; never both `INT_ARR_124` and `INT_ARR_126`); at most one orientation (`INT_ORI_140`).
 - **Composer:** [`functions/src/introFractionalPlan.ts`](../functions/src/introFractionalPlan.ts) (`composeIntroFractionalPlan`).
 
@@ -14,11 +14,11 @@ Layered opening segment for meditation: **Greeting**, **Arrival**, and **Orienta
 
 `POST /postFractionalPlan` with `moduleId: "INT_FRAC"`:
 
-- **`durationSec`:** Total **session** length in seconds — same as other modules: **`60`–`1200`**. The server computes the intro block length with `introWindowSecFromSessionDurationSec(durationSec)` and composes that many seconds of intro audio.
+- **`durationSec`:** **Practice** length in seconds (the timer the user chose), **`60`–`1200`**, same as other fractional plan endpoints. The server computes the intro block with `introWindowSecFromSessionDurationSec(durationSec)` and composes that many seconds of intro audio.
 
 Other fractional modules use **`durationSec`** as the **module** window (unchanged).
 
-Bounds on the composed intro block: [`INT_FRAC_PLAN_MIN_DURATION_SEC` / `INT_FRAC_PLAN_MAX_DURATION_SEC`](../functions/src/fractionalSessionConstants.ts) (currently 17–90s target cap).
+Bounds on the composed intro block: [`INT_FRAC_PLAN_MIN_DURATION_SEC` / `INT_FRAC_PLAN_MAX_DURATION_SEC`](../functions/src/fractionalSessionConstants.ts) (currently **20–60s** target range from practice length).
 
 ## Inline expansion
 

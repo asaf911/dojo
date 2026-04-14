@@ -130,3 +130,60 @@ test("themeCompositionHints: sleep suppresses morning greeting hint", () => {
   );
   assert.equal(fractionalContext.greetingFamilyHint, undefined);
 });
+
+test("resolveMeditationThemes: morning in prompt strips ambient sleep from client + explore night", () => {
+  const prefs = {
+    noBreathwork: false,
+    isSleep: false,
+    isMorning: false,
+    isEvening: false,
+  };
+  const themes = resolveMeditationThemes({
+    prompt: "Make a 5m morning gratitude",
+    prefs,
+    clientThemes: ["sleep"],
+    exploreTimeOfDay: "night",
+  });
+  assert.ok(!themes.includes("sleep"), themes.join(","));
+  assert.ok(themes.includes("morning"));
+  assert.ok(themes.includes("gratitude"));
+});
+
+test("resolveMeditationThemes + themeCompositionHints: night context still yields MV_GR for morning gratitude", () => {
+  const prefs = {
+    noBreathwork: false,
+    isSleep: false,
+    isMorning: false,
+    isEvening: false,
+  };
+  const themes = resolveMeditationThemes({
+    prompt: "Make a 5m morning gratitude",
+    prefs,
+    clientThemes: ["sleep"],
+    exploreTimeOfDay: "night",
+  });
+  const { fractionalContext, cueHints } = themeCompositionHints(
+    themes,
+    prefs,
+    {},
+    5
+  );
+  assert.equal(cueHints.focusFractionalId, "MV_GR_FRAC");
+  assert.equal(fractionalContext.greetingFamilyHint, "morning");
+});
+
+test("resolveMeditationThemes: morning + explicit sleep in prompt keeps sleep", () => {
+  const prefs = {
+    noBreathwork: false,
+    isSleep: false,
+    isMorning: false,
+    isEvening: false,
+  };
+  const themes = resolveMeditationThemes({
+    prompt: "Morning meditation to help me sleep tonight",
+    prefs,
+    clientThemes: ["sleep"],
+    exploreTimeOfDay: "night",
+  });
+  assert.ok(themes.includes("sleep"));
+});

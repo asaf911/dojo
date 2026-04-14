@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { expandFractionalCues } from "./fractionalComposer";
 import { INTRO_FRAC_FIRST_SPEECH_OFFSET_SEC } from "./introFractionalPlan";
 
-test("expandFractionalCues: long session — intro prefix then PB at practice minute 1 (90s + 60s)", () => {
+test("expandFractionalCues: long session — intro prefix then PB at practice minute 1 (60s + 60s)", () => {
   const out = expandFractionalCues(
     [
       {
@@ -26,11 +26,11 @@ test("expandFractionalCues: long session — intro prefix then PB at practice mi
     20,
     "Asaf"
   );
-  // Practice-relative minute 1 → absolute 90 (intro) + 60 = 150s on playback timeline.
-  const pbAt150 = out.find(
-    (c) => c.trigger === "s150" && String(c.id).startsWith("PBV_")
+  // 20m practice → 60s intro cap; practice-relative minute 1 → absolute 60 + 60 = 120s.
+  const pbAt120 = out.find(
+    (c) => c.trigger === "s120" && String(c.id).startsWith("PBV_")
   );
-  assert.ok(pbAt150, "expected a Perfect Breath clip at 150s (intro prefix + 1 practice min)");
+  assert.ok(pbAt120, "expected a Perfect Breath clip at 120s (intro prefix + 1 practice min)");
 });
 
 test("expandFractionalCues: INT_FRAC first atomic cue at 7s", () => {

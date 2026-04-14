@@ -10,6 +10,6 @@ export const FRACTIONAL_INTRO_MIN_DURATION_SEC = 300;
 export const FRACTIONAL_FIRST_SPEECH_OFFSET_SEC = 7;
 
 /** POST /postFractionalPlan / expandFractionalCues — intro block length bounds (see docs/intro-fractional-composer.md). */
-export const INT_FRAC_PLAN_MIN_DURATION_SEC = 17;
-/** Upper cap; actual window also scales from session length (shortest ~1m session, up to this for 10m+). */
-export const INT_FRAC_PLAN_MAX_DURATION_SEC = 90;
+export const INT_FRAC_PLAN_MIN_DURATION_SEC = 20;
+/** 10m+ practice targets this cap (60s intro). */
+export const INT_FRAC_PLAN_MAX_DURATION_SEC = 60;

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   allocatePhases,
+  allocatePhasesFromOverrides,
   minFocusMinutesForMorningVisualization,
   rebalanceAllocationForMinimumFocus,
 } from "./phaseAllocation";
@@ -37,4 +38,20 @@ test("rebalanceAllocationForMinimumFocus: 4m table gains focus from relax", () =
   assert.equal(out.focus, 2);
   assert.equal(out.relax, 0);
   assert.equal(out.breath, 2);
+});
+
+test("allocatePhasesFromOverrides: mantraMinutes 0 without IM still yields default focus minutes", () => {
+  const prefs = {
+    noBreathwork: false,
+    isSleep: false,
+    isMorning: false,
+    isEvening: false,
+  };
+  const out = allocatePhasesFromOverrides(
+    5,
+    { totalDuration: 5, mantraMinutes: 0 },
+    prefs
+  );
+  assert.ok(out.focus > 0, `focus=${out.focus}`);
+  assert.equal(out.breath + out.relax + out.focus + out.insight, 5);
 });

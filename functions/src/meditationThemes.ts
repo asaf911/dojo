@@ -80,6 +80,39 @@ export function extractThemesFromText(text: string): MeditationThemeId[] {
   return [...found];
 }
 
+/** Prompt + recent user turns only (no assistant / no prefs) for precedence over ambient context. */
+function explicitUserThemesForSleepPrecedence(args: {
+  prompt: string;
+  conversationHistory?: Array<{ role: string; content: string }>;
+}): Set<MeditationThemeId> {
+  const out = new Set<MeditationThemeId>();
+  for (const t of extractThemesFromText(args.prompt)) out.add(t);
+  const hist = args.conversationHistory ?? [];
+  for (const m of hist.slice(-3)) {
+    if (m.role === "user") {
+      for (const t of extractThemesFromText(m.content)) out.add(t);
+    }
+  }
+  return out;
+}
+
+/**
+ * Wall-clock / explore inject `sleep` while the user may ask for morning practice.
+ * If the user explicitly asked for morning and did not ask for sleep, drop ambient sleep.
+ */
+function stripAmbientSleepWhenMorningExplicit(
+  set: Set<MeditationThemeId>,
+  args: {
+    prompt: string;
+    conversationHistory?: Array<{ role: string; content: string }>;
+  }
+): void {
+  const explicit = explicitUserThemesForSleepPrecedence(args);
+  if (explicit.has("morning") && !explicit.has("sleep")) {
+    set.delete("sleep");
+  }
+}
+
 const THEME_PRIORITY: MeditationThemeId[] = [
   "sleep",
   "gratitude",
@@ -125,6 +158,11 @@ export function resolveMeditationThemes(args: {
   for (const t of themesFromExploreTimeOfDay(args.exploreTimeOfDay)) set.add(t);
   for (const t of normalizeThemeList(args.clientThemes)) set.add(t);
   for (const t of normalizeThemeList(args.llmThemes)) set.add(t);
+
+  stripAmbientSleepWhenMorningExplicit(set, {
+    prompt: args.prompt,
+    conversationHistory: args.conversationHistory,
+  });
 
   return THEME_PRIORITY.filter((t) => set.has(t));
 }

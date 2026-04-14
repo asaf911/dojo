@@ -3,24 +3,25 @@
 //  imagine
 //
 //  Matches `introWindowSecFromSessionDurationSec` in functions/src/introFractionalPlan.ts:
-//  intro is a **prefix** before practice; practice duration drives the curve (1m → ~18s … 10m+ → 90s).
+//  intro is a **prefix** before practice; 1m (or shorter) practice → 20s intro, 10m+ → 60s intro, linear between.
 //
 
 import Foundation
 
 enum IntroPrefixTimeline {
-    private static let minSec = 17
-    private static let maxSec = 90
-    private static let minTargetAtOneMinute = 18
+    private static let practiceLowSec = 60
+    private static let practiceHighSec = 600
+    private static let introAtShortPractice = 20
+    private static let introAtLongPractice = 60
 
     /// Intro block length in seconds for a given **practice** length (not including intro).
     static func introPrefixSeconds(practiceDurationSec: Int) -> Int {
-        let sessionMin = max(Double(practiceDurationSec) / 60.0, 1.0)
-        let cappedMin = min(sessionMin, 10.0)
-        let t = (cappedMin - 1.0) / 9.0
-        let raw = Double(minTargetAtOneMinute) + t * Double(maxSec - minTargetAtOneMinute)
+        let p = min(max(practiceDurationSec, practiceLowSec), practiceHighSec)
+        let span = Double(practiceHighSec - practiceLowSec)
+        let t = span > 0 ? Double(p - practiceLowSec) / span : 0
+        let raw = Double(introAtShortPractice) + t * Double(introAtLongPractice - introAtShortPractice)
         let rounded = Int(raw.rounded())
-        return Swift.max(minSec, Swift.min(maxSec, rounded))
+        return Swift.max(introAtShortPractice, Swift.min(introAtLongPractice, rounded))
     }
 
     /// Total playback seconds = practice + intro prefix when `INT_FRAC` is present.

@@ -28,11 +28,13 @@ function clip(
   };
 }
 
-test("introWindowSecFromSessionDurationSec: 1m session ~18s, 10m ~90s", () => {
-  assert.equal(introWindowSecFromSessionDurationSec(60), 18);
-  assert.equal(introWindowSecFromSessionDurationSec(600), 90);
-  assert.ok(introWindowSecFromSessionDurationSec(300) > 18);
-  assert.ok(introWindowSecFromSessionDurationSec(300) < 90);
+test("introWindowSecFromSessionDurationSec: 1m → 20s, 10m → 60s, sub-1m same as 1m", () => {
+  assert.equal(introWindowSecFromSessionDurationSec(60), 20);
+  assert.equal(introWindowSecFromSessionDurationSec(600), 60);
+  assert.equal(introWindowSecFromSessionDurationSec(30), 20);
+  assert.equal(introWindowSecFromSessionDurationSec(1200), 60);
+  assert.ok(introWindowSecFromSessionDurationSec(300) > 20);
+  assert.ok(introWindowSecFromSessionDurationSec(300) < 60);
 });
 
 const fullCatalog: FractionalClip[] = [

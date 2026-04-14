@@ -178,6 +178,10 @@ class AIRequestManager: ObservableObject {
                         case .evening: meditationThemes = ["evening"]
                         case .night: meditationThemes = ["sleep"]
                         }
+                        if ExploreRecommendationManager.TimeOfDay.current() == .night,
+                           Self.promptSignalsExplicitMorning(trimmedPromptCopy) {
+                            meditationThemes = nil
+                        }
                     }
                     let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
                         ? strongSelf.lastMeditation?.meditationConfiguration.duration
@@ -651,6 +655,17 @@ class AIRequestManager: ObservableObject {
     }
     
     // MARK: - Explore Guidance Helpers
+
+    /// Matches server `extractThemesFromText` morning signals so clock `sleep` is not sent when the user asks for morning practice (e.g. at night local time).
+    nonisolated private static func promptSignalsExplicitMorning(_ prompt: String) -> Bool {
+        let lower = prompt.lowercased()
+        if lower.contains("morning") || lower.contains("moning") { return true }
+        if lower.contains("wake up") || lower.contains("wake-up") { return true }
+        if lower.contains("sunrise") { return true }
+        if lower.contains("energize") || lower.contains("energise") { return true }
+        if lower.contains("start my day") || lower.contains("start the day") { return true }
+        return false
+    }
     
     /// Checks if the user explicitly requested a pre-recorded session
     /// This bypasses the normal Path-first logic for testing purposes
