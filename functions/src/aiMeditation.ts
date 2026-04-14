@@ -23,6 +23,7 @@ import {
   resolveMeditationThemes,
   themeCompositionHints,
 } from "./meditationThemes";
+import { pickDisplayTitle } from "./aiMeditationDisplayTitle";
 
 export interface AIGeneratedTimer {
   duration: number;
@@ -232,7 +233,8 @@ async function callOpenAIMetadata(
   duration: number,
   conversationHistory: Array<{ role: string; content: string }>,
   catalogs: LoadedCatalogs,
-  apiKey: string
+  apiKey: string,
+  lockedTitle: string
 ): Promise<AIMetadataResponse> {
   const beatsList =
     catalogs.binauralBeats.length > 0
@@ -244,13 +246,17 @@ async function callOpenAIMetadata(
           .join(", ")
       : "BB2 (Sleep), BB4 (Imagination), BB6 (Vision), BB10 (Relaxation), BB14 (Focus), BB40 (Gratitude)";
 
+  const titleJson = JSON.stringify(lockedTitle);
   const systemPrompt = `You generate meditation metadata only. The structure is already fixed.
 
 Given this meditation structure: ${structureContext}
 Duration: ${duration} min. User said: "${userPrompt}"
 
+The app display title is fixed — use it verbatim for the JSON "title" field (same spelling and spacing): ${titleJson}
+Do not invent a different title. Put your creativity into "description" only (one brief sentence that fits the user's request).
+
 Return JSON only with these exact keys:
-{ "title": "short title", "description": "brief description", "binauralBeatId": "ID" }
+{ "title": ${titleJson}, "description": "brief description", "binauralBeatId": "ID" }
 
 BINAURAL BEATS (each has a purpose - match user intent to the closest beat):
 ${beatsList}
@@ -314,7 +320,8 @@ function buildFallbackMetadata(
   duration: number,
   prefs: { isSleep: boolean; isEvening: boolean },
   catalogs: LoadedCatalogs,
-  recentBackgroundSounds?: string[]
+  recentBackgroundSounds: string[] | undefined,
+  displayTitle: string
 ): { title: string; description: string; backgroundSoundId: string; binauralBeatId: string } {
   const soundIds = catalogs.backgroundSounds.map((s) => s.id);
   const beatIds = catalogs.binauralBeats.map((b) => b.id);
@@ -329,7 +336,7 @@ function buildFallbackMetadata(
   const bbId =
     pickRandomFromCatalog(catalogs.binauralBeats)?.id ?? beatIds[0] ?? "BB10";
   return {
-    title: "Custom Meditation",
+    title: displayTitle,
     description: "A guided meditation tailored to your request.",
     backgroundSoundId: bgId,
     binauralBeatId: bbId,
@@ -484,6 +491,19 @@ export async function generateAIMeditation(
     `${TAG_AI} structure dur=${duration} cues=${cues.length} userOverrides=${hasExplicitOverrides ? JSON.stringify(overrides) : "none"}`
   );
 
+  const { title: displayTitle, bucket: displayTitleBucket } = pickDisplayTitle({
+    prompt: prompt.trim(),
+    duration,
+    themes,
+    prefs,
+    mvVariant,
+    overrides,
+    structureContext,
+  });
+  functions.logger.info(
+    `${TAG_AI} displayTitle bucket=${displayTitleBucket} title=${JSON.stringify(displayTitle)}`
+  );
+
   let metadata: {
     title: string;
     description: string;
@@ -499,12 +519,13 @@ export async function generateAIMeditation(
       duration,
       conversationHistory,
       catalogs,
-      apiKey
+      apiKey,
+      displayTitle
     );
     const beatIds = catalogs.binauralBeats.map((b) => b.id);
     const soundIds = catalogs.backgroundSounds.map((s) => s.id);
     metadata = {
-      title: ai.title?.trim() || "Custom Meditation",
+      title: displayTitle,
       description: ai.description?.trim() || "A guided meditation tailored to your request.",
       backgroundSoundId:
         pickWeightedRandomFromCatalog(
@@ -530,7 +551,8 @@ export async function generateAIMeditation(
       duration,
       prefs,
       catalogs,
-      recentBackgroundSounds
+      recentBackgroundSounds,
+      displayTitle
     );
     usedFallback = true;
   }

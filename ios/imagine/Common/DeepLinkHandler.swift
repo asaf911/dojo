@@ -9,29 +9,122 @@ import Foundation
 import SwiftUI
 
 class DeepLinkHandler {
+
+    /// Opens the timer player from a decoded portable plan (`pz` query, `pf=z1` fragment, or legacy `plan=` query).
+    private static func presentPortableTimerPlan(
+        _ planDocument: PortableTimerDeepLinkPlanV1,
+        durationMinutes: Int,
+        queryItems: [URLQueryItem],
+        navigationCoordinator: NavigationCoordinator
+    ) {
+        guard planDocument.v == PortableTimerDeepLinkCodec.currentSchemaVersion, !planDocument.items.isEmpty else {
+            logger.timerDeepLinkError("plan_reject reason=invalid_schema_or_empty v=\(planDocument.v) items=\(planDocument.items.count)")
+            return
+        }
+        let bsID = queryItems.first(where: { $0.name == "bs" })?.value ?? "None"
+        let bbID = queryItems.first(where: { $0.name == "bb" })?.value ?? "None"
+        let backgroundSound = MeditationConfiguration.backgroundSound(forID: bsID)
+        let binauralBeat: BinauralBeat = {
+            if bbID == "None" {
+                return BinauralBeat(id: "None", name: "None", url: "", description: nil)
+            }
+            return MeditationConfiguration.binauralBeat(forID: bbID)
+                ?? BinauralBeat(id: "None", name: "None", url: "", description: nil)
+        }()
+        let title = queryItems.first(where: { $0.name == "af_sub1" })?.value.flatMap { raw -> String? in
+            let once = raw.removingPercentEncoding ?? raw
+            return once.removingPercentEncoding ?? once
+        }
+        let timerConfig = planDocument.toTimerSessionConfig(
+            durationMinutes: durationMinutes,
+            backgroundSound: backgroundSound,
+            binauralBeat: binauralBeat,
+            title: title,
+            description: nil
+        )
+        let preview = planDocument.items.prefix(8).map { "\($0.clipId)@\($0.atSec)s" }.joined(separator: ",")
+        logger.timerDeepLink(
+            "plan_apply durMin=\(durationMinutes) bs=\(backgroundSound.id) bb=\(binauralBeat.id) items=\(planDocument.items.count) playbackSec=\(planDocument.playbackDurationSec.map(String.init) ?? "nil") preview=\(preview)"
+        )
+        navigationCoordinator.showPlayerFromDeepLinkedTimerConfig(timerConfig)
+    }
     
     // Handles incoming URLs and navigates to the appropriate screen.
     static func handleIncomingURL(_ url: URL, source: String = "universalLink", eventName: String = "deep_link_open", navigationCoordinator: NavigationCoordinator) {
-        logger.eventMessage("Deep link received: \(url.absoluteString)")
+        let absLen = url.absoluteString.count
+        logger.timerDeepLink("open urlLen=\(absLen) source=\(source) hasFragment=\(url.fragment != nil) queryLen=\(url.query?.count ?? 0)")
         
         let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
         let queryItems = urlComponents?.queryItems
         
         // Check if the URL uses abbreviated deep link parameters ("dur" key)
         if let _ = queryItems?.first(where: { $0.name == "dur" })?.value {
-            logger.eventMessage("Deep link contains abbreviated meditation configuration parameters.")
+            logger.timerDeepLink("route abbreviated_timer_query (dur=…)")
             // Ensure catalogs are loaded before decoding so ids (bs, bb, cues) resolve to models
             let group = DispatchGroup()
             group.enter()
             CatalogsManager.shared.fetchCatalogs(triggerContext: "DeepLinkHandler|incoming link resolve") { _ in group.leave() }
             group.notify(queue: .main) {
                 guard let queryItems = urlComponents?.queryItems,
-                      let meditationConfiguration = MeditationConfiguration(queryItems: queryItems) else {
-                    logger.errorMessage("Failed to parse MeditationConfiguration from deep link after prefetch.")
+                      let durValue = queryItems.first(where: { $0.name == "dur" })?.value,
+                      let durationMinutes = Int(durValue)
+                else {
+                    logger.timerDeepLinkError("abort reason=missing_dur_after_prefetch")
+                    return
+                }
+
+                // `pz` query: zlib+base64url — survives OneLink / redirects that strip `#fragment`.
+                if let pzRaw = TimerDeepLinkURLHelpers.rawPZParameter(from: url) {
+                    let rawLen = pzRaw.count
+                    let normLen = PortableTimerDeepLinkCodec.normalizeEncodedPlanToken(pzRaw).count
+                    logger.timerDeepLink("decode_try path=pz rawLen=\(rawLen) normLen=\(normLen)")
+                    switch PortableTimerDeepLinkCodec.decodeZlibPortablePlan(pzRaw) {
+                    case .success(let planDocument):
+                        logger.timerDeepLink("decode_ok path=pz items=\(planDocument.items.count)")
+                        presentPortableTimerPlan(planDocument, durationMinutes: durationMinutes, queryItems: queryItems, navigationCoordinator: navigationCoordinator)
+                        return
+                    case .failure(let err):
+                        logger.timerDeepLinkError("decode_fail path=pz err=\(err.localizedDescription)")
+                    }
+                } else {
+                    logger.timerDeepLink("decode_skip path=pz reason=no_pz_param")
+                }
+
+                // `pf=z1` + URL fragment: zlib+JSON base64url after `#` (older shares).
+                if queryItems.first(where: { $0.name == "pf" })?.value == "z1",
+                   let fragment = url.fragment?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !fragment.isEmpty {
+                    logger.timerDeepLink("decode_try path=fragment len=\(fragment.count)")
+                    switch PortableTimerDeepLinkCodec.decodeZlibPortablePlan(fragment) {
+                    case .success(let planDocument):
+                        logger.timerDeepLink("decode_ok path=fragment items=\(planDocument.items.count)")
+                        presentPortableTimerPlan(planDocument, durationMinutes: durationMinutes, queryItems: queryItems, navigationCoordinator: navigationCoordinator)
+                        return
+                    case .failure(let err):
+                        logger.timerDeepLinkError("decode_fail path=fragment err=\(err.localizedDescription)")
+                    }
+                }
+
+                // Legacy: portable plan in query `plan=` (raw JSON base64url, not zlib).
+                if let planRaw = queryItems.first(where: { $0.name == "plan" })?.value {
+                    let decodedPlanValue = PortableTimerDeepLinkCodec.percentDecodePlanQueryValue(planRaw)
+                    logger.timerDeepLink("decode_try path=plan_query len=\(decodedPlanValue.count)")
+                    if let planDocument = try? PortableTimerDeepLinkCodec.decodePlan(fromBase64URL: decodedPlanValue) {
+                        logger.timerDeepLink("decode_ok path=plan_query items=\(planDocument.items.count)")
+                        presentPortableTimerPlan(planDocument, durationMinutes: durationMinutes, queryItems: queryItems, navigationCoordinator: navigationCoordinator)
+                        return
+                    }
+                    logger.timerDeepLinkError("decode_fail path=plan_query")
+                }
+
+                guard let meditationConfiguration = MeditationConfiguration(queryItems: queryItems) else {
+                    logger.timerDeepLinkError("fallback_fail MeditationConfiguration(queryItems:) returned nil — no portable plan and no cu=")
                     return
                 }
                 let bbId = meditationConfiguration.binauralBeat?.id ?? "None"
-                logger.eventMessage("Parsed meditation configuration from deep link: dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)")
+                logger.timerDeepLink(
+                    "fallback_ok path=cu_only dur=\(meditationConfiguration.duration) bs=\(meditationConfiguration.backgroundSound.id) bb=\(bbId) cues=\(meditationConfiguration.cueSettings.count)"
+                )
                 navigationCoordinator.showPlayerFromDeepLink(meditationConfiguration: meditationConfiguration)
             }
             return

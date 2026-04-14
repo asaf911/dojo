@@ -58,6 +58,16 @@ public extension LoggerProtocol {
         let cleanMessage = message.hasPrefix("🧠 AI_DEBUG ") ? String(message.dropFirst(12)) : message
         errorMessage("🧠 AI_DEBUG " + cleanMessage, function: function, line: line, file: file)
     }
+
+    /// Portable timer / OneLink / fractional hydration (AI_DEBUG sub-channel).
+    /// **Console filter:** `[[TIMER_DEEPLINK]]` (matches `🧠 AI_DEBUG [[TIMER_DEEPLINK]] …` in unified logs).
+    func timerDeepLink(_ message: String, function: String = #function, line: Int = #line, file: String = #file) {
+        aiChat("[[TIMER_DEEPLINK]] " + message, function: function, line: line, file: file)
+    }
+
+    func timerDeepLinkError(_ message: String, function: String = #function, line: Int = #line, file: String = #file) {
+        aiChatError("[[TIMER_DEEPLINK]] " + message, function: function, line: line, file: file)
+    }
 }
 
 public final class Logger: LoggerProtocol {

@@ -105,82 +105,36 @@ struct PlayerView: View {
             
         case .timer:
             guard let config = timerSession?.config else { return nil }
-            let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: ":,"))
-            
-            let durValue = "\(config.minutes)".addingPercentEncoding(withAllowedCharacters: allowed)
-            let bsEncoded = config.backgroundSound.id.addingPercentEncoding(withAllowedCharacters: allowed)
-            let bbEncoded = config.binauralBeat.id.addingPercentEncoding(withAllowedCharacters: allowed)
-            
-            let cuRawValue = config.cueSettings.compactMap { cueSetting -> String? in
-                let id = cueSetting.cue.id
-                let trigger: String
-                switch cueSetting.triggerType {
-                case .start:
-                    trigger = "S"
-                case .end:
-                    trigger = "E"
-                case .minute:
-                    if let minute = cueSetting.minute {
-                        trigger = "\(minute)"
-                    } else {
-                        trigger = ""
-                    }
-                case .second:
-                    if let sec = cueSetting.minute {
-                        trigger = "s\(sec)"
-                    } else {
-                        trigger = ""
-                    }
-                }
-                return "\(id):\(trigger)"
-            }.joined(separator: ",")
-            let cuEncoded = cuRawValue.addingPercentEncoding(withAllowedCharacters: allowed)
-            
-            components?.queryItems = [
-                URLQueryItem(name: "dur", value: durValue),
-                URLQueryItem(name: "bs", value: bsEncoded),
-                URLQueryItem(name: "bb", value: bbEncoded),
-                URLQueryItem(name: "cu", value: cuEncoded),
-                URLQueryItem(name: "c", value: "custom"),
-                URLQueryItem(name: "af_sub1", value: "Custom Meditation")
-            ]
+            let subtitle = config.title ?? "Custom Meditation"
+            return TimerOneLinkShareURLBuilder.makeTimerShareURL(
+                timerConfig: config,
+                campaign: "custom",
+                afSub1: subtitle
+            )
         }
         
         return components?.url
     }
     
-    private var shareMessage: String {
+    /// Short line only — the share sheet also passes `URL` separately so the full query string (e.g. `plan=`) is not lost to link detection inside one long string.
+    private var shareCaptionText: String {
         switch sessionType {
         case .guided:
-            guard let file = selectedFile else { return "" }
-            let durationMinutes = Int(ceil(audioPlayerManager.totalDuration / 60))
-            let message = "Found a \(durationMinutes)-min meditation in Dojo called \"\(file.title)\" - thought you'd love it. Try it out!"
-            
-            if let url = generateShareLink() {
-                return "\(message)\n\n\(url.absoluteString)"
-            } else {
-                return message
-            }
-            
+            return "Try this Dojo meditation I thought you'd like."
         case .timer:
-            guard let config = timerSession?.config else { return "" }
-            let cueNames = config.cueSettings.map { $0.cue.name }.joined(separator: ", ")
-            let soundName = config.backgroundSound.name
-            var message = "I just created a custom \(config.minutes)-minute meditation session"
-            if soundName != "None" && !soundName.isEmpty {
-                message += " with \"\(soundName)\" playing in the background"
+            guard let config = timerSession?.config else {
+                return "Try this custom meditation I made for you."
             }
-            if !cueNames.isEmpty {
-                message += " and sound cues (\(cueNames)) to guide you through"
-            }
-            message += ". Made just for you!"
-            
-            if let url = generateShareLink() {
-                return "\(message)\n\n\(url.absoluteString)"
-            } else {
-                return message
-            }
+            return "Try this custom \(config.minutes)m meditation I made for you."
         }
+    }
+
+    private var shareActivityItems: [Any] {
+        let text = shareCaptionText
+        if let url = generateShareLink() {
+            return [text, url]
+        }
+        return [text]
     }
     
     // MARK: - Unified Player Container
@@ -332,7 +286,7 @@ struct PlayerView: View {
             handleOnDisappear()
         }
         .sheet(isPresented: $showShareSheet) {
-            ActivityViewController(activityItems: [shareMessage])
+            ActivityViewController(activityItems: shareActivityItems)
         }
     }
     

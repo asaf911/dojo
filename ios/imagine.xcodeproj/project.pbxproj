@@ -192,6 +192,8 @@
 		A5CD8ADE2CA26CDF00E98C6E /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = A5CD8ADD2CA26CDF00E98C6E /* OneSignalFramework */; };
 		A5D07D122C8BC71300594459 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = A5D07D112C8BC71300594459 /* FirebaseMessaging */; };
 		A5D07D142C8C029000594459 /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D132C8C029000594459 /* DeepLinkHandler.swift */; };
+		CE2B5665D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */; };
+		B5E0DEAD288000100594459 /* PortableTimerDeepLinkPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */; };
 		A5D07D162C8C033900594459 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D152C8C033900594459 /* AppDelegate.swift */; };
 		A5D07D2E2C93A53E00594459 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D2D2C93A53E00594459 /* NotificationService.swift */; };
 		A5D07D322C93A53E00594459 /* PushNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A5D07D2B2C93A53E00594459 /* PushNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -593,6 +595,8 @@
 		A5C7A1D02D4844E0001382C3 /* PracticeSummaryMetricView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSummaryMetricView.swift; sourceTree = "<group>"; };
 		A5C7A1D22D4847E3001382C3 /* PracticeRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeRatingView.swift; sourceTree = "<group>"; };
 		A5D07D132C8C029000594459 /* DeepLinkHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkHandler.swift; sourceTree = "<group>"; };
+		CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDeepLinkPlaybackHydrator.swift; sourceTree = "<group>"; };
+		B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableTimerDeepLinkPlan.swift; sourceTree = "<group>"; };
 		A5D07D152C8C033900594459 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A5D07D2B2C93A53E00594459 /* PushNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PushNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5D07D2D2C93A53E00594459 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -1559,6 +1563,8 @@
 			children = (
 				BC170C0F24420000B2993614 /* AppAudioLifecycleController.swift */,
 				A5D07D132C8C029000594459 /* DeepLinkHandler.swift */,
+				CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */,
+				B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */,
 				A5B264092B3A9DE5009E36B9 /* AppFunctions.swift */,
 				A5EA2E632DAE0941009505D4 /* AppState.swift */,
 				A568483F2D8CBBCF007BFF17 /* GeneralBackgroundMusicController.swift */,
@@ -2337,6 +2343,8 @@
 				A5C682632C0ED77200B3A79B /* NavigationCoordinator.swift in Sources */,
 				A529326B2C9D341500A33770 /* FirestoreManager.swift in Sources */,
 				A5D07D142C8C029000594459 /* DeepLinkHandler.swift in Sources */,
+				CE2B5665D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift in Sources */,
+				B5E0DEAD288000100594459 /* PortableTimerDeepLinkPlan.swift in Sources */,
 				A5C7A1D32D4847EC001382C3 /* PracticeRatingView.swift in Sources */,
 				A5BC07D32C3E5B91008D7D4D /* ConnectivityHelper.swift in Sources */,
 				A5EBC8432D00298C00443273 /* FilterOptionView.swift in Sources */,

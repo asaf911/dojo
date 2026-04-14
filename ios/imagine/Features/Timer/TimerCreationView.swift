@@ -145,8 +145,8 @@ struct TimerView: View {
         .background(InteractivePopGestureSetter())
         .sheet(isPresented: $showShareSheet) {
             if let url = shareLink {
-                // Passing the URL's string representation avoids sandbox extension errors.
-                ActivityViewController(activityItems: [shareMessage, url.absoluteString])
+                // Pass `URL` as its own item so Messages and other targets keep the full link (including long `plan=`).
+                ActivityViewController(activityItems: [shareMessage, url])
             } else {
                 Text("No share link generated.")
                     .nunitoFont(size: 16, style: .medium)
@@ -255,53 +255,26 @@ struct TimerView: View {
     }
     
     private func generateShareLink() -> URL? {
-        let baseURL = Config.oneLinkBaseURL
-        var components = URLComponents(string: baseURL)
-        // Subtract colon and comma from allowed set so that they are percent-encoded.
-        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: ":,"))
-        let durValue = "\(selectedMinutes)".addingPercentEncoding(withAllowedCharacters: allowed)
-        let bsValue = selectedBackgroundSound.id
-        let bsEncoded = bsValue.addingPercentEncoding(withAllowedCharacters: allowed)
-        let cuRawValue = cueSettings.compactMap { cueSetting -> String? in
-            let id = cueSetting.cue.id
-            let trigger: String
-            switch cueSetting.triggerType {
-            case .start:
-                trigger = "S"
-            case .end:
-                trigger = "E"
-            case .minute:
-                if let minute = cueSetting.minute {
-                    trigger = "\(minute)"
-                } else {
-                    trigger = ""
-                }
-            case .second:
-                if let sec = cueSetting.minute {
-                    trigger = "s\(sec)"
-                } else {
-                    trigger = ""
-                }
-            }
-            return "\(id):\(trigger)"
-        }.joined(separator: ",")
-        let cuEncoded = cuRawValue.addingPercentEncoding(withAllowedCharacters: allowed)
-        let bbValue = selectedBinauralBeat.id
-        let bbEncoded = bbValue.addingPercentEncoding(withAllowedCharacters: allowed)
-        components?.queryItems = [
-            URLQueryItem(name: "dur", value: durValue),
-            URLQueryItem(name: "bs", value: bsEncoded),
-            URLQueryItem(name: "bb", value: bbEncoded),
-            URLQueryItem(name: "cu", value: cuEncoded),
-            URLQueryItem(name: "c", value: "custom"),
-            URLQueryItem(name: "af_sub1", value: "Custom Meditation")
-        ]
-        return components?.url
+        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        let timerConfig = MeditationConfiguration.makeTimerSessionConfig(
+            durationMinutes: selectedMinutes,
+            backgroundSound: selectedBackgroundSound,
+            binauralBeat: selectedBinauralBeat,
+            cueSettings: cueSettings,
+            title: nil,
+            voiceId: voiceId,
+            isDeepLinked: false,
+            description: nil
+        )
+        return TimerOneLinkShareURLBuilder.makeTimerShareURL(
+            timerConfig: timerConfig,
+            campaign: "custom",
+            afSub1: "Custom Meditation"
+        )
     }
     
     private var shareMessage: String {
-        let cueNames = cueSettings.map { $0.cue.name }.joined(separator: ", ")
-        return "I just created a custom \(selectedMinutes)-minute meditation session with \"\(selectedBackgroundSound.name)\" playing in the background and sound cues (like \(cueNames)) to guide you through. Made just for you!"
+        "Try this custom \(selectedMinutes)m meditation I made for you."
     }
 
     // MARK: - Play Flow Helpers

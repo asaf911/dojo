@@ -333,20 +333,40 @@ class NavigationCoordinator: ObservableObject {
     func showPlayerFromDeepLink(meditationConfiguration: MeditationConfiguration) {
         logger.eventMessage("NavigationCoordinator: Showing Player from deep link - duration: \(meditationConfiguration.duration), sound: \(meditationConfiguration.backgroundSound.name)")
 
+        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
+        let timerConfig = meditationConfiguration.toTimerSessionConfig(voiceId: voiceId, isDeepLinked: true)
+        Task { @MainActor in
+            logger.timerDeepLink("player_sheet path=MeditationConfiguration pre_cues=\(timerConfig.cueSettings.count)")
+            let hydrated = await FractionalDeepLinkPlaybackHydrator.hydrateIfNeeded(timerConfig)
+            logger.timerDeepLink("player_sheet path=MeditationConfiguration post_cues=\(hydrated.cueSettings.count)")
+            self.presentPlayerForDeepLinkedTimer(timerConfig: hydrated)
+        }
+    }
+
+    /// Shows the Player from a portable-plan deep link (`dlv=2` + `pz` / fragment / `plan=`) — may hydrate collapsed `_FRAC` rows via `postFractionalPlan`.
+    func showPlayerFromDeepLinkedTimerConfig(_ timerConfig: TimerSessionConfig) {
+        logger.timerDeepLink("player_sheet path=portable_plan pre_cues=\(timerConfig.cueSettings.count) durMin=\(timerConfig.minutes)")
+        Task { @MainActor in
+            let hydrated = await FractionalDeepLinkPlaybackHydrator.hydrateIfNeeded(timerConfig)
+            logger.timerDeepLink("player_sheet path=portable_plan post_cues=\(hydrated.cueSettings.count)")
+            self.presentPlayerForDeepLinkedTimer(timerConfig: hydrated)
+        }
+    }
+
+    private func presentPlayerForDeepLinkedTimer(timerConfig: TimerSessionConfig) {
         // Subscription gate: if user must subscribe first, show subscription flow
         if SubscriptionManager.shared.shouldGatePlay {
+            logger.timerDeepLink("player_present blocked reason=subscription_gate cues=\(timerConfig.cueSettings.count)")
             SubscriptionManager.shared.logGateState()
             subscriptionSource = .createScreen
             navigateTo(.subscription)
             return
         }
 
+        logger.timerDeepLink("player_present ok cues=\(timerConfig.cueSettings.count) durMin=\(timerConfig.minutes)")
+
         // Navigate to main view to ensure proper view hierarchy for sheet presentation
         currentView = .main
-
-        // Build TimerSessionConfig with cue URLs resolved for user's voice
-        let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
-        let timerConfig = meditationConfiguration.toTimerSessionConfig(voiceId: voiceId, isDeepLinked: true)
 
         SessionContextManager.shared.setupCustomMeditationSession(
             entryPoint: .deepLink,
@@ -364,7 +384,8 @@ class NavigationCoordinator: ObservableObject {
             cueSettings: timerConfig.cueSettings,
             binauralBeat: timerConfig.binauralBeat,
             isDeepLinked: true,
-            title: timerConfig.title
+            title: timerConfig.title,
+            description: timerConfig.description
         )
     }
 

@@ -46,7 +46,7 @@ extension MeditationPackage {
             title: title,
             binauralBeat: binauralBeat
         )
-        let deepLink = Self.generateDeepLink(from: config)
+        let deepLink = Self.generateDeepLink(from: self)
         return AITimerResponse(
             meditationConfiguration: config,
             deepLink: deepLink,
@@ -54,40 +54,21 @@ extension MeditationPackage {
         )
     }
 
-    private static func generateDeepLink(from configuration: MeditationConfiguration) -> URL {
-        let baseURL = Config.oneLinkBaseURL
-        var components = URLComponents(string: baseURL)
-
-        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: ":,"))
-        let durValue = "\(configuration.duration)".addingPercentEncoding(withAllowedCharacters: allowed)
-        let bsEncoded = configuration.backgroundSound.id.addingPercentEncoding(withAllowedCharacters: allowed)
-
-        let cuRawValue = configuration.cueSettings.compactMap { cueSetting -> String? in
-            let id = cueSetting.cue.id
-            let trigger: String
-            switch cueSetting.triggerType {
-            case .start: trigger = "S"
-            case .end: trigger = "E"
-            case .minute: trigger = "\(cueSetting.minute ?? 0)"
-            case .second: trigger = "s\(cueSetting.minute ?? 0)"
-            }
-            return "\(id):\(trigger)"
-        }.joined(separator: ",")
-
-        let cuEncoded = cuRawValue.addingPercentEncoding(withAllowedCharacters: allowed)
-        let bbId = configuration.binauralBeat?.id ?? "None"
-        let bbEncoded = bbId.addingPercentEncoding(withAllowedCharacters: allowed)
-        let meditationName = configuration.title ?? "AI Meditation"
-
-        components?.queryItems = [
-            URLQueryItem(name: "dur", value: durValue),
-            URLQueryItem(name: "bs", value: bsEncoded),
-            URLQueryItem(name: "bb", value: bbEncoded),
-            URLQueryItem(name: "cu", value: cuEncoded),
-            URLQueryItem(name: "c", value: "ai"),
-            URLQueryItem(name: "af_sub1", value: meditationName),
-        ]
-
-        return components?.url ?? URL(string: baseURL)!
+    /// OneLink with `dlv=2` + portable `plan` so fractional / server clip ids replay without catalog rows.
+    private static func generateDeepLink(from package: MeditationPackage) -> URL {
+        do {
+            let plan = PortableTimerDeepLinkPlanV1(package: package)
+            return try TimerOneLinkShareURLBuilder.timerShareURL(
+                durationMinutes: package.duration,
+                backgroundSoundId: package.backgroundSound.id,
+                binauralBeatId: package.binauralBeat?.id ?? "None",
+                plan: plan,
+                campaign: "ai",
+                afSub1: package.title ?? "AI Meditation"
+            )
+        } catch {
+            logger.errorMessage("MeditationPackage: portable OneLink encode failed: \(error.localizedDescription)")
+            return URL(string: Config.oneLinkBaseURL)!
+        }
     }
 }

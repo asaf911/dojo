@@ -72,6 +72,12 @@ extension FractionalModules.Service {
                 guard let b = bodyScan else { return "nil" }
                 return "\(b.direction) introShort=\(b.introShort) introLong=\(b.introLong) entry=\(b.includeEntry)"
             }()
+            let isDeepLinkHydration = trigger.contains("FractionalDeepLinkPlaybackHydrator")
+            if isDeepLinkHydration {
+                logger.timerDeepLink(
+                    "postFractionalPlan_req moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) atTimelineStart=\(atTimelineStart) bodyScan=\(bsLog) server=\(Config.serverLabel)"
+                )
+            }
             #if DEBUG
             let tag = "🧠 AI_DEBUG [Fractional][Service]"
             print("\(tag) fetchPlan: start trigger=\(trigger) server=\(Config.serverLabel) moduleId=\(moduleId) durationSec=\(durationSec) voiceId=\(voiceId) atTimelineStart=\(atTimelineStart) bodyScan=\(bsLog)")
@@ -97,6 +103,9 @@ extension FractionalModules.Service {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let http = response as? HTTPURLResponse else {
+                if isDeepLinkHydration {
+                    logger.timerDeepLinkError("postFractionalPlan_transport moduleId=\(moduleId) err=invalid_response_type")
+                }
                 #if DEBUG
                 print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) - invalid response type")
                 #endif
@@ -105,6 +114,11 @@ extension FractionalModules.Service {
 
             if http.statusCode != 200 {
                 let bodyStr = String(data: data, encoding: .utf8) ?? ""
+                if isDeepLinkHydration {
+                    logger.timerDeepLinkError(
+                        "postFractionalPlan_http status=\(http.statusCode) moduleId=\(moduleId) bodyPrefix=\(String(bodyStr.prefix(200)))"
+                    )
+                }
                 #if DEBUG
                 print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) status=\(http.statusCode) body=\(String(bodyStr.prefix(200)))")
                 #endif
@@ -113,11 +127,17 @@ extension FractionalModules.Service {
 
             do {
                 let plan = try JSONDecoder().decode(FractionalModules.Plan.self, from: data)
+                if isDeepLinkHydration {
+                    logger.timerDeepLink("postFractionalPlan_ok moduleId=\(moduleId) planId=\(plan.planId) items=\(plan.items.count)")
+                }
                 #if DEBUG
                 print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: success trigger=\(trigger) planId=\(plan.planId) items=\(plan.items.count)")
                 #endif
                 return plan
             } catch {
+                if isDeepLinkHydration {
+                    logger.timerDeepLinkError("postFractionalPlan_decode moduleId=\(moduleId) err=\(error.localizedDescription)")
+                }
                 #if DEBUG
                 print("🧠 AI_DEBUG [Fractional][Service] fetchPlan: failure trigger=\(trigger) decode error - \(error.localizedDescription)")
                 #endif
