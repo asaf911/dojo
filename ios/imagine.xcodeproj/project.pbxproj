@@ -192,8 +192,6 @@
 		A5CD8ADE2CA26CDF00E98C6E /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = A5CD8ADD2CA26CDF00E98C6E /* OneSignalFramework */; };
 		A5D07D122C8BC71300594459 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = A5D07D112C8BC71300594459 /* FirebaseMessaging */; };
 		A5D07D142C8C029000594459 /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D132C8C029000594459 /* DeepLinkHandler.swift */; };
-		CE2B5665D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */; };
-		B5E0DEAD288000100594459 /* PortableTimerDeepLinkPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */; };
 		A5D07D162C8C033900594459 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D152C8C033900594459 /* AppDelegate.swift */; };
 		A5D07D2E2C93A53E00594459 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D07D2D2C93A53E00594459 /* NotificationService.swift */; };
 		A5D07D322C93A53E00594459 /* PushNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A5D07D2B2C93A53E00594459 /* PushNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -225,6 +223,7 @@
 		B1A1A1A12F00000100AAAAAA /* ThinkingIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1A1A02F00000100AAAAAA /* ThinkingIndicatorView.swift */; };
 		B211CA907177F10959DD6D1D /* JourneyPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5EE1D42B8780FD4D6C1C08 /* JourneyPhase.swift */; };
 		B467EF59E98773AD292FECE4 /* SessionHistoryQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCDDD51DE98D6EB915C3639 /* SessionHistoryQuery.swift */; };
+		B5E0DEAD288000100594459 /* PortableTimerDeepLinkPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */; };
 		B5F1E0112E9A000100508EB1 /* IntroPrefixTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */; };
 		B5F1E0172E9A000300508EB1 /* FractionalCueID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */; };
 		B62F5D1141715141CDE098FC /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D57F3366E32AA6519AD0E5 /* HealthKitManager.swift */; };
@@ -264,6 +263,7 @@
 		CD7BCF3881F99016A9ADDF26 /* OnboardingSelectableCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8899A05558BF7661F607AFC /* OnboardingSelectableCard.swift */; };
 		CDA623BF2CB618F80063D812 /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA623BE2CB618F50063D812 /* Fonts.swift */; };
 		CDA69981853FE06A56C5AEE4 /* SubscriptionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9848C9D23DC14F03647CC1 /* SubscriptionViewModel.swift */; };
+		CE2B5665D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */; };
 		CF1126CA54BB75ECCFB1F06A /* RecommendationCardShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7B4F74634479BB8EDC7D2A /* RecommendationCardShell.swift */; };
 		CF5EE117A5482D7E9D178D89 /* MockStatsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A97467A792B98CFF930F22 /* MockStatsService.swift */; };
 		CG0100032F00000100000001 /* CompositionGuidelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = CG0100012F00000100000001 /* CompositionGuidelines.swift */; };
@@ -595,8 +595,6 @@
 		A5C7A1D02D4844E0001382C3 /* PracticeSummaryMetricView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSummaryMetricView.swift; sourceTree = "<group>"; };
 		A5C7A1D22D4847E3001382C3 /* PracticeRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeRatingView.swift; sourceTree = "<group>"; };
 		A5D07D132C8C029000594459 /* DeepLinkHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkHandler.swift; sourceTree = "<group>"; };
-		CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDeepLinkPlaybackHydrator.swift; sourceTree = "<group>"; };
-		B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableTimerDeepLinkPlan.swift; sourceTree = "<group>"; };
 		A5D07D152C8C033900594459 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A5D07D2B2C93A53E00594459 /* PushNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PushNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5D07D2D2C93A53E00594459 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -627,6 +625,7 @@
 		B1A774B56C9FA226D362A809 /* AnalyticsServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsServiceProtocol.swift; sourceTree = "<group>"; };
 		B36CFA61BDB83691B4FA7C13 /* ProductJourneyManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProductJourneyManager.swift; sourceTree = "<group>"; };
 		B3FB30E6D09AC203A37C5936 /* FitbitHRProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FitbitHRProvider.swift; sourceTree = "<group>"; };
+		B5E0DEAC288000100594459 /* PortableTimerDeepLinkPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortableTimerDeepLinkPlan.swift; sourceTree = "<group>"; };
 		B5F1E0102E9A000100508EB1 /* IntroPrefixTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroPrefixTimeline.swift; sourceTree = "<group>"; };
 		B5F1E0162E9A000300508EB1 /* FractionalCueID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalCueID.swift; sourceTree = "<group>"; };
 		B64A5BD069478A86C6E10B88 /* AuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
@@ -665,6 +664,7 @@
 		CD161DA42CC310A000E06847 /* view+appear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "view+appear.swift"; sourceTree = "<group>"; };
 		CD161EA62CC3627E00E06847 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		CDA623BE2CB618F50063D812 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
+		CE2B5664D9784AC1BDB47934 /* FractionalDeepLinkPlaybackHydrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FractionalDeepLinkPlaybackHydrator.swift; sourceTree = "<group>"; };
 		CG0100012F00000100000001 /* CompositionGuidelines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionGuidelines.swift; sourceTree = "<group>"; };
 		CHATDIV00001FILEREF01 /* ChatDateDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDateDivider.swift; sourceTree = "<group>"; };
 		CHATLIST0001FILEREF01 /* ChatListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListItem.swift; sourceTree = "<group>"; };
@@ -2854,7 +2854,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 240;
+				CURRENT_PROJECT_VERSION = 241;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -2898,7 +2898,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 240;
+				CURRENT_PROJECT_VERSION = 241;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
