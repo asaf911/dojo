@@ -8,22 +8,24 @@
 export const ESTIMATED_CLIP_SEC_FALLBACK = 5;
 
 /** Minimum gap before first reminder (seconds). */
-const REMINDER_GAP_FLOOR = 15;
+const REMINDER_GAP_FLOOR = 22;
+/** NF_FRAC: wider floor so nostril nudges breathe more slowly. */
+const NF_REMINDER_GAP_FLOOR = 36;
 /** IM_FRAC: higher floor so mantra practice has wider reminder spacing. */
-const IM_REMINDER_GAP_FLOOR = 25;
+const IM_REMINDER_GAP_FLOOR = 40;
 /** Cap for each reminder gap in linear ramp. */
-const REMINDER_GAP_CAP = 90;
+const REMINDER_GAP_CAP = 120;
 /** Session end padding after last clip (seconds). */
 const SESSION_END_PAD_SEC = 1;
 /** Minimum gap after last reminder before outro starts. */
-const MIN_GAP_BEFORE_OUTRO = 8;
+const MIN_GAP_BEFORE_OUTRO = 16;
 
-const TAIL_FRAC = 0.15;
+const TAIL_FRAC = 0.24;
 /** IM_FRAC: reserve more span for uninterrupted practice after last reminder. */
-const IM_TAIL_FRAC = 0.22;
-const TAIL_ABS_MIN = 6;
-const IM_TAIL_ABS_MIN = 8;
-const TAIL_ABS_MAX = 50;
+const IM_TAIL_FRAC = 0.30;
+const TAIL_ABS_MIN = 12;
+const IM_TAIL_ABS_MIN = 14;
+const TAIL_ABS_MAX = 60;
 
 /** Clip fields required for scheduling (matches FractionalClip subset). */
 export interface ScheduleClip {
@@ -145,7 +147,11 @@ export function scheduleNfImPlan(
 
   const lastInstrStep = Math.max(0, instrClips.length - 2);
   const reminderGapFloor =
-    moduleId === "IM_FRAC" ? IM_REMINDER_GAP_FLOOR : REMINDER_GAP_FLOOR;
+    moduleId === "IM_FRAC"
+      ? IM_REMINDER_GAP_FLOOR
+      : moduleId === "NF_FRAC"
+        ? NF_REMINDER_GAP_FLOOR
+        : REMINDER_GAP_FLOOR;
   const remInitial = Math.max(
     instrGapAt(durationSec, lastInstrStep),
     reminderGapFloor
@@ -177,7 +183,7 @@ export function scheduleNfImPlan(
     let tailSec = clamp(
       span * tailFrac,
       tailAbsMin,
-      Math.min(TAIL_ABS_MAX, durationSec * 0.22)
+      Math.min(TAIL_ABS_MAX, durationSec * 0.30)
     );
     let gapBudget = span - sumRemD - tailSec;
 

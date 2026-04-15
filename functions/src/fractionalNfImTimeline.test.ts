@@ -92,16 +92,28 @@ test("IM_FRAC IM_C002→IM_C003 gap is 5s when both scheduled", () => {
   assert.ok(Math.abs(gap - 5) < 0.5, `expected ~5s gap, got ${gap}`);
 });
 
-test("IM_FRAC 120s caps reminders at 2", () => {
+test("IM_FRAC 120s: no reminders under reminder threshold (short block)", () => {
   const plan = composeFractionalPlan(imClips, 120, "Asaf", "IM_FRAC", true);
   const n = plan.items.filter((i) => i.role === "reminder").length;
-  assert.ok(n <= 2, `expected at most 2 reminders for 120s IM, got ${n}`);
+  assert.equal(n, 0, `expected no reminders for 120s IM, got ${n}`);
 });
 
-test("IM_FRAC 300s caps reminders at 4", () => {
+test("IM_FRAC 300s caps reminders at 2", () => {
   const plan = composeFractionalPlan(imClips, 300, "Asaf", "IM_FRAC", true);
   const n = plan.items.filter((i) => i.role === "reminder").length;
-  assert.ok(n <= 4, `expected at most 4 reminders for 300s IM, got ${n}`);
+  assert.ok(n <= 2, `expected at most 2 reminders for 300s IM, got ${n}`);
+});
+
+test("NF_FRAC 120s: no reminders under reminder threshold (short block)", () => {
+  const plan = composeFractionalPlan(nfClips, 120, "Asaf", "NF_FRAC", true);
+  const n = plan.items.filter((i) => i.role === "reminder").length;
+  assert.equal(n, 0, `expected no reminders for 120s NF, got ${n}`);
+});
+
+test("NF_FRAC 300s caps reminders at 2", () => {
+  const plan = composeFractionalPlan(nfClips, 300, "Asaf", "NF_FRAC", true);
+  const n = plan.items.filter((i) => i.role === "reminder").length;
+  assert.ok(n <= 2, `expected at most 2 reminders for 300s NF, got ${n}`);
 });
 
 test("composeFractionalPlan NF skips intro under 5m when not timeline start (catalog)", () => {

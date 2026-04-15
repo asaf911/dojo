@@ -20,7 +20,7 @@ const MIN_GAP_BEFORE_OUTRO = 8;
 const OUTRO_CHAIN_GAP_SEC = 1.5;
 const REMINDER_THRESHOLD_SEC = 120;
 /** Minimum seconds between MV reminder clips when more than one is scheduled (wider = calmer). */
-const MIN_GAP_BETWEEN_REMINDERS_SEC = 18;
+const MIN_GAP_BETWEEN_REMINDERS_SEC = 28;
 /**
  * "If attention drifts, return to the scene" — deprioritized: never scheduled below this MV
  * window duration (seconds). Long blocks only.
@@ -31,14 +31,14 @@ const MV_RETURN_SCENE_REMINDER_IDS = new Set(["MVK_C008", "MVG_C008"]);
 
 /**
  * Caps how many reminders we attempt for a given MV block length (sparse for short windows).
- * 2–3 min blocks: none. 3–5 min: at most one. 5–7 min: at most two. Longer: all eligible.
+ * Under 2 min: none. 2–3 min: none. 3–6 min: at most one. 6–9 min: at most two. Longer: at most three.
  */
 function reminderTierCap(durationSec: number): number {
   if (durationSec < REMINDER_THRESHOLD_SEC) return 0;
   if (durationSec < 180) return 0;
-  if (durationSec < 300) return 1;
-  if (durationSec < 420) return 2;
-  return 999;
+  if (durationSec < 360) return 1;
+  if (durationSec < 540) return 2;
+  return 3;
 }
 
 function remindersPoolForDuration(

@@ -112,15 +112,23 @@ export interface FractionalPlan {
 // Constants
 // ---------------------------------------------------------------------------
 
-const REMINDER_THRESHOLD_SEC = 120;
+/** No scripted reminders below this block length (NF/IM); widened for calmer short sessions. */
+const REMINDER_THRESHOLD_SEC = 180;
 const OUTRO_THRESHOLD_SEC = 120;
 
 /** IM_FRAC: cap reminders so mantra blocks keep longer silent practice. */
 function maxImMantraReminders(durationSec: number): number {
-  if (durationSec < 150) return 2;
-  if (durationSec < 240) return 3;
-  if (durationSec < 360) return 4;
-  return 5;
+  if (durationSec < 210) return 1;
+  if (durationSec < 330) return 2;
+  if (durationSec < 450) return 3;
+  return 4;
+}
+
+/** NF_FRAC: sparser than IM — fewer nudges, more room for silent attention on the breath. */
+function maxNostrilFocusReminders(durationSec: number): number {
+  if (durationSec < 240) return 1;
+  if (durationSec < 420) return 2;
+  return 3;
 }
 
 // ---------------------------------------------------------------------------
@@ -218,6 +226,8 @@ function selectClips(
     reminderCount = Math.max(1, reminderCount);
     if (moduleId === "IM_FRAC") {
       reminderCount = Math.min(reminderCount, maxImMantraReminders(durationSec));
+    } else if (moduleId === "NF_FRAC") {
+      reminderCount = Math.min(reminderCount, maxNostrilFocusReminders(durationSec));
     }
   }
 

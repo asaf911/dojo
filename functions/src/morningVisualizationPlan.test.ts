@@ -90,7 +90,7 @@ test("MV_KM_FRAC 60s: no reminders when under REMINDER_THRESHOLD", () => {
   assert.equal(n, 0);
 });
 
-test("MV_GR_FRAC 420s can schedule gratitude-only reminder MVG_C010", () => {
+test("MV_GR_FRAC 420s schedules at least one gratitude-variant reminder", () => {
   const plan = composeMorningVisualizationPlan(
     mvClips,
     420,
@@ -99,10 +99,14 @@ test("MV_GR_FRAC 420s can schedule gratitude-only reminder MVG_C010", () => {
     true
   );
   assertNoOverrun(plan, mvClips);
-  const ids = plan.items.map((i) => i.clipId);
+  const reminders = plan.items.filter((i) => i.role === "reminder");
   assert.ok(
-    ids.includes("MVG_C010"),
-    "expected MVG_C010 (gratitude reminder) in long GR session"
+    reminders.length >= 1,
+    "expected at least one reminder in a 7m gratitude block"
+  );
+  assert.ok(
+    reminders.every((i) => i.clipId.startsWith("MVG_")),
+    "expected only gratitude-variant reminder clips"
   );
 });
 
