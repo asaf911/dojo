@@ -8,21 +8,17 @@
 
 import * as functions from "firebase-functions";
 import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
-import { clipDurationSec } from "./fractionalTimeline";
+import {
+  allocateReminderSilencesWithLongTail,
+  clipDurationSec,
+  instrGapAt,
+} from "./fractionalTimeline";
 import { FRACTIONAL_FIRST_SPEECH_OFFSET_SEC } from "./fractionalSessionConstants";
 
 const SESSION_END_PAD_SEC = 1;
 const MIN_GAP_BEFORE_OUTRO = 8;
 const OUTRO_CHAIN_GAP_SEC = 1.5;
 const MIN_GAP_BETWEEN_REMINDERS_SEC = 20;
-
-/** Matches NF/IM instruction gaps (same curve as morning viz). */
-function instrGapAt(durationSec: number, step: number): number {
-  const dFactor = Math.min(1, Math.max(0, (durationSec - 600) / 600));
-  const instrBase = 6 + 2 * dFactor;
-  const INSTR_CAP = 30;
-  return Math.min(instrBase + Math.pow(2, step) - 1, INSTR_CAP);
-}
 
 function filterPool(
   clips: FractionalClip[],
@@ -127,34 +123,49 @@ function tryPlaceOrdered(
     return { items: [], fits: false, timelineEndSec: 0 };
   }
 
-  const reminderWindowEnd =
-    outros.length > 0 ? outroFirstStart - MIN_GAP_BEFORE_OUTRO : scheduleBudgetSec - SESSION_END_PAD_SEC;
-  let t = cursor + MIN_GAP_BEFORE_OUTRO;
-
-  if (reminders.length > 0) {
-    const sumRem = reminders.reduce((s, c) => s + clipDurationSec(c), 0);
-    const spaceForGaps = reminderWindowEnd - t - sumRem;
-    if (spaceForGaps < -0.01) {
-      return { items: [], fits: false, timelineEndSec: 0 };
+  let instrBaseline = instrGapAt(scheduleBudgetSec, 0);
+  if (speech.length >= 2) {
+    const gaps: number[] = [];
+    for (let j = 1; j < speech.length; j++) {
+      gaps.push(instrGapAt(scheduleBudgetSec, j - 1));
     }
-    if (reminders.length > 1) {
-      const gapBetween = spaceForGaps / (reminders.length - 1);
-      if (gapBetween < MIN_GAP_BETWEEN_REMINDERS_SEC - 0.01) {
-        return { items: [], fits: false, timelineEndSec: 0 };
-      }
-      for (let i = 0; i < reminders.length; i++) {
-        t = pushItem(t, reminders[i]!);
-        if (i < reminders.length - 1) t += gapBetween;
-      }
-    } else {
-      t = pushItem(t, reminders[0]!);
-    }
-    if (t > reminderWindowEnd + 0.01) {
-      return { items: [], fits: false, timelineEndSec: 0 };
-    }
+    instrBaseline = Math.min(...gaps);
   }
 
-  let o = outros.length > 0 ? outroFirstStart : t;
+  const segmentEnd =
+    outros.length > 0
+      ? outroFirstStart
+      : scheduleBudgetSec - SESSION_END_PAD_SEC;
+  const afterLastFloor = outros.length > 0 ? MIN_GAP_BEFORE_OUTRO : 0;
+
+  let tAfterReminders = cursor;
+
+  if (reminders.length > 0) {
+    const instrEnd = cursor;
+    const sumRem = reminders.reduce((s, c) => s + clipDurationSec(c), 0);
+    const totalSilence = segmentEnd - instrEnd - sumRem;
+    if (totalSilence < -0.01) {
+      return { items: [], fits: false, timelineEndSec: 0 };
+    }
+    const g = allocateReminderSilencesWithLongTail(totalSilence, reminders.length, {
+      beforeFirst: Math.max(instrBaseline, MIN_GAP_BEFORE_OUTRO),
+      between: Math.max(instrBaseline, MIN_GAP_BETWEEN_REMINDERS_SEC),
+      afterLast: Math.max(instrBaseline, afterLastFloor),
+    });
+    if (g === null) {
+      return { items: [], fits: false, timelineEndSec: 0 };
+    }
+    let t = instrEnd + g[0]!;
+    for (let i = 0; i < reminders.length; i++) {
+      t = pushItem(t, reminders[i]!);
+      if (i < reminders.length - 1) {
+        t += g[i + 1]!;
+      }
+    }
+    tAfterReminders = t;
+  }
+
+  let o = outros.length > 0 ? outroFirstStart : tAfterReminders;
   for (let i = 0; i < outros.length; i++) {
     o = pushItem(o, outros[i]!);
     if (i < outros.length - 1) o += OUTRO_CHAIN_GAP_SEC;

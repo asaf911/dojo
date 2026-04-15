@@ -1,6 +1,7 @@
 /**
- * NF_FRAC / IM_FRAC unified timeline: instruction spacing + monotonic reminder gaps
- * + explicit tail (silence before outro or session end). Selection and placement share this module.
+ * NF_FRAC / IM_FRAC unified timeline: instruction spacing + monotonic reminder silences
+ * (n+1 gaps for n reminders). Surplus silence above per-slot floors is split with linear weights
+ * 1…(n+1) so the gap before outro grows modestly vs earlier gaps (no single “long tail” swallow).
  *
  * @see docs/fractional-module-composition.md
  */
@@ -13,19 +14,12 @@ const REMINDER_GAP_FLOOR = 22;
 const NF_REMINDER_GAP_FLOOR = 36;
 /** IM_FRAC: higher floor so mantra practice has wider reminder spacing. */
 const IM_REMINDER_GAP_FLOOR = 40;
-/** Cap for each reminder gap in linear ramp. */
-const REMINDER_GAP_CAP = 120;
 /** Session end padding after last clip (seconds). */
 const SESSION_END_PAD_SEC = 1;
 /** Minimum gap after last reminder before outro starts. */
 const MIN_GAP_BEFORE_OUTRO = 16;
 
-const TAIL_FRAC = 0.24;
-/** IM_FRAC: reserve more span for uninterrupted practice after last reminder. */
-const IM_TAIL_FRAC = 0.30;
-const TAIL_ABS_MIN = 12;
-const IM_TAIL_ABS_MIN = 14;
-const TAIL_ABS_MAX = 60;
+const REM_SILENCE_SUM_EPS = 1e-3;
 
 /** Clip fields required for scheduling (matches FractionalClip subset). */
 export interface ScheduleClip {
@@ -71,7 +65,8 @@ function instructionPairGapSec(
   return v != null && Number.isFinite(v) ? v : undefined;
 }
 
-function instrGapAt(durationSec: number, step: number): number {
+/** Exponential instruction-gap curve (seconds), shared by fractional composers. */
+export function instrGapAt(durationSec: number, step: number): number {
   const dFactor = Math.min(1, Math.max(0, (durationSec - 600) / 600));
   const instrBase = 6 + 2 * dFactor;
   const INSTR_CAP = 30;
@@ -80,6 +75,57 @@ function instrGapAt(durationSec: number, step: number): number {
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
+}
+
+/**
+ * Per-slot minimum silence (seconds) for reminder placement. Callers typically combine with an
+ * instruction baseline via `Math.max(baseline, floors.*)` so reminder gaps never sit below the
+ * tightest instruction gap in the chain.
+ */
+export interface ReminderSilenceFloors {
+  beforeFirst: number;
+  between: number;
+  afterLast: number;
+}
+
+/**
+ * For `n` reminders, returns `n + 1` silences: after instructions before R₀, between Rᵢ and Rᵢ₊₁,
+ * then after the last reminder before the segment end (outro or session end).
+ *
+ * Floors are raised to a non-decreasing sequence. Remaining budget is split with weights
+ * `1, 2, …, n+1` (arithmetic progression on the **extra** above floors), so later gaps get more
+ * silence but no single slot absorbs the whole surplus.
+ */
+export function allocateReminderSilencesWithLongTail(
+  totalSilenceSec: number,
+  nReminders: number,
+  floors: ReminderSilenceFloors
+): number[] | null {
+  if (nReminders <= 0) {
+    return [];
+  }
+  const n = nReminders;
+  const s: number[] = [floors.beforeFirst];
+  for (let i = 1; i < n; i++) {
+    s.push(floors.between);
+  }
+  s.push(floors.afterLast);
+  for (let i = 1; i < s.length; i++) {
+    if (s[i]! < s[i - 1]!) {
+      s[i] = s[i - 1]!;
+    }
+  }
+  const minSum = s.reduce((a, b) => a + b, 0);
+  if (totalSilenceSec + REM_SILENCE_SUM_EPS < minSum) {
+    return null;
+  }
+  const extra = totalSilenceSec - minSum;
+  const weightSum = ((n + 1) * (n + 2)) / 2;
+  for (let i = 0; i <= n; i++) {
+    const w = i + 1;
+    s[i] = (s[i] ?? 0) + (extra * w) / weightSum;
+  }
+  return s;
 }
 
 export interface ScheduleNfImResult {
@@ -91,7 +137,7 @@ export interface ScheduleNfImResult {
 
 /**
  * Build plan items for NF/IM using one schedule: exponential instruction gaps (with pair overrides),
- * then linearly growing reminder gaps and explicit tail.
+ * then reminder gaps (floors + linear-weight surplus) before outro/session end.
  */
 export function scheduleNfImPlan(
   selected: ScheduleClip[],
@@ -145,17 +191,24 @@ export function scheduleNfImPlan(
     }
   }
 
-  const lastInstrStep = Math.max(0, instrClips.length - 2);
+  let instrBaseline = instrGapAt(durationSec, 0);
+  if (instrClips.length >= 2) {
+    const gaps: number[] = [];
+    for (let i = 1; i < instrClips.length; i++) {
+      const prev = instrClips[i - 1]!;
+      const cur = instrClips[i]!;
+      const pair = instructionPairGapSec(moduleId, prev.clipId, cur.clipId);
+      gaps.push(pair !== undefined ? pair : instrGapAt(durationSec, i - 1));
+    }
+    instrBaseline = Math.min(...gaps);
+  }
+
   const reminderGapFloor =
     moduleId === "IM_FRAC"
       ? IM_REMINDER_GAP_FLOOR
       : moduleId === "NF_FRAC"
         ? NF_REMINDER_GAP_FLOOR
         : REMINDER_GAP_FLOOR;
-  const remInitial = Math.max(
-    instrGapAt(durationSec, lastInstrStep),
-    reminderGapFloor
-  );
 
   const outroClip = outroClips[0];
   const outroDur = outroClip ? clipDurationSec(outroClip) : 0;
@@ -164,68 +217,38 @@ export function scheduleNfImPlan(
     const n = reminderClips.length;
     const sumRemD = reminderClips.reduce((s, c) => s + clipDurationSec(c), 0);
 
-    let spanEnd: number;
-    if (outroClip) {
-      const outroAt = durationSec - SESSION_END_PAD_SEC - outroDur;
-      spanEnd = outroAt - MIN_GAP_BEFORE_OUTRO;
-    } else {
-      spanEnd = durationSec - SESSION_END_PAD_SEC;
-    }
+    const segmentEnd = outroClip
+      ? durationSec - SESSION_END_PAD_SEC - outroDur
+      : durationSec - SESSION_END_PAD_SEC;
 
-    const span = spanEnd - cursorEnd;
-    if (span <= 0) {
+    const totalSilence = segmentEnd - cursorEnd - sumRemD;
+    if (totalSilence < -REM_SILENCE_SUM_EPS) {
       return { items, timelineEndSec, fits: false };
     }
 
-    const tailFrac = moduleId === "IM_FRAC" ? IM_TAIL_FRAC : TAIL_FRAC;
-    const tailAbsMin = moduleId === "IM_FRAC" ? IM_TAIL_ABS_MIN : TAIL_ABS_MIN;
+    const mergedFloors: ReminderSilenceFloors = {
+      beforeFirst: Math.max(instrBaseline, reminderGapFloor),
+      between: Math.max(instrBaseline, reminderGapFloor),
+      afterLast: Math.max(
+        instrBaseline,
+        outroClip ? MIN_GAP_BEFORE_OUTRO : 0
+      ),
+    };
 
-    let tailSec = clamp(
-      span * tailFrac,
-      tailAbsMin,
-      Math.min(TAIL_ABS_MAX, durationSec * 0.30)
+    const g = allocateReminderSilencesWithLongTail(
+      totalSilence,
+      n,
+      mergedFloors
     );
-    let gapBudget = span - sumRemD - tailSec;
-
-    while (gapBudget < n * remInitial && tailSec > tailAbsMin) {
-      tailSec = Math.max(tailAbsMin, tailSec - 4);
-      gapBudget = span - sumRemD - tailSec;
-    }
-
-    if (gapBudget < 0) {
+    if (g === null) {
       return { items, timelineEndSec, fits: false };
     }
 
-    if (n === 1) {
-      if (gapBudget < remInitial) {
-        return { items, timelineEndSec, fits: false };
-      }
-      cursorEnd = pushItem(cursorEnd + gapBudget, reminderClips[0]);
-    } else {
-      const idealLast = (2 * gapBudget) / n - remInitial;
-      if (idealLast < remInitial) {
-        const uniform = gapBudget / n;
-        if (uniform < 8) {
-          return { items, timelineEndSec, fits: false };
-        }
-        for (let i = 0; i < n; i++) {
-          cursorEnd = pushItem(cursorEnd + uniform, reminderClips[i]);
-        }
-      } else {
-        let gLast = Math.min(idealLast, REMINDER_GAP_CAP);
-        const gaps: number[] = [];
-        for (let i = 0; i < n; i++) {
-          const t = i / (n - 1);
-          gaps.push(remInitial + (gLast - remInitial) * t);
-        }
-        let sumG = gaps.reduce((a, b) => a + b, 0);
-        const scale = gapBudget / sumG;
-        for (let i = 0; i < n; i++) {
-          gaps[i] *= scale;
-        }
-        for (let i = 0; i < n; i++) {
-          cursorEnd = pushItem(cursorEnd + gaps[i], reminderClips[i]);
-        }
+    let t = cursorEnd + g[0]!;
+    for (let i = 0; i < n; i++) {
+      cursorEnd = pushItem(t, reminderClips[i]!);
+      if (i < n - 1) {
+        t = cursorEnd + g[i + 1]!;
       }
     }
   }

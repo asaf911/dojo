@@ -269,7 +269,7 @@ struct CueConfigurationView: View {
 struct CueConfigurationView_Previews: PreviewProvider {
     @State static var selectedMinutes = 20
     @State static var cueSettings: [CueSetting] = [
-        CueSetting(triggerType: .minute, minute: 5, cue: Cue(id: "GB", name: "Retrospection", url: "gs://..."))
+        CueSetting(triggerType: .minute, minute: 5, cue: Cue(id: "GB", name: "Gentle Bell", url: "gs://..."))
     ]
     
     static var previews: some View {

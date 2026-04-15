@@ -2,33 +2,6 @@
   "version": "1.0",
   "models": [
     {
-      "id": "OH",
-      "name": "Open Heart",
-      "path": "modules/cues/Cue_open_heart.mp3",
-      "voices": {
-        "Asaf": "modules/cues/Cue_open_heart.mp3",
-        "Dan": "modules/cues/Cue_open_heart.mp3"
-      }
-    },
-    {
-      "id": "VC",
-      "name": "Vision Clarity",
-      "path": "modules/cues/Cue_Vision_Clarity.mp3",
-      "voices": {
-        "Asaf": "modules/cues/Cue_Vision_Clarity.mp3",
-        "Dan": "modules/cues/Cue_Vision_Clarity.mp3"
-      }
-    },
-    {
-      "id": "RT",
-      "name": "Retrospection",
-      "path": "modules/cues/Cue_Retrospection.mp3",
-      "voices": {
-        "Asaf": "modules/cues/Cue_Retrospection.mp3",
-        "Dan": "modules/cues/Cue_Retrospection.mp3"
-      }
-    },
-    {
       "id": "GB",
       "name": "Gentle Bell",
       "path": "modules/cues/Ding.mp3"

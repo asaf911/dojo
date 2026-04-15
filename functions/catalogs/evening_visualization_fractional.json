@@ -13,7 +13,7 @@
       "text": "Bring your attention to your mind's eye and imagine the room you are in.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_INT_100_MINDS_EYE_ROOM_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -26,7 +26,7 @@
       "text": "Replay in your mind how you arrived here.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_200_REWIND_FEW_MINUTES_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_200_REWIND_FEW_MINUTES_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_INS_200_REWIND_FEW_MINUTES_DAN.mp3"
       },
       "durationSec": 3
     },
@@ -39,7 +39,7 @@
       "text": "Now go a little further back. Notice what happened just before that.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_210_REWIND_BIT_EARLIER_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_210_REWIND_BIT_EARLIER_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_INS_210_REWIND_BIT_EARLIER_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -52,7 +52,7 @@
       "text": "Continue moving backward through your day. Let the memories appear at their own pace.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_220_REWIND_CONTINUE_DAY_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_220_REWIND_CONTINUE_DAY_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_INS_220_REWIND_CONTINUE_DAY_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -65,7 +65,7 @@
       "text": "If any moment brings up emotion, simply observe it.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_230_NOTICE_EMOTIONS_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_230_NOTICE_EMOTIONS_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_INS_230_NOTICE_EMOTIONS_DAN.mp3"
       },
       "durationSec": 3
     },
@@ -78,7 +78,7 @@
       "text": "Move through your memories at a natural pace. There is no need to rush or slow anything down.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_RW_REM_290_MOVE_NATURAL_PACE_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -91,7 +91,7 @@
       "text": "If your mind drifts, gently continue from where you left off.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_300_RETURN_TO_REWIND_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_300_RETURN_TO_REWIND_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_REM_300_RETURN_TO_REWIND_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -105,7 +105,7 @@
       "text": "When something brings up strong emotion, rewind and stay with it a little longer.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_310_PROCESS_EMOTIONS_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_310_PROCESS_EMOTIONS_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_REM_310_PROCESS_EMOTIONS_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -118,7 +118,7 @@
       "text": "Continue observing what appears in your mind and heart.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_320_OBSERVE_WITHOUT_ANALYZING_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_320_OBSERVE_WITHOUT_ANALYZING_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_KM_REM_320_OBSERVE_WITHOUT_ANALYZING_DAN.mp3"
       },
       "durationSec": 3
     },
@@ -130,7 +130,7 @@
       "text": "Bring your focus back to your body.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_400_BODY_FOCUS_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -142,7 +142,7 @@
       "text": "Take a deep breath in and hold.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_510_INHALE_HOLD_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -154,7 +154,7 @@
       "text": "Exhale, relax, and let all emotions wash away.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_520_EXHALE_RELEASE_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -166,7 +166,7 @@
       "text": "Have a wonderful night.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_540_WONDERFUL_NIGHT_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -180,7 +180,7 @@
       "text": "Bring your attention to your mind's eye and imagine the room you are in.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_INT_100_MINDS_EYE_ROOM_DAN.mp3"
       },
       "durationSec": 4
     },
@@ -193,7 +193,7 @@
       "text": "Take a moment to feel gratitude for the simple fact that you can sit here and meditate.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_200_GRATITUDE_MEDITATE_OPPORTUNITY_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_200_GRATITUDE_MEDITATE_OPPORTUNITY_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_GR_INS_200_GRATITUDE_MEDITATE_OPPORTUNITY_DAN.mp3"
       },
       "durationSec": 8
     },
@@ -206,7 +206,7 @@
       "text": "Now begin to rewind your day from this moment backwards, looking for more moments you can be grateful for.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_210_REWIND_DAY_GRATITUDE_SEARCH_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_210_REWIND_DAY_GRATITUDE_SEARCH_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_GR_INS_210_REWIND_DAY_GRATITUDE_SEARCH_DAN.mp3"
       },
       "durationSec": 8
     },
@@ -219,7 +219,7 @@
       "text": "These may be things you saw, people you met, or small experiences from your day.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_220_GRATITUDE_SCOPE_EXAMPLES_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_220_GRATITUDE_SCOPE_EXAMPLES_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_GR_INS_220_GRATITUDE_SCOPE_EXAMPLES_DAN.mp3"
       },
       "durationSec": 7
     },
@@ -232,7 +232,7 @@
       "text": "Move through your memories at a natural pace. There is no need to rush or slow anything down.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_RW_REM_290_MOVE_NATURAL_PACE_DAN.mp3"
       },
       "durationSec": 7
     },
@@ -245,7 +245,7 @@
       "text": "When something brings up gratitude, rewind and stay with that feeling a little longer.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_REM_300_LINGER_GRATITUDE_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_REM_300_LINGER_GRATITUDE_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_GR_REM_300_LINGER_GRATITUDE_DAN.mp3"
       },
       "durationSec": 7
     },
@@ -257,7 +257,7 @@
       "text": "Bring your focus back to your body.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_400_BODY_FOCUS_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -269,7 +269,7 @@
       "text": "Take a deep breath in and hold.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_510_INHALE_HOLD_DAN.mp3"
       },
       "durationSec": 5
     },
@@ -281,7 +281,7 @@
       "text": "Exhale, relax, and let all emotions wash away.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_520_EXHALE_RELEASE_DAN.mp3"
       },
       "durationSec": 6
     },
@@ -293,7 +293,7 @@
       "text": "Have a wonderful night.",
       "voices": {
         "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3",
-        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3"
+        "Dan": "modules/evening_visualization_fractional/dan/EV_OUT_540_WONDERFUL_NIGHT_DAN.mp3"
       },
       "durationSec": 4
     }

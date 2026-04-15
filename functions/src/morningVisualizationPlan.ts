@@ -9,7 +9,11 @@
 
 import * as functions from "firebase-functions";
 import type { FractionalClip, FractionalPlan, FractionalPlanItem } from "./fractionalComposer";
-import { clipDurationSec } from "./fractionalTimeline";
+import {
+  allocateReminderSilencesWithLongTail,
+  clipDurationSec,
+  instrGapAt,
+} from "./fractionalTimeline";
 import {
   FRACTIONAL_FIRST_SPEECH_OFFSET_SEC,
   FRACTIONAL_INTRO_MIN_DURATION_SEC,
@@ -60,14 +64,6 @@ function shuffle<T>(arr: T[]): T[] {
 
 function pickRandom<T>(pool: T[], count: number): T[] {
   return shuffle(pool).slice(0, count);
-}
-
-/** Matches NF/IM instruction gaps (exponential step). */
-function instrGapAt(durationSec: number, step: number): number {
-  const dFactor = Math.min(1, Math.max(0, (durationSec - 600) / 600));
-  const instrBase = 6 + 2 * dFactor;
-  const INSTR_CAP = 30;
-  return Math.min(instrBase + Math.pow(2, step) - 1, INSTR_CAP);
 }
 
 function filterPool(
@@ -172,29 +168,43 @@ export function composeMorningVisualizationPlan(
       return { items: [], fits: false, timelineEndSec: 0 };
     }
 
-    const reminderWindowEnd = outroFirstStart - MIN_GAP_BEFORE_OUTRO;
-    let t = cursor + MIN_GAP_BEFORE_OUTRO;
+    let instrBaseline = instrGapAt(scheduleBudgetSec, 0);
+    if (speech.length >= 2) {
+      const gaps: number[] = [];
+      for (let j = 1; j < speech.length; j++) {
+        gaps.push(instrGapAt(scheduleBudgetSec, j - 1));
+      }
+      instrBaseline = Math.min(...gaps);
+    }
+
+    const segmentEnd =
+      outSel.length > 0
+        ? outroFirstStart
+        : scheduleBudgetSec - SESSION_END_PAD_SEC;
+    const afterLastFloor =
+      outSel.length > 0 ? MIN_GAP_BEFORE_OUTRO : 0;
 
     if (remSel.length > 0) {
+      const instrEnd = cursor;
       const sumRem = remSel.reduce((s, c) => s + clipDurationSec(c), 0);
-      const spaceForGaps = reminderWindowEnd - t - sumRem;
-      if (spaceForGaps < -0.01) {
+      const totalSilence = segmentEnd - instrEnd - sumRem;
+      if (totalSilence < -0.01) {
         return { items: [], fits: false, timelineEndSec: 0 };
       }
-      if (remSel.length > 1) {
-        const gapBetween = spaceForGaps / (remSel.length - 1);
-        if (gapBetween < MIN_GAP_BETWEEN_REMINDERS_SEC - 0.01) {
-          return { items: [], fits: false, timelineEndSec: 0 };
-        }
-        for (let i = 0; i < remSel.length; i++) {
-          t = pushItem(t, remSel[i]);
-          if (i < remSel.length - 1) t += gapBetween;
-        }
-      } else {
-        t = pushItem(t, remSel[0]);
-      }
-      if (t > reminderWindowEnd + 0.01) {
+      const g = allocateReminderSilencesWithLongTail(totalSilence, remSel.length, {
+        beforeFirst: Math.max(instrBaseline, MIN_GAP_BEFORE_OUTRO),
+        between: Math.max(instrBaseline, MIN_GAP_BETWEEN_REMINDERS_SEC),
+        afterLast: Math.max(instrBaseline, afterLastFloor),
+      });
+      if (g === null) {
         return { items: [], fits: false, timelineEndSec: 0 };
+      }
+      let t = instrEnd + g[0]!;
+      for (let i = 0; i < remSel.length; i++) {
+        t = pushItem(t, remSel[i]);
+        if (i < remSel.length - 1) {
+          t += g[i + 1]!;
+        }
       }
     }
 

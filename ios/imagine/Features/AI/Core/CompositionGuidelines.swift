@@ -392,7 +392,7 @@ final class CompositionGuidelinesLoader {
     /// Check if a module is a trigger cue (needs quiet span)
     func isTriggerCue(_ id: String) -> Bool {
         guard let guidelines = loadGuidelines() else {
-            return ["OH", "VC", "RT"].contains(id)
+            return false
         }
         return guidelines.moduleTypeClassifications.triggerCue.modules.contains(id)
     }

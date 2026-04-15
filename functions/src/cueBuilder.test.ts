@@ -241,3 +241,43 @@ test("buildCuesFromAllocation (dev): practiceDurationMinutes 5 includes INT_FRAC
     }
   }
 });
+
+test("buildCuesFromAllocation (dev): MV focus absorbs retired insight minutes (no VC/RT)", () => {
+  const prev = process.env.GCLOUD_PROJECT;
+  process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+  try {
+    const prefs = {
+      noBreathwork: false,
+      isSleep: false,
+      isMorning: false,
+      isEvening: false,
+    };
+    const cues = buildCuesFromAllocation(
+      {
+        intro: 0,
+        breath: 2,
+        relax: 2,
+        focus: 2,
+        insight: 2,
+        focusType: undefined,
+      },
+      prefs,
+      {
+        practiceDurationMinutes: 8,
+        themeCueHints: {
+          focusFractionalId: "MV_KM_FRAC",
+        },
+      }
+    );
+    assert.ok(cues.some((c) => c.id === "MV_KM_FRAC"));
+    assert.ok(!cues.some((c) => c.id === "VC"));
+    assert.ok(!cues.some((c) => c.id === "RT"));
+    assert.ok(!cues.some((c) => c.id === "OH"));
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GCLOUD_PROJECT;
+    } else {
+      process.env.GCLOUD_PROJECT = prev;
+    }
+  }
+});

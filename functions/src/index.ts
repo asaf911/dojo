@@ -571,14 +571,17 @@ interface VoiceItem {
 }
 
 function getDeprecatedCueIds(): Set<string> {
+  /** Retired monolithic trigger modules (use fractional MV/EV + GB only). */
+  const legacyTriggerCues = ["OH", "VC", "RT"] as const;
   if (useFractionalModulesInCatalogsAndAI()) {
     return new Set([
+      ...legacyTriggerCues,
       "MA",
       "IM2", "IM3", "IM4", "IM5", "IM6", "IM7", "IM8", "IM9", "IM10",
       "PB1", "PB2", "PB3", "PB4", "PB5",
     ]);
   }
-  return new Set(["MA"]);
+  return new Set(["MA", ...legacyTriggerCues]);
 }
 
 function resolveStorageUrl(relativePath: string): string {
@@ -1221,6 +1224,7 @@ export const postAIRequest = functions.runWith({
 // ---------------------------------------------------------------------------
 // 8. postFractionalPlan — Fractional module composition (second-precision timeline)
 // ---------------------------------------------------------------------------
+// Fractional catalogs live under functions/catalogs (bundled at deploy).
 // Module intro policy (all fractional types): docs/fractional-module-intro-rule.md
 // Body scan tier composer: docs/body-scan-tier-composer.md
 

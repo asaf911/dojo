@@ -178,9 +178,16 @@ final class CatalogsManager: ObservableObject {
         let perfectBreathPlaceholderPath = "modules/perfect_breath_fractional/asaf/PBV_OPEN_000_INTRO_ASAF.mp3"
         let perfectBreathFallbackUrl = Config.contentStoragePath + perfectBreathPlaceholderPath
 
+        /// Retired from catalog + Timer Create picker (GB remains for optional closing bell).
+        let retiredMonolithicCueIds: Set<String> = ["OH", "VC", "RT"]
+
         var out: [Cue] = []
         out.reserveCapacity(cues.count + 4)
-        for c in cues where c.id != legacyId && !deprecatedMonolithicPerfectBreath.contains(c.id) {
+        for c in cues
+            where c.id != legacyId
+            && !deprecatedMonolithicPerfectBreath.contains(c.id)
+            && !retiredMonolithicCueIds.contains(c.id)
+        {
             if c.id == upId {
                 out.append(Cue(id: c.id, name: "Body Scan Up", url: c.url, urlsByVoice: c.urlsByVoice))
             } else if c.id == downId {

@@ -133,8 +133,8 @@ Selected clips are ordered by catalog `order`, then scheduled on a **float** tim
 
 ### Reminder segment
 
-- After the last instruction, remaining time (minus an explicit **tail** slice and, for IM, space before **outro**) is split into **pre-reminder gaps**.
-- Gaps form a **linear ramp** from a floor (at least the instruction gap floor, 15 s minimum) toward a last gap (capped), then **scaled** so the sum matches the gap budget exactly (monotonic non-decreasing in float space).
+- After the last instruction, remaining time (before **outro** or session end, minus reminder audio) is split into **`n + 1` silences** for `n` reminders (`allocateReminderSilencesWithLongTail` in `fractionalTimeline.ts`).
+- Each silence is at least a **floor** (instruction baseline and module-specific minimums, merged to a non-decreasing sequence). Any **surplus** is distributed with weights **`1, 2, …, n+1`**: the extra silence grows **linearly** by slot index (last slot gets the largest share, but not the entire surplus — avoids a multi-minute gap before outro when earlier gaps stay short).
 
 ### Outro (IM_FRAC only when duration allows)
 
@@ -215,7 +215,7 @@ Intro included (>= 4 min). All 13 clips used. Gaps grow from 10 s to ~37 s.
 | 5:33  | C012   | reminder    |
 | 6:46  | C013   | reminder    |
 
-All 13 clips. Gaps grow from 13 s to ~73 s. ~3+ min trailing silence.
+All 13 clips. Silence between clips ramps (floors + weighted surplus); the gap before outro is larger than the first post-instruction gap but on the same order as mid-chain gaps (not a single long tail).
 
 ---
 

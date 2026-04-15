@@ -27,7 +27,7 @@ export type FractionalCompositionContext = {
   greetingFamilyHint?: "morning" | "evening" | "neutral" | "returning";
 };
 
-/** Hints for cueBuilder (focus / insight rows). */
+/** Hints for cueBuilder (focus row). */
 export type ThemeCompositionHints = {
   focusFractionalId?:
     | "IM_FRAC"
@@ -36,7 +36,6 @@ export type ThemeCompositionHints = {
     | "MV_GR_FRAC"
     | "EV_KM_FRAC"
     | "EV_GR_FRAC";
-  insightCueId?: "VC" | "RT";
 };
 
 function isMeditationThemeId(s: string): s is MeditationThemeId {
@@ -325,12 +324,6 @@ export function themeCompositionHints(
     ) {
       cueHints.focusFractionalId = "EV_KM_FRAC";
     }
-  }
-
-  if (themes.includes("night") && !sleepish) {
-    cueHints.insightCueId = "RT";
-  } else if (themes.includes("noon")) {
-    cueHints.insightCueId = "VC";
   }
 
   return { fractionalContext, cueHints };

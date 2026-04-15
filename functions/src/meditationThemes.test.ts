@@ -269,3 +269,4 @@ test("resolveMeditationThemes: morning + explicit sleep in prompt keeps sleep", 
   });
   assert.ok(themes.includes("sleep"));
 });
+

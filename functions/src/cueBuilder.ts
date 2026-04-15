@@ -1,6 +1,6 @@
 /**
  * Maps phase allocation to cue IDs and triggers.
- * Flow: Intro > Breath > Relax > Focus > Insight (AI path — no automatic end bell; users add GB in Timer if desired).
+ * Flow: Intro > Breath > Relax > Focus (legacy VC/RT/OH insight cues retired — GB optional in Timer only).
  */
 
 import type { PhaseAllocation, SessionPreferences } from "./phaseAllocation";
@@ -26,7 +26,7 @@ export interface BuildCuesFromAllocationOptions {
    */
   practiceDurationMinutes?: number;
   /**
-   * Theme-driven focus/insight rows. User `allocation.focusType` IM/NF always wins over focus fractional hint.
+   * Theme-driven focus rows. User `allocation.focusType` IM/NF always wins over focus fractional hint.
    */
   themeCueHints?: ThemeCompositionHints;
 }
@@ -34,6 +34,62 @@ export interface BuildCuesFromAllocationOptions {
 const PB_CAP = 5;
 const BS_CAP = 10;
 const IM_CAP = 10;
+
+/**
+ * Retired monolithic insight trigger cues (VC/RT/OH): fold planned `insight` minutes into earlier phases
+ * so totals still match the session duration.
+ */
+function allocationWithInsightMergedIntoEarlierPhases(
+  allocation: PhaseAllocation
+): PhaseAllocation {
+  let breath = allocation.breath;
+  let relax = allocation.relax;
+  let focus = allocation.focus;
+  let insight = allocation.insight;
+  if (insight <= 0) return allocation;
+
+  let rest = insight;
+  insight = 0;
+
+  const addFocus = Math.min(IM_CAP - focus, rest);
+  focus += addFocus;
+  rest -= addFocus;
+
+  if (rest > 0) {
+    const addRelax = Math.min(BS_CAP - relax, rest);
+    relax += addRelax;
+    rest -= addRelax;
+  }
+  if (rest > 0) {
+    const addBreath = Math.min(PB_CAP - breath, rest);
+    breath += addBreath;
+    rest -= addBreath;
+  }
+
+  while (rest > 0) {
+    if (focus < IM_CAP) {
+      focus++;
+      rest--;
+    } else if (relax < BS_CAP) {
+      relax++;
+      rest--;
+    } else if (breath < PB_CAP) {
+      breath++;
+      rest--;
+    } else {
+      break;
+    }
+  }
+
+  return {
+    ...allocation,
+    breath,
+    relax,
+    focus,
+    insight: 0,
+    focusType: allocation.focusType,
+  };
+}
 
 /**
  * Production: monolithic INT_GEN_1/INT_MORN_1, PBn, BSn, IMn/NFn.
@@ -55,6 +111,7 @@ function buildCuesFromAllocationLegacy(
   prefs: SessionPreferences,
   options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
+  const merged = allocationWithInsightMergedIntoEarlierPhases(allocation);
   const cues: CueWithTrigger[] = [];
   /// Practice-minute index: 0 = meditation clock 00:00 (INT_FRAC prelude uses negative countdown / prefix).
   let currentMinute = 0;
@@ -62,10 +119,9 @@ function buildCuesFromAllocationLegacy(
   const introId = prefs.isMorning ? "INT_MORN_1" : "INT_GEN_1";
   cues.push({ id: introId, trigger: "start" });
 
-  const breath = Math.min(PB_CAP, Math.max(0, allocation.breath));
-  const relax = Math.min(BS_CAP, Math.max(0, allocation.relax));
-  const focus = Math.min(IM_CAP, Math.max(0, allocation.focus));
-  const insight = Math.min(10, Math.max(0, allocation.insight));
+  const breath = Math.min(PB_CAP, Math.max(0, merged.breath));
+  const relax = Math.min(BS_CAP, Math.max(0, merged.relax));
+  const focus = Math.min(IM_CAP, Math.max(0, merged.focus));
 
   if (breath > 0) {
     const pbVariant = Math.min(5, Math.max(1, breath));
@@ -85,11 +141,8 @@ function buildCuesFromAllocationLegacy(
     currentMinute += relax;
   }
 
-  if (prefs.isSleep && (focus > 0 || relax > 0 || breath > 0)) {
-    cues.push({ id: "OH", trigger: String(currentMinute) });
-    currentMinute += 1;
-  } else if (focus > 0) {
-    if (allocation.focusType === "NF") {
+  if (focus > 0) {
+    if (merged.focusType === "NF") {
       const nfVariant = Math.min(10, Math.max(1, focus));
       cues.push({ id: `NF${nfVariant}`, trigger: String(currentMinute) });
     } else {
@@ -97,11 +150,6 @@ function buildCuesFromAllocationLegacy(
       cues.push({ id: `IM${imVariant}`, trigger: String(currentMinute) });
     }
     currentMinute += Math.min(10, focus);
-  }
-
-  if (insight > 0) {
-    const insightId = prefs.isEvening ? "RT" : "VC";
-    cues.push({ id: insightId, trigger: String(currentMinute) });
   }
 
   return cues;
@@ -114,9 +162,10 @@ function buildCuesFromAllocationLegacy(
  */
 function buildCuesFromAllocationFractional(
   allocation: PhaseAllocation,
-  prefs: SessionPreferences,
+  _prefs: SessionPreferences,
   options?: BuildCuesFromAllocationOptions
 ): CueWithTrigger[] {
+  const merged = allocationWithInsightMergedIntoEarlierPhases(allocation);
   const cues: CueWithTrigger[] = [];
   /// Practice-minute index: 0 = first module at meditation 00:00 (or first content when INT_FRAC omitted for short AI sessions).
   let currentMinute = 0;
@@ -127,10 +176,9 @@ function buildCuesFromAllocationFractional(
     cues.push({ id: "INT_FRAC", trigger: "start" });
   }
 
-  const breath = Math.min(PB_CAP, Math.max(0, allocation.breath));
-  const relax = Math.min(BS_CAP, Math.max(0, allocation.relax));
-  const focus = Math.min(IM_CAP, Math.max(0, allocation.focus));
-  const insight = Math.min(10, Math.max(0, allocation.insight));
+  const breath = Math.min(PB_CAP, Math.max(0, merged.breath));
+  const relax = Math.min(BS_CAP, Math.max(0, merged.relax));
+  const focus = Math.min(IM_CAP, Math.max(0, merged.focus));
 
   if (breath > 0) {
     cues.push({
@@ -158,27 +206,17 @@ function buildCuesFromAllocationFractional(
     currentMinute += relax;
   }
 
-  if (prefs.isSleep && (focus > 0 || relax > 0 || breath > 0)) {
-    cues.push({ id: "OH", trigger: String(currentMinute) });
-    currentMinute += 1;
-  } else if (focus > 0) {
+  if (focus > 0) {
     const focusFrac =
       options?.themeCueHints?.focusFractionalId &&
-      allocation.focusType !== "NF" &&
-      allocation.focusType !== "IM"
+      merged.focusType !== "NF" &&
+      merged.focusType !== "IM"
         ? options.themeCueHints.focusFractionalId
-        : allocation.focusType === "NF"
+        : merged.focusType === "NF"
           ? "NF_FRAC"
           : "IM_FRAC";
     cues.push({ id: focusFrac, trigger: String(currentMinute) });
     currentMinute += Math.min(10, focus);
-  }
-
-  if (insight > 0) {
-    const insightId =
-      options?.themeCueHints?.insightCueId ??
-      (prefs.isEvening ? "RT" : "VC");
-    cues.push({ id: insightId, trigger: String(currentMinute) });
   }
 
   return cues;

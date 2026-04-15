@@ -1,121 +1,201 @@
 {
   "version": "4.3.0",
   "last_updated": "2026-04-11",
-  "description": "AI meditation composition rules - 4-phase blueprint with finite focus modules (IM: I AM Mantra, NF: Nostril Focus, MV: Morning Key Moments / Morning Gratitude, EV: Evening Retrospection / Evening Gratitude fractional modules). Theme tags (morning, evening, noon, night, sleep, gratitude) from prompt, LLM extract, client context, and Explore time-of-day bias INT_FRAC greeting family and, when focus minutes > 0, may select MV_* or EV_* visualization instead of IM_FRAC unless the user chose IM or NF. At most one of morning (MV_*) or evening (EV_*) visualization per session. User IM/NF always wins. For AI sessions 1-4 minutes, omit INT_FRAC; for 5+ minutes, include INT_FRAC@start. Do not include Gentle Bell (GB) at the end unless the user explicitly asks for a closing bell; users can add GB in the Timer builder.",
-
+  "description": "AI meditation composition rules \u2014 fractional modules only for structure (INT_FRAC, PB_FRAC, BS_FRAC_*, IM_FRAC, NF_FRAC, MV_*_FRAC, EV_*_FRAC). Retired monolithic cues OH, VC, RT are never used; GB remains optional when the user asks for a closing bell or adds it in the Timer builder.",
   "priority_detection": {
     "description": "When user explicitly requests a specific exercise, give it 50% of session time",
     "rules": {
       "body_scan": {
-        "keywords": ["body scan", "bodyscan", "body awareness"],
+        "keywords": [
+          "body scan",
+          "bodyscan",
+          "body awareness"
+        ],
         "target_module": "BS",
         "allocation": "50% of session duration (capped at BS10)"
       },
       "breathing": {
-        "keywords": ["breath", "breathing", "breathwork"],
+        "keywords": [
+          "breath",
+          "breathing",
+          "breathwork"
+        ],
         "target_module": "PB",
         "allocation": "50% of session duration (breath phase via PB_FRAC, up to 5 minutes)"
       },
       "i_am_mantra": {
-        "keywords": ["mantra", "chant", "chanting", "i am", "affirmation"],
+        "keywords": [
+          "mantra",
+          "chant",
+          "chanting",
+          "i am",
+          "affirmation"
+        ],
         "target_module": "IM",
         "allocation": "50% of session duration (uses IM_FRAC fractional module)"
       },
       "nostril_focus": {
-        "keywords": ["nostril", "nostril focus", "nadi shodhana", "alternate nostril"],
+        "keywords": [
+          "nostril",
+          "nostril focus",
+          "nadi shodhana",
+          "alternate nostril"
+        ],
         "target_module": "NF",
         "allocation": "50% of session duration (capped at NF10)"
       },
       "visualization": {
-        "keywords": ["visualization", "vision", "intention", "intentions"],
-        "target_module": "VC",
+        "keywords": [
+          "visualization",
+          "vision",
+          "intention",
+          "intentions"
+        ],
+        "target_module": "MV_KM_FRAC",
         "allocation": "priority placement in visualization phase"
       },
       "retrospection": {
-        "keywords": ["retrospection", "reflection", "gratitude"],
-        "target_module": "RT",
+        "keywords": [
+          "retrospection",
+          "reflection",
+          "gratitude"
+        ],
+        "target_module": "EV_KM_FRAC",
         "allocation": "priority placement in visualization phase"
       }
     },
     "when_priority_detected": {
       "action": "Give priority exercise 50% of total session time",
       "other_modules": "Reduce to minimum (1m each)",
-      "example_10m_bodyscan": "INT_FRAC@start, PB_FRAC@1 (durationMinutes=1), BS5@2, IM_FRAC@7 — no GB unless user asks",
-      "example_3m_short_ai": "PB_FRAC@0 (durationMinutes=2), IM_FRAC@2 — no INT_FRAC for AI sessions under 5 minutes; omit GB unless user asks"
+      "example_10m_bodyscan": "INT_FRAC@start, PB_FRAC@1 (durationMinutes=1), BS5@2, IM_FRAC@7 \u2014 no GB unless user asks",
+      "example_3m_short_ai": "PB_FRAC@0 (durationMinutes=2), IM_FRAC@2 \u2014 no INT_FRAC for AI sessions under 5 minutes; omit GB unless user asks"
     }
   },
-
   "module_type_classifications": {
     "finite_exercise": {
       "description": "Full-duration guided audio. The audio file IS the exercise.",
       "time_allocation": "exact duration of the module",
       "behavior": "Occupies its full duration in the session timeline. No additional quiet time needed.",
-      "modules": ["INT_FRAC", "BS1", "BS2", "BS3", "BS4", "BS5", "BS6", "BS7", "BS8", "BS9", "BS10", "PB_FRAC", "IM_FRAC", "NF_FRAC", "MV_KM_FRAC", "MV_GR_FRAC", "EV_KM_FRAC", "EV_GR_FRAC"]
+      "modules": [
+        "INT_FRAC",
+        "BS1",
+        "BS2",
+        "BS3",
+        "BS4",
+        "BS5",
+        "BS6",
+        "BS7",
+        "BS8",
+        "BS9",
+        "BS10",
+        "PB_FRAC",
+        "IM_FRAC",
+        "NF_FRAC",
+        "MV_KM_FRAC",
+        "MV_GR_FRAC",
+        "EV_KM_FRAC",
+        "EV_GR_FRAC"
+      ]
     },
     "trigger_cue": {
       "description": "Short audio trigger that instructs user to BEGIN a practice. User continues in silence.",
       "time_allocation": "Cue audio + remaining phase time as quiet practice",
       "behavior": "After audio plays, user continues the practice silently until next module.",
       "audio_duration_note": "Actual duration loaded from cues_models.json via CueManager",
-      "modules": ["OH", "VC", "RT"]
+      "modules": []
     },
     "instant_cue": {
       "description": "Brief sound marker with no time allocation needed.",
       "time_allocation": "0 minutes",
       "behavior": "Instant audio marker, does not occupy timeline space.",
-      "modules": ["GB"]
+      "modules": [
+        "GB"
+      ]
     }
   },
-
   "special_modules": {
     "SI": {
       "position": "start",
       "required": true,
       "duration": 1,
-      "skip_keywords": ["no settle in", "skip settle in", "without settle in", "no settling", "skip settling", "no introduction", "skip introduction", "no SI", "no INT"]
+      "skip_keywords": [
+        "no settle in",
+        "skip settle in",
+        "without settle in",
+        "no settling",
+        "skip settling",
+        "no introduction",
+        "skip introduction",
+        "no SI",
+        "no INT"
+      ]
     },
     "GB": {
       "position": "end",
-      "skip_for": ["sleep", "bedtime", "night", "fall asleep", "drift off", "slumber"],
+      "skip_for": [
+        "sleep",
+        "bedtime",
+        "night",
+        "fall asleep",
+        "drift off",
+        "slumber"
+      ],
       "note": "Optional for AI: include only when the user explicitly requests a bell at the end. Default AI sessions omit GB."
     }
   },
-
   "short_session_rules": {
     "description": "Rules for sessions 1-6 minutes. Simpler structure than 4-phase. AI sessions 1-4 minutes: do not use INT_FRAC; first fractional cue at practice minute 0 (trigger \"0\" or \"start\" as appropriate). AI 5+ minutes: include INT_FRAC@start as in longer examples.",
     "rules": {
       "1min": {
         "structure": "One relaxation or focus fractional at minute 0 (no INT_FRAC for AI under 5 min)",
-        "cues": ["PB_FRAC@0 (durationMinutes=1) or BS1@0 or IM_FRAC/NF_FRAC@0"],
+        "cues": [
+          "PB_FRAC@0 (durationMinutes=1) or BS1@0 or IM_FRAC/NF_FRAC@0"
+        ],
         "notes": "Introduction-only 1m AI: omit INT_FRAC; omit GB unless user asks for a closing bell."
       },
       "2-3min": {
         "structure": "ONE relaxation (PB or BS) at minute 0 (no INT_FRAC for AI under 5 min)",
-        "cues_2m": ["PB_FRAC@0 (durationMinutes=2) or BS2@0"],
-        "cues_3m": ["PB_FRAC@0 (durationMinutes=3) or BS3@0"],
+        "cues_2m": [
+          "PB_FRAC@0 (durationMinutes=2) or BS2@0"
+        ],
+        "cues_3m": [
+          "PB_FRAC@0 (durationMinutes=3) or BS3@0"
+        ],
         "notes": "Choose PB or BS based on prompt, not both. Omit GB unless user asks."
       },
       "4min": {
         "structure": "PB + BS at minute 0 onward (no INT_FRAC for AI under 5 min; no focus module)",
-        "cues": ["PB_FRAC@0 (durationMinutes=1)", "BS2@1"],
+        "cues": [
+          "PB_FRAC@0 (durationMinutes=1)",
+          "BS2@1"
+        ],
         "notes": "Both breathing and body scan, but no focus module. Omit GB unless user asks."
       },
       "5-6min": {
         "structure": "INT_FRAC + PB + BS + focus",
-        "cues_5m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS1@2", "IM_FRAC or NF_FRAC@3"],
-        "cues_6m": ["INT_FRAC@start", "PB_FRAC@1 (durationMinutes=1)", "BS2@2", "IM_FRAC or NF_FRAC@4"],
+        "cues_5m": [
+          "INT_FRAC@start",
+          "PB_FRAC@1 (durationMinutes=1)",
+          "BS1@2",
+          "IM_FRAC or NF_FRAC@3"
+        ],
+        "cues_6m": [
+          "INT_FRAC@start",
+          "PB_FRAC@1 (durationMinutes=1)",
+          "BS2@2",
+          "IM_FRAC or NF_FRAC@4"
+        ],
         "focus_selection": {
           "default": "IM_FRAC or NF_FRAC (random)",
           "nostril": "NF_FRAC",
           "mantra": "IM_FRAC",
-          "sleep": "OH"
+          "sleep": "IM_FRAC"
         },
-        "notes": "ONE fractional focus module (IM_FRAC or NF_FRAC randomly, OH for sleep, explicit request overrides)"
+        "notes": "ONE fractional focus module (IM_FRAC or NF_FRAC randomly, IM_FRAC for sleep, explicit request overrides)"
       }
     },
     "gb_rule": "Omit GB (Gentle Bell) in default AI sessions. Include GB at trigger 'end' only if the user explicitly asks for a bell or chime at the end. Timer / custom builder still offers GB as an optional cue."
   },
-
   "composition_algorithm": {
     "description": "4-phase blueprint for sessions > 6 minutes. Fills 100% of session time.",
     "target_fill_percentage": 100,
@@ -123,33 +203,57 @@
       "settle_in": {
         "range": "0% to ~10%",
         "duration": 1,
-        "modules": ["INT_FRAC"],
+        "modules": [
+          "INT_FRAC"
+        ],
         "required": true,
         "note": "INT_FRAC applies when the session uses the fractional intro row (AI 5+ minutes). AI 1-4 minutes omit INT_FRAC; first content begins at practice minute 0."
       },
       "relaxation": {
         "range": "~10% to 50%",
-        "modules": ["PB", "BS"],
-        "split": { "breathing": 0.40, "body_scan": 0.60 },
+        "modules": [
+          "PB",
+          "BS"
+        ],
+        "split": {
+          "breathing": 0.4,
+          "body_scan": 0.6
+        },
         "purpose": "Physical relaxation and grounding"
       },
       "focus": {
         "range": "50% to 75%",
-        "modules": ["IM", "NF", "OH"],
+        "modules": [
+          "IM",
+          "NF"
+        ],
         "purpose": "Guided focus practice (I AM mantra or nostril focus) or emotional focus",
         "preferred": "IM or NF",
         "note": "IM and NF are finite exercises (1-10m guided audio). Use only ONE per session unless user explicitly requests both. OH remains a trigger cue for sleep/emotional sessions."
       },
       "visualization": {
         "range": "75% to 100%",
-        "modules": ["VC", "RT"],
+        "modules": [
+          "MV_KM_FRAC",
+          "MV_GR_FRAC",
+          "EV_KM_FRAC",
+          "EV_GR_FRAC"
+        ],
         "purpose": "Intention, vision, or reflection practice",
-        "preferred_by_time": { "morning": "VC", "evening": "RT", "default": "VC" },
-        "note": "OH is NOT a visualization cue - use only VC or RT"
+        "preferred_by_time": {
+          "morning": "MV_KM_FRAC",
+          "evening": "EV_KM_FRAC",
+          "default": "MV_KM_FRAC"
+        },
+        "note": "Use fractional morning (MV_*) or evening (EV_*) visualization modules only; retired monolithic VC/RT/OH are not used."
       },
       "closing": {
         "modules": [],
-        "skip_for": ["sleep", "bedtime", "night"],
+        "skip_for": [
+          "sleep",
+          "bedtime",
+          "night"
+        ],
         "note": "Default: no closing cue module. Optional GB only if the user explicitly requests an end bell."
       }
     },
@@ -186,7 +290,7 @@
       {
         "step": 6,
         "action": "Add visualization trigger cue",
-        "details": "Add VC (morning) or RT (evening) at focus_end. Audio plays for 2 min, user practices silently until session end.",
+        "details": "Add fractional visualization when themes call for it: MV_KM_FRAC / MV_GR_FRAC / EV_KM_FRAC / EV_GR_FRAC at focus_end (guided audio fills the visualization window).",
         "placement": "minute focus_end"
       },
       {
@@ -197,41 +301,59 @@
       }
     ]
   },
-
   "session_templates": {
     "description": "Pre-calculated examples. Short sessions (1-6m) use simplified structure, long sessions (>6m) use 4-phase blueprint.",
     "1min": {
-      "composition": "PB_FRAC(0-1, 1m) — AI 1-4m: no INT_FRAC; no GB unless user asks",
+      "composition": "PB_FRAC(0-1, 1m) \u2014 AI 1-4m: no INT_FRAC; no GB unless user asks",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 1 }
+        {
+          "id": "PB_FRAC",
+          "trigger": "0",
+          "durationMinutes": 1
+        }
       ],
       "time_filled": 1,
       "percentage_filled": 100,
       "notes": "AI under 5 min: omit INT_FRAC. Omit GB unless user asks for a closing bell."
     },
     "2min": {
-      "composition": "PB_FRAC(0-2, 2m) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-2, 2m) \u2014 AI 1-4m: no INT_FRAC",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 2 }
+        {
+          "id": "PB_FRAC",
+          "trigger": "0",
+          "durationMinutes": 2
+        }
       ],
       "time_filled": 2,
       "percentage_filled": 100,
       "notes": "Could also use BS2@0 instead of PB_FRAC"
     },
     "3min": {
-      "composition": "PB_FRAC(0-3, 3m) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-3, 3m) \u2014 AI 1-4m: no INT_FRAC",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 3 }
+        {
+          "id": "PB_FRAC",
+          "trigger": "0",
+          "durationMinutes": 3
+        }
       ],
       "time_filled": 3,
       "percentage_filled": 100,
       "notes": "Could also use BS3@0 instead of PB_FRAC"
     },
     "4min": {
-      "composition": "PB_FRAC(0-1, 1m) + BS2(1-4) — AI 1-4m: no INT_FRAC",
+      "composition": "PB_FRAC(0-1, 1m) + BS2(1-4) \u2014 AI 1-4m: no INT_FRAC",
       "cues": [
-        { "id": "PB_FRAC", "trigger": "0", "durationMinutes": 1 },
-        { "id": "BS2", "trigger": "1" }
+        {
+          "id": "PB_FRAC",
+          "trigger": "0",
+          "durationMinutes": 1
+        },
+        {
+          "id": "BS2",
+          "trigger": "1"
+        }
       ],
       "time_filled": 4,
       "percentage_filled": 100,
@@ -240,10 +362,23 @@
     "5min": {
       "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
-        { "id": "BS1", "trigger": "2" },
-        { "id": "IM_FRAC", "trigger": "3" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 1
+        },
+        {
+          "id": "BS1",
+          "trigger": "2"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "3"
+        }
       ],
       "time_filled": 5,
       "percentage_filled": 100,
@@ -252,100 +387,191 @@
     "6min": {
       "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS2(2-4) + IM_FRAC(4-6)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
-        { "id": "BS2", "trigger": "2" },
-        { "id": "IM_FRAC", "trigger": "4" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 1
+        },
+        {
+          "id": "BS2",
+          "trigger": "2"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "4"
+        }
       ],
       "time_filled": 6,
       "percentage_filled": 100,
       "notes": "ONE fractional focus module (IM_FRAC default, VC/RT for specific session types)"
     },
     "7min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5) + VC(5-7)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-2, 1m) + BS1(2-3) + IM_FRAC(3-5) + MV_KM_FRAC(5-7)",
       "phases": "Intro(0-1) | Relax(1-3) | Focus(3-5) | Viz(5-7)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 1 },
-        { "id": "BS1", "trigger": "2" },
-        { "id": "IM_FRAC", "trigger": "3" },
-        { "id": "VC", "trigger": "5" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 1
+        },
+        {
+          "id": "BS1",
+          "trigger": "2"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "3"
+        },
+        {
+          "id": "MV_KM_FRAC",
+          "trigger": "5"
+        }
       ],
       "time_filled": 7,
       "percentage_filled": 100
     },
     "10min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-3, 2m) + BS2(3-5) + IM_FRAC(5-7) + VC(7-10)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-3, 2m) + BS2(3-5) + IM_FRAC(5-7) + MV_KM_FRAC(7-10)",
       "phases": "Intro(0-1) | Relax(1-5) | Focus(5-7) | Viz(7-10)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 2 },
-        { "id": "BS2", "trigger": "3" },
-        { "id": "IM_FRAC", "trigger": "5" },
-        { "id": "VC", "trigger": "7" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 2
+        },
+        {
+          "id": "BS2",
+          "trigger": "3"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "5"
+        },
+        {
+          "id": "MV_KM_FRAC",
+          "trigger": "7"
+        }
       ],
       "time_filled": 10,
       "percentage_filled": 100
     },
     "15min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-4, 3m) + BS3(4-7) + IM_FRAC(7-11) + VC(11-15)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-4, 3m) + BS3(4-7) + IM_FRAC(7-11) + MV_KM_FRAC(11-15)",
       "phases": "Intro(0-1) | Relax(1-7) | Focus(7-11) | Viz(11-15)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 3 },
-        { "id": "BS3", "trigger": "4" },
-        { "id": "IM_FRAC", "trigger": "7" },
-        { "id": "VC", "trigger": "11" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 3
+        },
+        {
+          "id": "BS3",
+          "trigger": "4"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "7"
+        },
+        {
+          "id": "MV_KM_FRAC",
+          "trigger": "11"
+        }
       ],
       "time_filled": 15,
       "percentage_filled": 100
     },
     "20min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-5, 4m) + BS5(5-10) + IM_FRAC(10-15) + VC(15-20)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-5, 4m) + BS5(5-10) + IM_FRAC(10-15) + MV_KM_FRAC(15-20)",
       "phases": "Intro(0-1) | Relax(1-10) | Focus(10-15) | Viz(15-20)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 4 },
-        { "id": "BS5", "trigger": "5" },
-        { "id": "IM_FRAC", "trigger": "10" },
-        { "id": "VC", "trigger": "15" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 4
+        },
+        {
+          "id": "BS5",
+          "trigger": "5"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "10"
+        },
+        {
+          "id": "MV_KM_FRAC",
+          "trigger": "15"
+        }
       ],
       "time_filled": 20,
       "percentage_filled": 100
     },
     "30min": {
-      "composition": "INT_FRAC(0-1) + PB_FRAC(1-6, 5m) + BS9(6-15) + IM_FRAC(15-22) + RT(22-30)",
+      "composition": "INT_FRAC(0-1) + PB_FRAC(1-6, 5m) + BS9(6-15) + IM_FRAC(15-22) + EV_KM_FRAC(22-30)",
       "phases": "Intro(0-1) | Relax(1-15) | Focus(15-22) | Viz(22-30)",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 5 },
-        { "id": "BS9", "trigger": "6" },
-        { "id": "IM_FRAC", "trigger": "15" },
-        { "id": "RT", "trigger": "22" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 5
+        },
+        {
+          "id": "BS9",
+          "trigger": "6"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "15"
+        },
+        {
+          "id": "EV_KM_FRAC",
+          "trigger": "22"
+        }
       ],
       "time_filled": 30,
       "percentage_filled": 100
     }
   },
-
   "trigger_cue_selection": {
     "focus_phase": {
       "default": "IM or NF",
-      "alternatives": ["OH"],
-      "description": "IM (I AM Mantra) or NF (Nostril Focus) as finite focus exercise (randomly chosen). OH for sleep/emotional sessions. Only ONE focus module per session unless user explicitly requests both."
+      "alternatives": [],
+      "description": "IM (I AM Mantra) or NF (Nostril Focus) as finite focus exercise. Sleep sessions use IM_FRAC or longer BS; retired OH is not used."
     },
     "visualization_phase": {
       "by_session_type": {
-        "morning": "VC",
-        "evening": "RT",
-        "relaxation": "VC",
-        "focus": "VC",
-        "default": "VC"
+        "morning": "MV_KM_FRAC",
+        "evening": "EV_KM_FRAC",
+        "relaxation": "MV_KM_FRAC",
+        "focus": "MV_KM_FRAC",
+        "default": "MV_KM_FRAC"
       },
-      "description": "VC for intentions/goals, RT for evening reflection. OH is NOT a visualization cue."
+      "description": "Fractional MV_* / EV_* modules for guided visualization; VC/RT retired."
     }
   },
-
   "introduction_selection": {
     "by_session_type": {
       "morning": "INT_FRAC",
@@ -353,114 +579,218 @@
     },
     "description": "For AI sessions 5+ minutes, use INT_FRAC (Intro) at trigger start. For AI sessions 1-4 minutes, omit INT_FRAC; first guided content uses trigger 0 or start as appropriate."
   },
-
   "session_type_rules": {
     "sleep": {
-      "keywords": ["sleep", "sleepy", "bedtime", "night", "fall asleep", "drift off", "slumber", "insomnia", "rest"],
+      "keywords": [
+        "sleep",
+        "sleepy",
+        "bedtime",
+        "night",
+        "fall asleep",
+        "drift off",
+        "slumber",
+        "insomnia",
+        "rest"
+      ],
       "rules": [
         "Omit GB unless the user explicitly asks for a closing bell",
         "Use longer body scans",
         "Use calming background sounds (Ocean, Rain)"
       ],
-      "focus_cue": "OH",
+      "focus_cue": "IM_FRAC",
       "viz_cue": null,
-      "preferred_sounds": ["OC", "BD"]
+      "preferred_sounds": [
+        "OC",
+        "BD"
+      ]
     },
     "focus": {
-      "keywords": ["focus", "concentrate", "concentration", "attention", "productivity", "work", "study"],
+      "keywords": [
+        "focus",
+        "concentrate",
+        "concentration",
+        "attention",
+        "productivity",
+        "work",
+        "study"
+      ],
       "rules": [
         "Use IM for focus phase",
-        "Use VC for visualization phase"
+        "Use MV_* for visualization phase"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["LI", "DH"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "LI",
+        "DH"
+      ]
     },
     "relaxation": {
-      "keywords": ["relax", "relaxation", "calm", "stress", "anxiety", "unwind", "destress"],
+      "keywords": [
+        "relax",
+        "relaxation",
+        "calm",
+        "stress",
+        "anxiety",
+        "unwind",
+        "destress"
+      ],
       "rules": [
-        "Use VC for visualization (intentions/goals)",
+        "Use MV_* for visualization (intentions/goals)",
         "Use longer body scans"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["SP", "OC"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "SP",
+        "OC"
+      ]
     },
     "morning": {
-      "keywords": ["morning", "wake up", "start day", "energize", "sunrise"],
+      "keywords": [
+        "morning",
+        "wake up",
+        "start day",
+        "energize",
+        "sunrise"
+      ],
       "rules": [
         "For AI sessions 5+ minutes use INT_FRAC (Intro) at start; for 1-4 minutes omit INT_FRAC",
-        "Use VC (Vision Clarity) for visualization",
+        "Use MV_* (morning visualization (MV_*)) for visualization",
         "Energizing background sounds"
       ],
       "intro_cue": "INT_FRAC",
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["LI", "DH"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "LI",
+        "DH"
+      ]
     },
     "evening": {
-      "keywords": ["evening", "end of day", "wind down", "after work", "sunset"],
+      "keywords": [
+        "evening",
+        "end of day",
+        "wind down",
+        "after work",
+        "sunset"
+      ],
       "rules": [
-        "Use RT (Retrospection) for visualization",
+        "Use EV_* (evening visualization (EV_*)) for visualization",
         "Calming sounds"
       ],
       "focus_cue": "IM",
-      "viz_cue": "RT",
-      "preferred_sounds": ["OC", "SP"]
+      "viz_cue": "EV_KM_FRAC",
+      "preferred_sounds": [
+        "OC",
+        "SP"
+      ]
     },
     "anxiety": {
-      "keywords": ["anxiety", "anxious", "worried", "nervous", "panic", "overwhelm", "fear"],
+      "keywords": [
+        "anxiety",
+        "anxious",
+        "worried",
+        "nervous",
+        "panic",
+        "overwhelm",
+        "fear"
+      ],
       "rules": [
         "Use longer breathing exercises",
         "Use calming background sounds",
         "Focus on grounding techniques"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["SP", "OC"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "SP",
+        "OC"
+      ]
     },
     "stress": {
-      "keywords": ["stress", "stressed", "tense", "tension", "pressure", "burnout", "overwhelmed"],
+      "keywords": [
+        "stress",
+        "stressed",
+        "tense",
+        "tension",
+        "pressure",
+        "burnout",
+        "overwhelmed"
+      ],
       "rules": [
         "Use body scans to release tension",
         "Use calming background sounds"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["SP", "OC"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "SP",
+        "OC"
+      ]
     },
     "energy": {
-      "keywords": ["energy", "energize", "boost", "vitality", "awake", "alert", "refresh"],
+      "keywords": [
+        "energy",
+        "energize",
+        "boost",
+        "vitality",
+        "awake",
+        "alert",
+        "refresh"
+      ],
       "rules": [
         "Use shorter, more dynamic exercises",
         "Use uplifting background sounds"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["LI", "DH"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "LI",
+        "DH"
+      ]
     },
     "creativity": {
-      "keywords": ["creative", "creativity", "inspiration", "ideas", "imagination", "art", "create"],
+      "keywords": [
+        "creative",
+        "creativity",
+        "inspiration",
+        "ideas",
+        "imagination",
+        "art",
+        "create"
+      ],
       "rules": [
         "Use visualization exercises",
         "Open-ended focus techniques"
       ],
       "focus_cue": "IM",
-      "viz_cue": "VC",
-      "preferred_sounds": ["LI", "SP"]
+      "viz_cue": "MV_KM_FRAC",
+      "preferred_sounds": [
+        "LI",
+        "SP"
+      ]
     },
     "gratitude": {
-      "keywords": ["gratitude", "grateful", "thankful", "appreciation", "thanks"],
+      "keywords": [
+        "gratitude",
+        "grateful",
+        "thankful",
+        "appreciation",
+        "thanks"
+      ],
       "rules": [
-        "Use RT (Retrospection) for reflection",
+        "Use evening gratitude visualization (EV_GR_FRAC) when appropriate",
         "Gentle background sounds"
       ],
       "focus_cue": "IM",
-      "viz_cue": "RT",
-      "preferred_sounds": ["SP", "LI"]
+      "viz_cue": "EV_GR_FRAC",
+      "preferred_sounds": [
+        "SP",
+        "LI"
+      ]
     }
   },
-
   "strict_rules": [
     {
       "id": "ai_intro_frac_duration",
@@ -489,7 +819,7 @@
     },
     {
       "id": "focus_and_viz",
-      "rule": "Sessions > 6 min must have one finite focus module (IM or NF) and one visualization trigger cue (VC/RT)",
+      "rule": "Sessions > 6 min must have one finite focus module (IM_FRAC or NF_FRAC) and, when visualization is appropriate, a single fractional MV_* or EV_* visualization row (retired VC/RT/OH are never used).",
       "priority": 95
     },
     {
@@ -499,7 +829,7 @@
     },
     {
       "id": "im_nf_full_session_at_meditation_start",
-      "rule": "When IM_FRAC or NF_FRAC has durationMinutes equal to the full session length (entire practice is that fractional module), use trigger 'start' so it begins at meditation clock 00:00 after any INT_FRAC intro, or at 00:00 when INT_FRAC is omitted (AI 1-4 minutes) — not minute 1 unless another module occupies minute 0. Minute numbers are practice-minute positions; a full-session focus module is not 'one minute into practice'.",
+      "rule": "When IM_FRAC or NF_FRAC has durationMinutes equal to the full session length (entire practice is that fractional module), use trigger 'start' so it begins at meditation clock 00:00 after any INT_FRAC intro, or at 00:00 when INT_FRAC is omitted (AI 1-4 minutes) \u2014 not minute 1 unless another module occupies minute 0. Minute numbers are practice-minute positions; a full-session focus module is not 'one minute into practice'.",
       "priority": 96
     },
     {
@@ -508,13 +838,22 @@
       "priority": 90
     }
   ],
-
   "background_sound_guidelines": {
     "description": "Guidelines for selecting appropriate background sounds",
     "sound_categories": {
-      "calming": ["SP", "OC", "BD"],
-      "focus": ["LI", "DH"],
-      "sleep": ["OC", "BD"]
+      "calming": [
+        "SP",
+        "OC",
+        "BD"
+      ],
+      "focus": [
+        "LI",
+        "DH"
+      ],
+      "sleep": [
+        "OC",
+        "BD"
+      ]
     },
     "default_by_session_type": {
       "relaxation": "SP",
@@ -525,7 +864,6 @@
       "default": "LI"
     }
   },
-
   "json_output_format": {
     "description": "The exact JSON format the AI must return. Omit GB (Gentle Bell) from cues unless the user explicitly requests an end bell; Timer still allows adding GB manually.",
     "template": {
@@ -533,7 +871,10 @@
       "backgroundSoundId": "ID from available sounds (REQUIRED)",
       "binauralBeatId": "ID from available beats (REQUIRED)",
       "cues": [
-        { "id": "module_id", "trigger": "start|end|minute_number" }
+        {
+          "id": "module_id",
+          "trigger": "start|end|minute_number"
+        }
       ],
       "title": "Short descriptive title",
       "description": "One sentence description of the meditation"
@@ -543,14 +884,30 @@
       "backgroundSoundId": "LI",
       "binauralBeatId": "BB10",
       "cues": [
-        { "id": "INT_FRAC", "trigger": "start" },
-        { "id": "PB_FRAC", "trigger": "1", "durationMinutes": 2 },
-        { "id": "BS2", "trigger": "3" },
-        { "id": "IM_FRAC", "trigger": "5" },
-        { "id": "VC", "trigger": "7" }
+        {
+          "id": "INT_FRAC",
+          "trigger": "start"
+        },
+        {
+          "id": "PB_FRAC",
+          "trigger": "1",
+          "durationMinutes": 2
+        },
+        {
+          "id": "BS2",
+          "trigger": "3"
+        },
+        {
+          "id": "IM_FRAC",
+          "trigger": "5"
+        },
+        {
+          "id": "MV_KM_FRAC",
+          "trigger": "7"
+        }
       ],
       "title": "Morning Focus Meditation",
-      "description": "A 10-minute session with breathwork, body scan, I AM mantra, and vision clarity."
+      "description": "A 10-minute session with breathwork, body scan, I AM mantra, and morning visualization."
     }
   }
 }

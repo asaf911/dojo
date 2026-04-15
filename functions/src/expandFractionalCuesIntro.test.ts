@@ -83,8 +83,8 @@ test("expandFractionalCues: non-fractional cue before IM_FRAC at start skips IM 
   const out = expandFractionalCues(
     [
       {
-        id: "VC",
-        name: "Vision",
+        id: "GB",
+        name: "Gentle Bell",
         url: "",
         trigger: "start",
       },

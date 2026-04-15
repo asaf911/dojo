@@ -8,7 +8,7 @@ test("normalizeFractionalSurfaceCueIdsForProd: NF_FRAC rewrites to NF3 for 3-min
       { id: "INT_GEN_1", trigger: "start" },
       { id: "PB_FRAC", trigger: "1", durationMinutes: 1 },
       { id: "NF_FRAC", trigger: "3" },
-      { id: "VC", trigger: "6" },
+      { id: "IM_FRAC", trigger: "6" },
       { id: "GB", trigger: "end" },
     ],
     10
