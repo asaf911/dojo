@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "EV_KM_FRAC",
+      "name": "Evening Retrospection",
+      "path": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+      },
+      "fractional": true
+    },
+    {
+      "id": "EV_GR_FRAC",
+      "name": "Evening Gratitude",
+      "path": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+      },
+      "fractional": true
+    }
+  ]
+}

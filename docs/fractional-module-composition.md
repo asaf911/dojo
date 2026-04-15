@@ -11,6 +11,8 @@ This document serves as a reference for building new fractional modules.
 
 Optional catalog fields for MV inventory / QA: `contentTrack` (e.g. `Key Moments`, `Morning Gratitude`) and `reminderPurpose` (e.g. `Reinforce flow`). Example — shared asset `MV_REM_420_MOVE_WITH_EASE_ASAF.mp3`: **reminder**, on-screen/script line **Continue moving through your day**; `MVK_C009` → `contentTrack: Key Moments`, `reminderPurpose: Reinforce flow`; `MVG_C009` → same audio in the gratitude variant with `contentTrack: Morning Gratitude`.
 
+**Evening Visualization (`EV_KM_FRAC` / `EV_GR_FRAC`)** uses a **deterministic** composer — [`functions/src/eveningVisualizationPlan.ts`](../functions/src/eveningVisualizationPlan.ts) — with catalog [`functions/catalogs/evening_visualization_fractional.json`](../functions/catalogs/evening_visualization_fractional.json). Clips use `EVK_*` (retrospection) and `EVG_*` (gratitude); shared orientation and shared reminders are duplicated per prefix like MV. Under time pressure the composer **drops optional clips** by `priority` (`p2` / `p1` before `p0`) rather than randomizing reminders. Tests: [`functions/src/eveningVisualizationPlan.test.ts`](../functions/src/eveningVisualizationPlan.test.ts).
+
 ## Module intro (1–4 min vs first on timeline)
 
 Every fractional module shares one **framing intro** policy: **no module intro for under 5 minutes** unless the block is **at meditation start (t=0)** **and** **first fractional row** **and** **no regular cue precedes it** (or standalone `postFractionalPlan` with `atTimelineStart`). Authoritative spec: [**`fractional-module-intro-rule.md`**](./fractional-module-intro-rule.md).

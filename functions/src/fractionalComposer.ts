@@ -38,6 +38,10 @@ import {
   composeMorningVisualizationPlan,
   isMorningVisualizationModuleId,
 } from "./morningVisualizationPlan";
+import {
+  composeEveningVisualizationPlan,
+  isEveningVisualizationModuleId,
+} from "./eveningVisualizationPlan";
 import type { FractionalCompositionContext } from "./meditationThemes";
 
 export { FRACTIONAL_INSTRUCTION_PAIR_GAPS } from "./fractionalTimeline";
@@ -333,6 +337,8 @@ const FRACTIONAL_MODULE_MAP: Record<string, string> = {
   INT_FRAC: "intro_fractional",
   MV_KM_FRAC: "morning_visualization_fractional",
   MV_GR_FRAC: "morning_visualization_fractional",
+  EV_KM_FRAC: "evening_visualization_fractional",
+  EV_GR_FRAC: "evening_visualization_fractional",
 };
 
 /** Inline expansion defaults for BS_FRAC* (see `docs/body-scan-tier-composer.md`). */
@@ -635,6 +641,14 @@ export function expandFractionalCues(
       });
     } else if (isMorningVisualizationModuleId(cue.id)) {
       plan = composeMorningVisualizationPlan(
+        resolvedClips,
+        windowSec,
+        voiceId,
+        cue.id,
+        atFractModuleTimelineStart
+      );
+    } else if (isEveningVisualizationModuleId(cue.id)) {
+      plan = composeEveningVisualizationPlan(
         resolvedClips,
         windowSec,
         voiceId,

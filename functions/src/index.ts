@@ -14,6 +14,10 @@ import {
   composeMorningVisualizationPlan,
   isMorningVisualizationModuleId,
 } from "./morningVisualizationPlan";
+import {
+  composeEveningVisualizationPlan,
+  isEveningVisualizationModuleId,
+} from "./eveningVisualizationPlan";
 import { composeBodyScanTierPlan } from "./bodyScanTierPlan";
 import { composePerfectBreathPlan } from "./perfectBreathPlan";
 import {
@@ -534,6 +538,7 @@ function getCueCatalogFileBasenames(): string[] {
       "i_am_mantra",
       "nostril_focus",
       "morning_visualization",
+      "evening_visualization",
     ];
   }
   return [
@@ -1391,12 +1396,15 @@ export const postFractionalPlan = functions.https.onRequest(
         INT_FRAC: "intro_fractional",
         MV_KM_FRAC: "morning_visualization_fractional",
         MV_GR_FRAC: "morning_visualization_fractional",
+        EV_KM_FRAC: "evening_visualization_fractional",
+        EV_GR_FRAC: "evening_visualization_fractional",
       };
 
       let catalogSlug: string | undefined;
       let isBodyScanTier = false;
       const isPerfectBreath = moduleId === "PB_FRAC";
       const isMorningViz = isMorningVisualizationModuleId(moduleId);
+      const isEveningViz = isEveningVisualizationModuleId(moduleId);
 
       if (isBodyScanModuleId(moduleId)) {
         catalogSlug = "body_scan_fractional";
@@ -1473,6 +1481,14 @@ export const postFractionalPlan = functions.https.onRequest(
         );
       } else if (isMorningViz) {
         plan = composeMorningVisualizationPlan(
+          resolvedClips,
+          durationSec,
+          voiceId,
+          moduleId,
+          atTimelineStart
+        );
+      } else if (isEveningViz) {
+        plan = composeEveningVisualizationPlan(
           resolvedClips,
           durationSec,
           voiceId,

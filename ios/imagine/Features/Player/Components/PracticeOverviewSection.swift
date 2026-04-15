@@ -209,11 +209,11 @@ struct PracticeOverviewSection: View {
         return formatTimelineMMSS(sessionSecond - introPrefixSeconds)
     }
 
-    /// `IM_FRAC` / `NF_FRAC` / `MV_*_FRAC` with `fractionalDuration` equal to session length: module starts at practice clock 00:00.
+    /// `IM_FRAC` / `NF_FRAC` / `MV_*_FRAC` / `EV_*_FRAC` with `fractionalDuration` equal to session length: module starts at practice clock 00:00.
     private func isFullSessionFocusModule(_ setting: CueSetting) -> Bool {
         guard let fd = setting.fractionalDuration, fd == config.minutes else { return false }
         switch setting.cue.id {
-        case "IM_FRAC", "NF_FRAC", "MV_KM_FRAC", "MV_GR_FRAC":
+        case "IM_FRAC", "NF_FRAC", "MV_KM_FRAC", "MV_GR_FRAC", "EV_KM_FRAC", "EV_GR_FRAC":
             return true
         default:
             return false

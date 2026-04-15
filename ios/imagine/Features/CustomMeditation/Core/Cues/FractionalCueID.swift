@@ -31,6 +31,8 @@ enum FractionalCueID {
             if prefix == "IM" || prefix == "NF" { return "\(prefix)_FRAC" }
             if prefix == "MVK" { return "MV_KM_FRAC" }
             if prefix == "MVG" { return "MV_GR_FRAC" }
+            if prefix == "EVK" { return "EV_KM_FRAC" }
+            if prefix == "EVG" { return "EV_GR_FRAC" }
         }
         if isBodyScanTierAtomicId(cueId) { return bodyScanTierGroupKey }
         return nil

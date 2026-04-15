@@ -145,6 +145,37 @@ test("buildCuesFromAllocation (dev): rebalanced 4m + MV_KM_FRAC emits morning vi
   }
 });
 
+test("buildCuesFromAllocation (dev): rebalanced 4m + EV_KM_FRAC emits evening viz row", () => {
+  const prev = process.env.GCLOUD_PROJECT;
+  process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";
+  try {
+    const prefs = {
+      noBreathwork: false,
+      isSleep: false,
+      isMorning: false,
+      isEvening: false,
+    };
+    const base = allocatePhases(4, prefs);
+    const minF = minFocusMinutesForMorningVisualization(
+      4,
+      "4 minutes evening visualization"
+    );
+    const alloc = rebalanceAllocationForMinimumFocus(base, 4, minF);
+    assert.equal(alloc.focus, 2);
+    const cues = buildCuesFromAllocation(alloc, prefs, {
+      practiceDurationMinutes: 4,
+      themeCueHints: { focusFractionalId: "EV_KM_FRAC" },
+    });
+    assert.ok(cues.some((c) => c.id === "EV_KM_FRAC"));
+  } finally {
+    if (prev === undefined) {
+      delete process.env.GCLOUD_PROJECT;
+    } else {
+      process.env.GCLOUD_PROJECT = prev;
+    }
+  }
+});
+
 test("buildCuesFromAllocation (dev): theme gratitude + focus uses MV_GR_FRAC when no IM/NF", () => {
   const prev = process.env.GCLOUD_PROJECT;
   process.env.GCLOUD_PROJECT = "imaginedev-e5fd3";

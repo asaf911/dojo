@@ -18,6 +18,8 @@ extension FractionalModules {
         case intro = "INT_FRAC"
         case morningVizKeyMoments = "MV_KM_FRAC"
         case morningVizGratitude = "MV_GR_FRAC"
+        case eveningVizRetrospection = "EV_KM_FRAC"
+        case eveningVizGratitude = "EV_GR_FRAC"
 
         var displayName: String {
             FractionalModules.displayTitle(forModuleId: rawValue)
@@ -90,6 +92,14 @@ extension FractionalModules {
 
                 if selectedModule == .morningVizKeyMoments || selectedModule == .morningVizGratitude {
                     Text("Guided visualization: ordered intro, theme instructions, optional reminders (2m+), and closing outro.")
+                        .nunitoFont(size: 13, style: .regular)
+                        .foregroundColor(.foregroundLightGray.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+
+                if selectedModule == .eveningVizRetrospection || selectedModule == .eveningVizGratitude {
+                    Text("Evening visualization: room anchor, rewind instructions, reminders, and outro (deterministic order).")
                         .nunitoFont(size: 13, style: .regular)
                         .foregroundColor(.foregroundLightGray.opacity(0.85))
                         .multilineTextAlignment(.center)

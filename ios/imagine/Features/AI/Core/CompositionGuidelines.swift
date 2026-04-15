@@ -4,7 +4,7 @@
 //
 //  Created on 2025-01-12
 //  Composition rules only - module catalog comes from CueManager (Firebase)
-//  Bundled JSON (v4.3+) documents theme-driven INT_FRAC greetings and MV_* focus modules for AI.
+//  Bundled JSON (v4.3+) documents theme-driven INT_FRAC greetings and MV_* / EV_* focus modules for AI.
 //
 
 import Foundation

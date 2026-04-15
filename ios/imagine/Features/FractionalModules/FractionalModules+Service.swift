@@ -2,7 +2,7 @@
 //  FractionalModules+Service.swift
 //  Dojo
 //
-//  POST /postFractionalPlan — second-precision `Plan` JSON for NF_FRAC, IM_FRAC, MV_*_FRAC, BS_FRAC.
+//  POST /postFractionalPlan — second-precision `Plan` JSON for NF_FRAC, IM_FRAC, MV_*_FRAC, EV_*_FRAC, BS_FRAC.
 //  BS_FRAC request fields: `bodyScanDirection`, `introShort`, `introLong`, `includeEntry` (see server doc
 //  `docs/body-scan-tier-composer.md`). Logs: filter "[Fractional]".
 //
@@ -216,6 +216,18 @@ extension FractionalModules.Service {
                     FractionalModules.PlanItem(atSec: 0, clipId: "MVG_C001", role: "instruction", text: "Mind's eye", url: "gs://preview/MVG_C001.mp3"),
                     FractionalModules.PlanItem(atSec: 12, clipId: "MVG_C004", role: "instruction", text: "Gratitude", url: "gs://preview/MVG_C004.mp3"),
                     FractionalModules.PlanItem(atSec: 30, clipId: "MVG_C010", role: "reminder", text: "Feel gratitude", url: "gs://preview/MVG_C010.mp3"),
+                ]
+            case "EV_KM_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "EVK_C001", role: "instruction", text: "Room", url: "gs://preview/EVK_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 10, clipId: "EVK_C002", role: "instruction", text: "Rewind", url: "gs://preview/EVK_C002.mp3"),
+                    FractionalModules.PlanItem(atSec: 28, clipId: "EVK_C010", role: "outro", text: "Body", url: "gs://preview/EVK_C010.mp3"),
+                ]
+            case "EV_GR_FRAC":
+                items = [
+                    FractionalModules.PlanItem(atSec: 0, clipId: "EVG_C001", role: "instruction", text: "Room", url: "gs://preview/EVG_C001.mp3"),
+                    FractionalModules.PlanItem(atSec: 10, clipId: "EVG_C002", role: "instruction", text: "Gratitude", url: "gs://preview/EVG_C002.mp3"),
+                    FractionalModules.PlanItem(atSec: 26, clipId: "EVG_C007", role: "outro", text: "Body", url: "gs://preview/EVG_C007.mp3"),
                 ]
             default:
                 if framingIntroAllowed {

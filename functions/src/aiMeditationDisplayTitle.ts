@@ -5,12 +5,18 @@
 
 import { createHash, randomInt } from "crypto";
 import type { SessionPreferences, UserStructureOverrides } from "./phaseAllocation";
-import type { MeditationThemeId, MorningVisualizationVariant } from "./meditationThemes";
+import type {
+  EveningVisualizationVariant,
+  MeditationThemeId,
+  MorningVisualizationVariant,
+} from "./meditationThemes";
 
 export type DisplayTitleBucket =
   | "sleep"
   | "morning_viz_km"
   | "morning_viz_gr"
+  | "evening_viz_km"
+  | "evening_viz_gr"
   | "focus"
   | "anxiety"
   | "relax"
@@ -70,6 +76,50 @@ const POOLS: Record<DisplayTitleBucket, readonly string[]> = {
     "Still Room for Plans",
     "Paint the Morning Calm",
     "Your Day, Framed Softly",
+  ],
+  evening_viz_km: [
+    "Rewind the Day Quietly",
+    "Backward Through the Hours",
+    "Evening Inner Replay",
+    "Soft Review, No Verdict",
+    "Memory Walk at Dusk",
+    "Unspool the Day Gently",
+    "What the Day Left Behind",
+    "Slow Motion Recall",
+    "Heart Notes From Today",
+    "Let the Day Unfold Backward",
+    "Evening Rearview Calm",
+    "Quiet Scroll Through Today",
+    "Feel What Surfaced",
+    "Name the Edges of Today",
+    "Evening Inner Reel",
+    "Dim the Lights Inward",
+    "Trace the Thread Back",
+    "Gentle Day-in-Reverse",
+    "Still Waters, Old Footsteps",
+    "Close the Loop Softly",
+  ],
+  evening_viz_gr: [
+    "Thanks at Sundown",
+    "Grateful Rewind",
+    "Evening Shelf of Good",
+    "Small Lights From Today",
+    "Warm Goodbye to the Hours",
+    "Count the Kindness Backward",
+    "Thank the Day on the Way Out",
+    "Soft Thanks in Reverse",
+    "Evening Gratitude Walk",
+    "What Shone Today",
+    "Hold the Good Loosely",
+    "Twilight Thank-Yous",
+    "Gentle Harvest of Moments",
+    "Evening Appreciation",
+    "Thanks Without Rush",
+    "Let Gratitude Linger",
+    "Quiet Praise for Today",
+    "Bless the Ordinary Evening",
+    "Warm Edges of the Day",
+    "Evening Thank-You Breath",
   ],
   morning_viz_gr: [
     "Thank the Morning",
@@ -269,14 +319,22 @@ export function resolveDisplayTitleBucket(args: {
   themes: MeditationThemeId[];
   prefs: SessionPreferences;
   mvVariant: MorningVisualizationVariant | null;
+  evVariant: EveningVisualizationVariant | null;
   overrides: UserStructureOverrides;
   structureContext: string;
 }): DisplayTitleBucket {
-  const { prompt, themes, prefs, mvVariant, overrides, structureContext } = args;
+  const { prompt, themes, prefs, mvVariant, evVariant, overrides, structureContext } =
+    args;
   const lower = prompt.toLowerCase();
 
   if (prefs.isSleep || themes.includes("sleep")) {
     return "sleep";
+  }
+  if (evVariant === "EV_GR") {
+    return "evening_viz_gr";
+  }
+  if (evVariant === "EV_KM") {
+    return "evening_viz_km";
   }
   if (mvVariant === "MV_GR") {
     return "morning_viz_gr";
@@ -350,6 +408,7 @@ export function pickDisplayTitle(
     themes: MeditationThemeId[];
     prefs: SessionPreferences;
     mvVariant: MorningVisualizationVariant | null;
+    evVariant: EveningVisualizationVariant | null;
     overrides: UserStructureOverrides;
     structureContext: string;
   },

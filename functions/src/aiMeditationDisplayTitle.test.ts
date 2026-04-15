@@ -22,6 +22,7 @@ function bucketFor(
   themes: MeditationThemeId[],
   prefs: SessionPreferences,
   mvVariant: "MV_KM" | "MV_GR" | null,
+  evVariant: "EV_KM" | "EV_GR" | null,
   overrides: UserStructureOverrides,
   structureContext: string
 ): DisplayTitleBucket {
@@ -30,6 +31,7 @@ function bucketFor(
     themes,
     prefs,
     mvVariant,
+    evVariant,
     overrides,
     structureContext,
   });
@@ -41,6 +43,7 @@ test("resolveDisplayTitleBucket: sleep prompt", () => {
       "help me sleep",
       [],
       { ...prefsBase, isSleep: true },
+      null,
       null,
       overridesEmpty,
       "PB_FRAC@s1"
@@ -56,6 +59,7 @@ test("resolveDisplayTitleBucket: MV_KM wins over morning theme", () => {
       ["morning"],
       prefsBase,
       "MV_KM",
+      null,
       overridesEmpty,
       "MV_KM_FRAC@s2"
     ),
@@ -70,10 +74,41 @@ test("resolveDisplayTitleBucket: MV_GR", () => {
       ["gratitude", "morning"],
       prefsBase,
       "MV_GR",
+      null,
       overridesEmpty,
       "MV_GR_FRAC@s2"
     ),
     "morning_viz_gr"
+  );
+});
+
+test("resolveDisplayTitleBucket: EV_KM wins over evening theme", () => {
+  assert.equal(
+    bucketFor(
+      "evening visualization unwind",
+      ["evening"],
+      prefsBase,
+      null,
+      "EV_KM",
+      overridesEmpty,
+      "EV_KM_FRAC@s2"
+    ),
+    "evening_viz_km"
+  );
+});
+
+test("resolveDisplayTitleBucket: EV_GR", () => {
+  assert.equal(
+    bucketFor(
+      "evening gratitude visualization",
+      ["evening", "gratitude"],
+      prefsBase,
+      null,
+      "EV_GR",
+      overridesEmpty,
+      "EV_GR_FRAC@s2"
+    ),
+    "evening_viz_gr"
   );
 });
 
@@ -84,6 +119,7 @@ test("resolveDisplayTitleBucket: NF override", () => {
       [],
       prefsBase,
       null,
+      null,
       { focusType: "NF" },
       "NF_FRAC@s3"
     ),
@@ -93,28 +129,28 @@ test("resolveDisplayTitleBucket: NF override", () => {
 
 test("resolveDisplayTitleBucket: IM_FRAC in structure", () => {
   assert.equal(
-    bucketFor("custom", [], prefsBase, null, overridesEmpty, "IM_FRAC@s2"),
+    bucketFor("custom", [], prefsBase, null, null, overridesEmpty, "IM_FRAC@s2"),
     "focus"
   );
 });
 
 test("resolveDisplayTitleBucket: anxiety keywords", () => {
   assert.equal(
-    bucketFor("calm my racing thoughts", [], prefsBase, null, overridesEmpty, "PB_FRAC@s1"),
+    bucketFor("calm my racing thoughts", [], prefsBase, null, null, overridesEmpty, "PB_FRAC@s1"),
     "anxiety"
   );
 });
 
 test("resolveDisplayTitleBucket: relax keywords", () => {
   assert.equal(
-    bucketFor("10m relaxation", [], prefsBase, null, overridesEmpty, "PB_FRAC@s1"),
+    bucketFor("10m relaxation", [], prefsBase, null, null, overridesEmpty, "PB_FRAC@s1"),
     "relax"
   );
 });
 
 test("resolveDisplayTitleBucket: morning_general when morning theme, no mv", () => {
   assert.equal(
-    bucketFor("good morning 5m", ["morning"], prefsBase, null, overridesEmpty, "PB_FRAC@s1"),
+    bucketFor("good morning 5m", ["morning"], prefsBase, null, null, overridesEmpty, "PB_FRAC@s1"),
     "morning_general"
   );
 });
@@ -126,6 +162,7 @@ test("pickDisplayTitle: same hash + same randomIndex → same title", () => {
     themes: ["morning"] satisfies MeditationThemeId[],
     prefs: prefsBase,
     mvVariant: "MV_KM" as const,
+    evVariant: null,
     overrides: overridesEmpty,
     structureContext: "PB_FRAC@s1,MV_KM_FRAC@s2",
   };
@@ -142,6 +179,7 @@ test("pickDisplayTitle: different randomIndex can change title", () => {
     themes: ["morning"] satisfies MeditationThemeId[],
     prefs: prefsBase,
     mvVariant: "MV_KM" as const,
+    evVariant: null,
     overrides: overridesEmpty,
     structureContext: "PB_FRAC@s1,MV_KM_FRAC@s2",
   };

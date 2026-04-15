@@ -22,6 +22,8 @@ enum FractionalDeepLinkPlaybackHydrator {
         "BS_FRAC_DOWN",
         "MV_KM_FRAC",
         "MV_GR_FRAC",
+        "EV_KM_FRAC",
+        "EV_GR_FRAC",
     ]
 
     /// Returns the config unchanged when already atomic, offline-only, or expansion fails.

@@ -115,10 +115,10 @@ export function allocatePhases(
 }
 
 /**
- * Minimum focus minutes when the user explicitly asked for morning/gratitude visualization,
- * so MV_* fractional rows are schedulable even for short defaults (e.g. 4m table focus=0).
+ * Minimum focus minutes when the user explicitly asked for themed visualization (morning MV_* or evening EV_*),
+ * so fractional viz rows are schedulable even for short defaults (e.g. 4m table focus=0).
  */
-export function minFocusMinutesForMorningVisualization(
+export function minFocusMinutesForVisualizationFocus(
   duration: number,
   prompt: string
 ): number {
@@ -136,6 +136,9 @@ export function minFocusMinutesForMorningVisualization(
   }
   return Math.max(2, Math.min(10, Math.ceil(d * 0.25)));
 }
+
+/** @deprecated Use {@link minFocusMinutesForVisualizationFocus} (same implementation). */
+export const minFocusMinutesForMorningVisualization = minFocusMinutesForVisualizationFocus;
 
 /**
  * Steals minutes from relax, then breath, then insight until focus >= minFocus.

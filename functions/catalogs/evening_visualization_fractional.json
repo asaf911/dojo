@@ -1,0 +1,301 @@
+{
+  "version": "1.0",
+  "moduleId": "EV_FRAC",
+  "title": "Evening Visualization",
+  "clips": [
+    {
+      "clipId": "EVK_C001",
+      "role": "instruction",
+      "order": 100,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Mind's eye and room",
+      "text": "Bring your attention to your mind's eye and imagine the room you are in.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+      },
+      "durationSec": 4
+    },
+    {
+      "clipId": "EVK_C002",
+      "role": "instruction",
+      "order": 200,
+      "priority": "p0",
+      "contentTrack": "Retrospection",
+      "text": "Replay in your mind how you arrived here.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_200_REWIND_FEW_MINUTES_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_200_REWIND_FEW_MINUTES_ASAF.mp3"
+      },
+      "durationSec": 3
+    },
+    {
+      "clipId": "EVK_C003",
+      "role": "instruction",
+      "order": 210,
+      "priority": "p0",
+      "contentTrack": "Retrospection",
+      "text": "Now go a little further back. Notice what happened just before that.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_210_REWIND_BIT_EARLIER_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_210_REWIND_BIT_EARLIER_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVK_C004",
+      "role": "instruction",
+      "order": 220,
+      "priority": "p0",
+      "contentTrack": "Retrospection",
+      "text": "Continue moving backward through your day. Let the memories appear at their own pace.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_220_REWIND_CONTINUE_DAY_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_220_REWIND_CONTINUE_DAY_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVK_C005",
+      "role": "instruction",
+      "order": 230,
+      "priority": "p1",
+      "contentTrack": "Retrospection",
+      "text": "If any moment brings up emotion, simply observe it.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_INS_230_NOTICE_EMOTIONS_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_INS_230_NOTICE_EMOTIONS_ASAF.mp3"
+      },
+      "durationSec": 3
+    },
+    {
+      "clipId": "EVK_C006",
+      "role": "reminder",
+      "order": 290,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "text": "Move through your memories at a natural pace. There is no need to rush or slow anything down.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3"
+      },
+      "durationSec": 6
+    },
+    {
+      "clipId": "EVK_C007",
+      "role": "reminder",
+      "order": 300,
+      "priority": "p1",
+      "contentTrack": "Retrospection",
+      "text": "If your mind drifts, gently continue from where you left off.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_300_RETURN_TO_REWIND_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_300_RETURN_TO_REWIND_ASAF.mp3"
+      },
+      "durationSec": 4
+    },
+    {
+      "clipId": "EVK_C008",
+      "role": "reminder",
+      "order": 310,
+      "priority": "p2",
+      "reminderPriority": "secondary",
+      "contentTrack": "Retrospection",
+      "text": "When something brings up strong emotion, rewind and stay with it a little longer.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_310_PROCESS_EMOTIONS_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_310_PROCESS_EMOTIONS_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVK_C009",
+      "role": "reminder",
+      "order": 320,
+      "priority": "p2",
+      "contentTrack": "Retrospection",
+      "text": "Continue observing what appears in your mind and heart.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_KM_REM_320_OBSERVE_WITHOUT_ANALYZING_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_KM_REM_320_OBSERVE_WITHOUT_ANALYZING_ASAF.mp3"
+      },
+      "durationSec": 3
+    },
+    {
+      "clipId": "EVK_C010",
+      "role": "outro",
+      "order": 500,
+      "priority": "p0",
+      "text": "Bring your focus back to your body.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVK_C011",
+      "role": "outro",
+      "order": 510,
+      "priority": "p0",
+      "text": "Take a deep breath in and hold.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVK_C012",
+      "role": "outro",
+      "order": 520,
+      "priority": "p0",
+      "text": "Exhale, relax, and let all emotions wash away.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3"
+      },
+      "durationSec": 6
+    },
+    {
+      "clipId": "EVK_C013",
+      "role": "outro",
+      "order": 530,
+      "priority": "p0",
+      "text": "Have a wonderful night.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3"
+      },
+      "durationSec": 4
+    },
+    {
+      "clipId": "EVG_C001",
+      "role": "instruction",
+      "order": 100,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "flowPurpose": "Mind's eye and room",
+      "text": "Bring your attention to your mind's eye and imagine the room you are in.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_INT_100_MINDS_EYE_ROOM_ASAF.mp3"
+      },
+      "durationSec": 4
+    },
+    {
+      "clipId": "EVG_C002",
+      "role": "instruction",
+      "order": 200,
+      "priority": "p0",
+      "contentTrack": "Gratitude",
+      "text": "Take a moment to feel gratitude for the simple fact that you can sit here and meditate.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_200_GRATITUDE_MEDITATE_OPPORTUNITY_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_200_GRATITUDE_MEDITATE_OPPORTUNITY_ASAF.mp3"
+      },
+      "durationSec": 8
+    },
+    {
+      "clipId": "EVG_C003",
+      "role": "instruction",
+      "order": 210,
+      "priority": "p0",
+      "contentTrack": "Gratitude",
+      "text": "Now begin to rewind your day from this moment backwards, looking for more moments you can be grateful for.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_210_REWIND_DAY_GRATITUDE_SEARCH_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_210_REWIND_DAY_GRATITUDE_SEARCH_ASAF.mp3"
+      },
+      "durationSec": 8
+    },
+    {
+      "clipId": "EVG_C004",
+      "role": "instruction",
+      "order": 220,
+      "priority": "p1",
+      "contentTrack": "Gratitude",
+      "text": "These may be things you saw, people you met, or small experiences from your day.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_INS_220_GRATITUDE_SCOPE_EXAMPLES_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_INS_220_GRATITUDE_SCOPE_EXAMPLES_ASAF.mp3"
+      },
+      "durationSec": 7
+    },
+    {
+      "clipId": "EVG_C005",
+      "role": "reminder",
+      "order": 290,
+      "priority": "p0",
+      "contentTrack": "Shared",
+      "text": "Move through your memories at a natural pace. There is no need to rush or slow anything down.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_RW_REM_290_MOVE_NATURAL_PACE_ASAF.mp3"
+      },
+      "durationSec": 7
+    },
+    {
+      "clipId": "EVG_C006",
+      "role": "reminder",
+      "order": 300,
+      "priority": "p1",
+      "contentTrack": "Gratitude",
+      "text": "When something brings up gratitude, rewind and stay with that feeling a little longer.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_GR_REM_300_LINGER_GRATITUDE_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_GR_REM_300_LINGER_GRATITUDE_ASAF.mp3"
+      },
+      "durationSec": 7
+    },
+    {
+      "clipId": "EVG_C007",
+      "role": "outro",
+      "order": 500,
+      "priority": "p0",
+      "text": "Bring your focus back to your body.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_400_BODY_FOCUS_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVG_C008",
+      "role": "outro",
+      "order": 510,
+      "priority": "p0",
+      "text": "Take a deep breath in and hold.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_510_INHALE_HOLD_ASAF.mp3"
+      },
+      "durationSec": 5
+    },
+    {
+      "clipId": "EVG_C009",
+      "role": "outro",
+      "order": 520,
+      "priority": "p0",
+      "text": "Exhale, relax, and let all emotions wash away.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_520_EXHALE_RELEASE_ASAF.mp3"
+      },
+      "durationSec": 6
+    },
+    {
+      "clipId": "EVG_C010",
+      "role": "outro",
+      "order": 530,
+      "priority": "p0",
+      "text": "Have a wonderful night.",
+      "voices": {
+        "Asaf": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3",
+        "Dan": "modules/evening_visualization_fractional/asaf/EV_OUT_540_WONDERFUL_NIGHT_ASAF.mp3"
+      },
+      "durationSec": 4
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 /**
  * Canonical meditation themes for AI composition: merge prompt, client context, LLM, and SessionPreferences.
- * Drives INT_FRAC greeting family, focus fractional (MV vs IM/NF), and insight cue.
+ * Drives INT_FRAC greeting family, focus fractional (MV / EV vs IM/NF), and insight cue.
  */
 
 import type { SessionPreferences, UserStructureOverrides } from "./phaseAllocation";
@@ -16,6 +16,12 @@ export const MEDITATION_THEME_IDS = [
 
 export type MeditationThemeId = (typeof MEDITATION_THEME_IDS)[number];
 
+function eveningOnlyWithoutMorning(mergedThemes: MeditationThemeId[]): boolean {
+  const eveningish =
+    mergedThemes.includes("evening") || mergedThemes.includes("night");
+  return eveningish && !mergedThemes.includes("morning");
+}
+
 /** Carried through expandFractionalCues → composeIntroFractionalPlan(INT_FRAC). */
 export type FractionalCompositionContext = {
   greetingFamilyHint?: "morning" | "evening" | "neutral" | "returning";
@@ -23,7 +29,13 @@ export type FractionalCompositionContext = {
 
 /** Hints for cueBuilder (focus / insight rows). */
 export type ThemeCompositionHints = {
-  focusFractionalId?: "IM_FRAC" | "NF_FRAC" | "MV_KM_FRAC" | "MV_GR_FRAC";
+  focusFractionalId?:
+    | "IM_FRAC"
+    | "NF_FRAC"
+    | "MV_KM_FRAC"
+    | "MV_GR_FRAC"
+    | "EV_KM_FRAC"
+    | "EV_GR_FRAC";
   insightCueId?: "VC" | "RT";
 };
 
@@ -196,6 +208,7 @@ export function resolveMorningVisualizationVariant(args: {
     );
 
   if (/gratitude|grateful|thankful/.test(lower) || gratitudeTheme) {
+    if (eveningOnlyWithoutMorning(args.mergedThemes)) return null;
     return "MV_GR";
   }
   if (morningTheme) {
@@ -204,9 +217,60 @@ export function resolveMorningVisualizationVariant(args: {
   return null;
 }
 
+export type EveningVisualizationVariant = "EV_KM" | "EV_GR";
+
+function eveningVisualizationEveningishContext(args: {
+  mergedThemes: MeditationThemeId[];
+  prefs: SessionPreferences;
+  prompt: string;
+}): boolean {
+  if (
+    args.mergedThemes.includes("evening") ||
+    args.mergedThemes.includes("night")
+  ) {
+    return true;
+  }
+  if (args.prefs.isEvening) return true;
+  const lower = args.prompt.toLowerCase();
+  return /\b(evening|wind down|after work|sunset|end of day)\b/.test(lower);
+}
+
+/**
+ * Evening / end-of-day visualization (EV_KM vs EV_GR). Requires evening-ish context + viz cue
+ * (or explicit LLM wantsEveningVisualization).
+ */
+export function resolveEveningVisualizationVariant(args: {
+  prompt: string;
+  llmWants?: "key_moments" | "gratitude" | null;
+  mergedThemes: MeditationThemeId[];
+  prefs: SessionPreferences;
+}): EveningVisualizationVariant | null {
+  if (args.llmWants === "gratitude") return "EV_GR";
+  if (args.llmWants === "key_moments") return "EV_KM";
+
+  if (!eveningVisualizationEveningishContext(args)) return null;
+
+  const lower = args.prompt.toLowerCase();
+  const vizCue =
+    /\bvisuali[sz]ations?\b|\bvisuali[sz]e\b|\bimagin(e|ing)\b|\benvision\b|\bkey\s+moments?\b|\bguided\s+imagery\b/.test(
+      lower
+    );
+  if (!vizCue) return null;
+
+  const gratitudeTheme = args.mergedThemes.includes("gratitude");
+  if (/gratitude|grateful|thankful/.test(lower) || gratitudeTheme) {
+    return "EV_GR";
+  }
+  return "EV_KM";
+}
+
 export type ThemeCompositionHintsOptions = {
-  /** When set, chooses MV fractional row even if theme ordering would not (e.g. LLM key_moments). */
-  forcedFocusFractionalId?: "MV_KM_FRAC" | "MV_GR_FRAC";
+  /** When set, chooses MV or EV fractional row even if theme ordering would not (e.g. LLM wants*). */
+  forcedFocusFractionalId?:
+    | "MV_KM_FRAC"
+    | "MV_GR_FRAC"
+    | "EV_KM_FRAC"
+    | "EV_GR_FRAC";
 };
 
 /**
@@ -243,10 +307,23 @@ export function themeCompositionHints(
   if (focusMinutes > 0 && !sleepish && !userChoseImNf) {
     if (options?.forcedFocusFractionalId) {
       cueHints.focusFractionalId = options.forcedFocusFractionalId;
+    } else if (
+      themes.includes("gratitude") &&
+      (themes.includes("evening") ||
+        themes.includes("night") ||
+        prefs.isEvening)
+    ) {
+      cueHints.focusFractionalId = "EV_GR_FRAC";
     } else if (themes.includes("gratitude")) {
       cueHints.focusFractionalId = "MV_GR_FRAC";
     } else if (themes.includes("morning")) {
       cueHints.focusFractionalId = "MV_KM_FRAC";
+    } else if (
+      themes.includes("evening") ||
+      themes.includes("night") ||
+      prefs.isEvening
+    ) {
+      cueHints.focusFractionalId = "EV_KM_FRAC";
     }
   }
 

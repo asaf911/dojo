@@ -20,6 +20,8 @@ extension FractionalModules {
         "INT_FRAC": "Intro",
         "MV_KM_FRAC": "Morning Key Moments",
         "MV_GR_FRAC": "Morning Gratitude",
+        "EV_KM_FRAC": "Evening Retrospection",
+        "EV_GR_FRAC": "Evening Gratitude",
         "VC": "Vision Clarity",
         "RT": "Retrospection",
         "GB": "Gentle Bell",

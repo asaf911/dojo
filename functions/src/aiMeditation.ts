@@ -11,7 +11,7 @@ import {
   extractDurationFromConversationHistory,
   extractDurationFromPrompt,
   extractSessionPreferences,
-  minFocusMinutesForMorningVisualization,
+  minFocusMinutesForVisualizationFocus,
   rebalanceAllocationForMinimumFocus,
   type UserStructureOverrides,
 } from "./phaseAllocation";
@@ -19,6 +19,7 @@ import { buildCuesFromAllocation } from "./cueBuilder";
 import {
   type FractionalCompositionContext,
   normalizeThemeList,
+  resolveEveningVisualizationVariant,
   resolveMorningVisualizationVariant,
   resolveMeditationThemes,
   themeCompositionHints,
@@ -104,6 +105,8 @@ interface AIStructureRequirements {
   themes?: string[];
   /** Explicit morning visualization module (when wording is indirect). */
   wantsMorningVisualization?: "key_moments" | "gratitude";
+  /** Explicit evening visualization module (retrospection vs gratitude). */
+  wantsEveningVisualization?: "key_moments" | "gratitude";
 }
 
 async function extractUserStructureRequirements(
@@ -114,11 +117,12 @@ async function extractUserStructureRequirements(
   const systemPrompt = `You extract meditation structure requirements from the user's message.
 The user may specify: total duration (e.g. "3m", "10 min"), mantra duration ("2m mantra", "3 min mantra"), body scan duration ("2m body scan"), breath duration ("1m breath"), focus type.
 
-Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down"), themes (array of strings, optional), wantsMorningVisualization (optional string).
+Keys: totalDuration (int), mantraMinutes (int), bodyScanMinutes (int), breathMinutes (int), focusType ("IM" or "NF"), bodyScanDirection ("up" or "down"), themes (array of strings, optional), wantsMorningVisualization (optional string), wantsEveningVisualization (optional string).
 
 themes: optional array, each value one of: morning, evening, noon, night, sleep, gratitude. Set when the user clearly wants that theme (e.g. "morning gratitude" → ["gratitude","morning"] or ["morning","gratitude"]).
 
-wantsMorningVisualization: set when the user clearly wants the guided morning visualization module even if they omit the word "visualization": "key_moments" (default morning viz / key moments of the day) or "gratitude" (gratitude visualization). Use with short sessions so structure can reserve focus time for MV.
+wantsMorningVisualization: set when the user clearly wants the guided morning visualization module even if they omit the word "visualization": "key_moments" or "gratitude". Use with short sessions so structure can reserve focus time for MV.
+wantsEveningVisualization: same for evening rewind/gratitude visualization ("key_moments" = retrospection, "gratitude" = evening gratitude). Never set both wantsMorningVisualization and wantsEveningVisualization; pick one from context.
 - focusType "IM" = mantra, chant, affirmation, I AM
 - focusType "NF" = nostril, nostril focus, nostril breathing, alternate nostril, nasal focus, breath focus on nose
 IMPORTANT: If the user mentions nostril, nose, or nasal breathing/focus, ALWAYS set focusType to "NF".
@@ -199,11 +203,15 @@ Return ONLY valid JSON. No other text.`;
     const wm = raw.wantsMorningVisualization;
     const wantsMorningVisualization =
       wm === "gratitude" || wm === "key_moments" ? wm : undefined;
+    const we = (raw as { wantsEveningVisualization?: unknown }).wantsEveningVisualization;
+    const wantsEveningVisualization =
+      we === "gratitude" || we === "key_moments" ? we : undefined;
     const result: AIStructureRequirements = {
       ...raw,
       bodyScanDirection,
       themes: llmThemes.length > 0 ? llmThemes : undefined,
       wantsMorningVisualization,
+      wantsEveningVisualization,
     };
     if (
       result.mantraMinutes === 0 &&
@@ -218,7 +226,8 @@ Return ONLY valid JSON. No other text.`;
       result.breathMinutes != null ||
       result.focusType != null ||
       bodyScanDirection != null ||
-      wantsMorningVisualization != null;
+      wantsMorningVisualization != null ||
+      wantsEveningVisualization != null;
     const hasThemes = llmThemes.length > 0;
     return hasOverride || hasThemes ? result : null;
   } catch (e) {
@@ -427,41 +436,73 @@ export async function generateAIMeditation(
     prefs,
   });
 
+  const evVariant = resolveEveningVisualizationVariant({
+    prompt,
+    llmWants: userOverrides?.wantsEveningVisualization ?? null,
+    mergedThemes: themes,
+    prefs,
+  });
   const mvVariant = resolveMorningVisualizationVariant({
     prompt,
     llmWants: userOverrides?.wantsMorningVisualization ?? null,
     mergedThemes: themes,
   });
 
+  type VizChosen = "MV_KM" | "MV_GR" | "EV_KM" | "EV_GR";
+  let vizChosen: VizChosen | null = null;
+  if (userOverrides?.wantsEveningVisualization != null) {
+    vizChosen =
+      userOverrides.wantsEveningVisualization === "gratitude" ? "EV_GR" : "EV_KM";
+  } else if (userOverrides?.wantsMorningVisualization != null) {
+    vizChosen =
+      userOverrides.wantsMorningVisualization === "gratitude" ? "MV_GR" : "MV_KM";
+  } else if (evVariant != null && mvVariant == null) {
+    vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
+  } else if (mvVariant != null && evVariant == null) {
+    vizChosen = mvVariant === "MV_GR" ? "MV_GR" : "MV_KM";
+  } else if (evVariant != null && mvVariant != null) {
+    // Single visualization: prefer evening when both theme resolvers fire.
+    vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
+    functions.logger.info(
+      `${TAG_AI} vizArb ev=${evVariant} mv=${mvVariant} -> ${vizChosen}`
+    );
+  }
+
   const userPinnedModuleMinutes =
     overrides.mantraMinutes != null ||
     overrides.bodyScanMinutes != null ||
     overrides.breathMinutes != null;
 
-  const shouldReserveMorningViz =
-    mvVariant != null &&
+  const shouldReserveVisualizationViz =
+    vizChosen != null &&
     !prefs.isSleep &&
     overrides.focusType !== "IM" &&
     overrides.focusType !== "NF" &&
     !userPinnedModuleMinutes;
 
-  if (shouldReserveMorningViz) {
-    const minFocus = minFocusMinutesForMorningVisualization(duration, prompt);
+  if (shouldReserveVisualizationViz) {
+    const minFocus = minFocusMinutesForVisualizationFocus(duration, prompt);
     allocation = rebalanceAllocationForMinimumFocus(
       allocation,
       duration,
       minFocus
     );
     functions.logger.info(
-      `${TAG_AI} morningViz mvVariant=${mvVariant} minFocus=${minFocus} breath=${allocation.breath} relax=${allocation.relax} focus=${allocation.focus} insight=${allocation.insight}`
+      `${TAG_AI} visualization vizChosen=${vizChosen} minFocus=${minFocus} breath=${allocation.breath} relax=${allocation.relax} focus=${allocation.focus} insight=${allocation.insight}`
     );
   }
 
   const themeHintOptions =
-    mvVariant != null && allocation.focus > 0
+    vizChosen != null && allocation.focus > 0
       ? {
           forcedFocusFractionalId:
-            mvVariant === "MV_GR" ? ("MV_GR_FRAC" as const) : ("MV_KM_FRAC" as const),
+            vizChosen === "EV_GR"
+              ? ("EV_GR_FRAC" as const)
+              : vizChosen === "EV_KM"
+                ? ("EV_KM_FRAC" as const)
+                : vizChosen === "MV_GR"
+                  ? ("MV_GR_FRAC" as const)
+                  : ("MV_KM_FRAC" as const),
         }
       : undefined;
 
@@ -491,12 +532,26 @@ export async function generateAIMeditation(
     `${TAG_AI} structure dur=${duration} cues=${cues.length} userOverrides=${hasExplicitOverrides ? JSON.stringify(overrides) : "none"}`
   );
 
+  const mvVariantForTitle =
+    vizChosen === "MV_KM" || vizChosen === "MV_GR"
+      ? vizChosen === "MV_GR"
+        ? ("MV_GR" as const)
+        : ("MV_KM" as const)
+      : null;
+  const evVariantForTitle =
+    vizChosen === "EV_KM" || vizChosen === "EV_GR"
+      ? vizChosen === "EV_GR"
+        ? ("EV_GR" as const)
+        : ("EV_KM" as const)
+      : null;
+
   const { title: displayTitle, bucket: displayTitleBucket } = pickDisplayTitle({
     prompt: prompt.trim(),
     duration,
     themes,
     prefs,
-    mvVariant,
+    mvVariant: mvVariantForTitle,
+    evVariant: evVariantForTitle,
     overrides,
     structureContext,
   });

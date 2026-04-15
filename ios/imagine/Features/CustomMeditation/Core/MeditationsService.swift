@@ -403,6 +403,8 @@ extension MeditationsService {
                     MeditationCue(id: "IM_FRAC", name: "I AM Mantra", url: "gs://preview", trigger: .minute(3)),
                     MeditationCue(id: "MV_KM_FRAC", name: "Morning Key Moments", url: "gs://preview", trigger: .minute(4)),
                     MeditationCue(id: "MV_GR_FRAC", name: "Morning Gratitude", url: "gs://preview", trigger: .minute(5)),
+                    MeditationCue(id: "EV_KM_FRAC", name: "Evening Retrospection", url: "gs://preview", trigger: .minute(6)),
+                    MeditationCue(id: "EV_GR_FRAC", name: "Evening Gratitude", url: "gs://preview", trigger: .minute(7)),
                     MeditationCue(id: "GB", name: "Gentle Bell", url: "gs://preview", trigger: .end),
                 ]
             )
