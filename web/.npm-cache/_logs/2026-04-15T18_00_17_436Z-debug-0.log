@@ -1,0 +1,18 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.8.3
+2 info using node@v20.10.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/asafshamir/Documents/GitHub/dojo/web/.npmrc
+5 silly config load:file:/Users/asafshamir/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm run build
+8 verbose argv "run" "build" "--cache" "./.npm-cache"
+9 verbose logfile logs-max:10 dir:/Users/asafshamir/Documents/GitHub/dojo/web/.npm-cache/_logs/2026-04-15T18_00_17_436Z-
+10 verbose logfile /Users/asafshamir/Documents/GitHub/dojo/web/.npm-cache/_logs/2026-04-15T18_00_17_436Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /Users/asafshamir/Documents/GitHub/dojo/web
+13 verbose os Darwin 25.2.0
+14 verbose node v20.10.0
+15 verbose npm  v10.8.3
+16 verbose exit 0
+17 info ok

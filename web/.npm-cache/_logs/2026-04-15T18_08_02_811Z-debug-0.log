@@ -1,0 +1,338 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.8.3
+2 info using node@v20.10.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/asafshamir/Documents/GitHub/dojo/web/.npmrc
+5 silly config load:file:/Users/asafshamir/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm install
+8 verbose argv "install" "--cache" "./.npm-cache"
+9 verbose logfile logs-max:10 dir:/Users/asafshamir/Documents/GitHub/dojo/web/.npm-cache/_logs/2026-04-15T18_08_02_811Z-
+10 verbose logfile /Users/asafshamir/Documents/GitHub/dojo/web/.npm-cache/_logs/2026-04-15T18_08_02_811Z-debug-0.log
+11 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+12 silly logfile done cleaning log files
+13 silly idealTree buildDeps
+14 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+15 silly reify moves {}
+16 silly audit bulk request {
+16 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+16 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+16 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+16 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-android-arm64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.1' ],
+16 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.1' ],
+16 silly audit   '@types/estree': [ '1.0.8' ],
+16 silly audit   esbuild: [ '0.25.12' ],
+16 silly audit   fdir: [ '6.5.0' ],
+16 silly audit   fsevents: [ '2.3.3' ],
+16 silly audit   nanoid: [ '3.3.11' ],
+16 silly audit   picocolors: [ '1.1.1' ],
+16 silly audit   picomatch: [ '4.0.4' ],
+16 silly audit   postcss: [ '8.5.9' ],
+16 silly audit   rollup: [ '4.60.1' ],
+16 silly audit   'source-map-js': [ '1.2.1' ],
+16 silly audit   tinyglobby: [ '0.2.16' ],
+16 silly audit   typescript: [ '5.6.3' ],
+16 silly audit   vite: [ '6.4.2' ]
+16 silly audit }
+17 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-x64-msvc
+18 silly reify mark deleted [
+18 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-x64-msvc'
+18 silly reify ]
+19 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-x64-gnu
+20 silly reify mark deleted [
+20 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-x64-gnu'
+20 silly reify ]
+21 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-ia32-msvc
+22 silly reify mark deleted [
+22 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-ia32-msvc'
+22 silly reify ]
+23 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-arm64-msvc
+24 silly reify mark deleted [
+24 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-win32-arm64-msvc'
+24 silly reify ]
+25 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-openharmony-arm64
+26 silly reify mark deleted [
+26 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-openharmony-arm64'
+26 silly reify ]
+27 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-openbsd-x64
+28 silly reify mark deleted [
+28 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-openbsd-x64'
+28 silly reify ]
+29 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-x64-musl
+30 silly reify mark deleted [
+30 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-x64-musl'
+30 silly reify ]
+31 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-x64-gnu
+32 silly reify mark deleted [
+32 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-x64-gnu'
+32 silly reify ]
+33 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-s390x-gnu
+34 silly reify mark deleted [
+34 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-s390x-gnu'
+34 silly reify ]
+35 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-riscv64-musl
+36 silly reify mark deleted [
+36 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-riscv64-musl'
+36 silly reify ]
+37 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-riscv64-gnu
+38 silly reify mark deleted [
+38 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-riscv64-gnu'
+38 silly reify ]
+39 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-ppc64-musl
+40 silly reify mark deleted [
+40 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-ppc64-musl'
+40 silly reify ]
+41 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-ppc64-gnu
+42 silly reify mark deleted [
+42 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-ppc64-gnu'
+42 silly reify ]
+43 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-loong64-musl
+44 silly reify mark deleted [
+44 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-loong64-musl'
+44 silly reify ]
+45 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-loong64-gnu
+46 silly reify mark deleted [
+46 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-loong64-gnu'
+46 silly reify ]
+47 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm64-musl
+48 silly reify mark deleted [
+48 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm64-musl'
+48 silly reify ]
+49 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm64-gnu
+50 silly reify mark deleted [
+50 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm64-gnu'
+50 silly reify ]
+51 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm-musleabihf
+52 silly reify mark deleted [
+52 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm-musleabihf'
+52 silly reify ]
+53 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm-gnueabihf
+54 silly reify mark deleted [
+54 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-linux-arm-gnueabihf'
+54 silly reify ]
+55 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-freebsd-x64
+56 silly reify mark deleted [
+56 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-freebsd-x64'
+56 silly reify ]
+57 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-freebsd-arm64
+58 silly reify mark deleted [
+58 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-freebsd-arm64'
+58 silly reify ]
+59 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-darwin-x64
+60 silly reify mark deleted [
+60 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-darwin-x64'
+60 silly reify ]
+61 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-android-arm64
+62 silly reify mark deleted [
+62 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-android-arm64'
+62 silly reify ]
+63 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-android-arm-eabi
+64 silly reify mark deleted [
+64 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@rollup/rollup-android-arm-eabi'
+64 silly reify ]
+65 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-x64
+66 silly reify mark deleted [
+66 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-x64'
+66 silly reify ]
+67 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-ia32
+68 silly reify mark deleted [
+68 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-ia32'
+68 silly reify ]
+69 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-arm64
+70 silly reify mark deleted [
+70 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/win32-arm64'
+70 silly reify ]
+71 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/sunos-x64
+72 silly reify mark deleted [
+72 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/sunos-x64'
+72 silly reify ]
+73 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openharmony-arm64
+74 silly reify mark deleted [
+74 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openharmony-arm64'
+74 silly reify ]
+75 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openbsd-x64
+76 silly reify mark deleted [
+76 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openbsd-x64'
+76 silly reify ]
+77 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openbsd-arm64
+78 silly reify mark deleted [
+78 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/openbsd-arm64'
+78 silly reify ]
+79 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/netbsd-x64
+80 silly reify mark deleted [
+80 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/netbsd-x64'
+80 silly reify ]
+81 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/netbsd-arm64
+82 silly reify mark deleted [
+82 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/netbsd-arm64'
+82 silly reify ]
+83 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-x64
+84 silly reify mark deleted [
+84 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-x64'
+84 silly reify ]
+85 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-s390x
+86 silly reify mark deleted [
+86 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-s390x'
+86 silly reify ]
+87 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-riscv64
+88 silly reify mark deleted [
+88 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-riscv64'
+88 silly reify ]
+89 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-ppc64
+90 silly reify mark deleted [
+90 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-ppc64'
+90 silly reify ]
+91 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-mips64el
+92 silly reify mark deleted [
+92 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-mips64el'
+92 silly reify ]
+93 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-loong64
+94 silly reify mark deleted [
+94 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-loong64'
+94 silly reify ]
+95 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-ia32
+96 silly reify mark deleted [
+96 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-ia32'
+96 silly reify ]
+97 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-arm64
+98 silly reify mark deleted [
+98 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-arm64'
+98 silly reify ]
+99 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-arm
+100 silly reify mark deleted [
+100 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/linux-arm'
+100 silly reify ]
+101 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/freebsd-x64
+102 silly reify mark deleted [
+102 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/freebsd-x64'
+102 silly reify ]
+103 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/freebsd-arm64
+104 silly reify mark deleted [
+104 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/freebsd-arm64'
+104 silly reify ]
+105 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/darwin-x64
+106 silly reify mark deleted [
+106 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/darwin-x64'
+106 silly reify ]
+107 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-x64
+108 silly reify mark deleted [
+108 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-x64'
+108 silly reify ]
+109 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-arm64
+110 silly reify mark deleted [
+110 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-arm64'
+110 silly reify ]
+111 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-arm
+112 silly reify mark deleted [
+112 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/android-arm'
+112 silly reify ]
+113 verbose reify failed optional dependency /Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/aix-ppc64
+114 silly reify mark deleted [
+114 silly reify   '/Users/asafshamir/Documents/GitHub/dojo/web/node_modules/@esbuild/aix-ppc64'
+114 silly reify ]
+115 silly tarball no local data for fsevents@https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz. Extracting by manifest.
+116 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 207ms
+117 silly audit report {}
+118 http fetch GET 200 https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz 186ms (cache miss)
+119 silly ADD node_modules/fsevents
+120 silly ADD
+121 silly ADD
+122 silly ADD
+123 silly ADD
+124 silly ADD
+125 silly ADD
+126 silly ADD
+127 silly ADD
+128 silly ADD
+129 silly ADD
+130 silly ADD
+131 silly ADD
+132 silly ADD
+133 silly ADD
+134 silly ADD
+135 silly ADD
+136 silly ADD
+137 silly ADD
+138 silly ADD
+139 silly ADD
+140 silly ADD
+141 silly ADD
+142 silly ADD
+143 silly ADD
+144 silly ADD
+145 silly ADD
+146 silly ADD
+147 silly ADD
+148 silly ADD
+149 silly ADD
+150 silly ADD
+151 silly ADD
+152 silly ADD
+153 silly ADD
+154 silly ADD
+155 silly ADD
+156 silly ADD
+157 silly ADD
+158 silly ADD
+159 silly ADD
+160 silly ADD
+161 silly ADD
+162 silly ADD
+163 silly ADD
+164 silly ADD
+165 silly ADD
+166 silly ADD
+167 silly ADD
+168 silly ADD
+169 verbose cwd /Users/asafshamir/Documents/GitHub/dojo/web
+170 verbose os Darwin 25.2.0
+171 verbose node v20.10.0
+172 verbose npm  v10.8.3
+173 verbose exit 0
+174 info ok

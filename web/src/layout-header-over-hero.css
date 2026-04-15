@@ -1,0 +1,17 @@
+/* Header is fixed; body padding was pushing the hero (and its bg) below the bar. */
+html {
+  scroll-padding-top: var(--header-h);
+}
+
+body {
+  padding-top: 0;
+}
+
+/* Over hero: black at alpha 0x63/255 ≈ 38.8% (HEXA #00000063) */
+.site-header {
+  background: #00000063;
+}
+
+.hero__title {
+  text-shadow: none;
+}
