@@ -90,3 +90,6 @@ fastlane/test_output
 iOSInjectionProject/
 .DS_Store
 node_modules
+
+# Local npm cache (optional; avoids broken ~/.npm permissions during firebase predeploy)
+.npm-cache/

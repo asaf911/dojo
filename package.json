@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "deploy:hosting:dev": "npx firebase use dev && npx firebase deploy --only hosting",
+    "deploy:hosting:prod": "npx firebase use default && npx firebase deploy --only hosting"
+  },
   "devDependencies": {
     "firebase-tools": "^15.8.0"
   }
