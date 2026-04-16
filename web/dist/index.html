@@ -1,6 +1,29 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
+    <!-- AppsFlyer OneLink Smart Banner V2 -->
+    <script>
+      !(function (t, e, n, s, a, c, i, o, p) {
+        t.AppsFlyerSdkObject = a;
+        t.AF =
+          t.AF ||
+          function () {
+            (t.AF.q = t.AF.q || []).push([Date.now()].concat(Array.prototype.slice.call(arguments)));
+          };
+        t.AF.id = t.AF.id || i;
+        t.AF.plugins = {};
+        o = e.createElement(n);
+        p = e.getElementsByTagName(n)[0];
+        o.async = 1;
+        o.src =
+          "https://websdk.appsflyersdk.com?" +
+          (c.length > 0 ? "st=" + c.split(",").sort().join(",") + "&" : "") +
+          (i.length > 0 ? "af_id=" + i : "");
+        p.parentNode.insertBefore(o, p);
+      })(window, document, "script", 0, "AF", "banners", { banners: { key: "89855429-509d-4f9f-b48d-2f16b5c695dc" } });
+      AF("banners", "showBanner");
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Dojo -</title>
@@ -32,7 +55,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Dojo -" />
     <meta name="twitter:description" content="Practice Meditation. See the Change." />
-    <script type="module" crossorigin src="/assets/main-DTkXIY17.js"></script>
+    <script type="module" crossorigin src="/assets/main-Co4bqIRr.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/site-b69-aSP2.js">
     <link rel="stylesheet" crossorigin href="/assets/site-CvLbEVNq.css">
     <link rel="stylesheet" crossorigin href="/assets/main-Bd350ABG.css">
@@ -256,97 +279,5 @@
         <p class="site-footer__legal">Made in San Francisco California © 2026 All Rights Reserved</p>
       </div>
     </footer>
-
-    <script>
-      (function (w, d) {
-        var ONE_LINK_URL = "https://medidojo.onelink.me/miw9";
-        var BUTTON_SELECTOR = ".onelink-btn a, a.onelink-btn";
-        var QR_COLOR = "#2E2E4C";
-        var MAX_TRIES = 120;
-        /* Must match CSS wide breakpoint (see src/css/01-tokens.css). */
-        var DESKTOP_MQ = "(min-width: 64.0625rem)";
-
-        function isDesktop() {
-          return w.matchMedia && w.matchMedia(DESKTOP_MQ).matches;
-        }
-
-        function loadAF(cb) {
-          if (w.AF_SMART_SCRIPT && typeof w.AF_SMART_SCRIPT.generateOneLinkURL === "function") return cb(true);
-          var s = d.createElement("script");
-          s.async = true;
-          s.src = "https://onelinksmartscript.appsflyer.com/onelink-smart-script-latest.js";
-          s.onload = function () {
-            cb(true);
-          };
-          s.onerror = function () {
-            cb(false);
-          };
-          d.head.appendChild(s);
-        }
-
-        function generateClickURL() {
-          try {
-            var result = w.AF_SMART_SCRIPT.generateOneLinkURL({
-              oneLinkURL: ONE_LINK_URL,
-              afParameters: {
-                mediaSource: { keys: ["utm_source"], defaultValue: "website" },
-                campaign: { keys: ["utm_campaign"], defaultValue: "homepage" },
-                channel: { keys: ["utm_medium"], defaultValue: "site" },
-              },
-            });
-            return result && result.clickURL ? result.clickURL : "";
-          } catch (e) {
-            return "";
-          }
-        }
-
-        function bindButtons(url) {
-          if (!url) return;
-          d.querySelectorAll(BUTTON_SELECTOR).forEach(function (a) {
-            a.setAttribute("href", url);
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener");
-          });
-        }
-
-        function renderAllQrs() {
-          if (!isDesktop()) return true;
-          if (!w.AF_SMART_SCRIPT || typeof w.AF_SMART_SCRIPT.displayQrCode !== "function") return false;
-
-          var nodes = d.querySelectorAll(".af-qr");
-          if (!nodes.length) return false;
-
-          nodes.forEach(function (node, i) {
-            if (!node.id) node.id = "af-qr-" + i;
-            if (node.__afQrDone) return;
-            node.__afQrDone = true;
-            node.innerHTML = "";
-            w.AF_SMART_SCRIPT.displayQrCode(node.id, { codeColor: QR_COLOR });
-          });
-
-          return true;
-        }
-
-        function runWithRetries() {
-          var url = generateClickURL();
-          bindButtons(url);
-
-          var tries = 0;
-          var t = w.setInterval(function () {
-            tries++;
-            var ok = renderAllQrs();
-            if (ok || tries >= MAX_TRIES) w.clearInterval(t);
-          }, 100);
-        }
-
-        if (w.__AF_SAFE_INIT_DONE) return;
-        w.__AF_SAFE_INIT_DONE = true;
-
-        loadAF(function (loaded) {
-          if (!loaded) return;
-          runWithRetries();
-        });
-      })(window, document);
-    </script>
   </body>
 </html>

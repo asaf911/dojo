@@ -1,5 +1,6 @@
 import "./site.css";
 import "./layout-header-over-hero.css";
+import "./appsflyer-smart-script";
 
 const wideBpRem = 64.0625;
 const mql = window.matchMedia(`(min-width: ${wideBpRem}rem)`);
