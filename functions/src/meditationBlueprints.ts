@@ -9,6 +9,7 @@ import type {
   MeditationThemeId,
   ThemeCompositionHints,
 } from "./meditationThemes";
+import { SOUNDSCAPE_TIME_PLAN } from "./soundscapeTimePlan";
 
 /** Known blueprint ids (extend for new scenarios). */
 export const BLUEPRINT_IDS = [
@@ -70,7 +71,7 @@ const BLUEPRINTS: Record<BlueprintId, MeditationBlueprint> = {
     phaseIntent: ["intro", "breath", "relax", "morning_visualization"],
     terminalMode: "MV_KM",
     audioHints: {
-      backgroundSound: { preferCategory: "focus", preferredIds: ["LI", "DH"] },
+      backgroundSound: { ...SOUNDSCAPE_TIME_PLAN["timely.morning"] },
       binauralBeat: { preferredIds: ["BB10", "BB12"] },
     },
   },
@@ -79,7 +80,7 @@ const BLUEPRINTS: Record<BlueprintId, MeditationBlueprint> = {
     phaseIntent: ["intro", "breath", "relax", "focus"],
     terminalMode: "IM_FOCUS",
     audioHints: {
-      backgroundSound: { preferCategory: "focus", preferredIds: ["LI", "DH"] },
+      backgroundSound: { ...SOUNDSCAPE_TIME_PLAN["timely.noon"] },
       binauralBeat: { preferredIds: ["BB10", "BB14"] },
     },
   },
@@ -88,7 +89,7 @@ const BLUEPRINTS: Record<BlueprintId, MeditationBlueprint> = {
     phaseIntent: ["intro", "breath", "relax", "evening_visualization"],
     terminalMode: "EV_KM",
     audioHints: {
-      backgroundSound: { preferCategory: "calming", preferredIds: ["OC", "SP", "BD"] },
+      backgroundSound: { ...SOUNDSCAPE_TIME_PLAN["timely.evening"] },
       binauralBeat: { preferredIds: ["BB8", "BB10"] },
     },
   },
@@ -97,7 +98,7 @@ const BLUEPRINTS: Record<BlueprintId, MeditationBlueprint> = {
     phaseIntent: ["intro", "breath", "relax", "focus", "evening_visualization"],
     terminalMode: "NIGHT_IM_THEN_EV",
     audioHints: {
-      backgroundSound: { preferCategory: "calming", preferredIds: ["OC", "BD", "SP"] },
+      backgroundSound: { ...SOUNDSCAPE_TIME_PLAN["timely.night"] },
       binauralBeat: { preferredIds: ["BB8", "BB6"] },
     },
   },

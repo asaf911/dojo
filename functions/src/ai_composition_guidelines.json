@@ -1,6 +1,6 @@
 {
-  "version": "4.3.0",
-  "last_updated": "2026-04-11",
+  "version": "4.3.1",
+  "last_updated": "2026-04-16",
   "description": "AI meditation composition rules \u2014 fractional modules only for structure (INT_FRAC, PB_FRAC, BS_FRAC_*, IM_FRAC, NF_FRAC, MV_*_FRAC, EV_*_FRAC). Retired monolithic cues OH, VC, RT are never used; GB remains optional when the user asks for a closing bell or adds it in the Timer builder.",
   "priority_detection": {
     "description": "When user explicitly requests a specific exercise, give it 50% of session time",
@@ -663,8 +663,29 @@
       "focus_cue": "IM",
       "viz_cue": "MV_KM_FRAC",
       "preferred_sounds": [
-        "LI",
-        "DH"
+        "OA",
+        "BD",
+        "PT"
+      ]
+    },
+    "noon": {
+      "keywords": [
+        "noon",
+        "midday",
+        "lunch",
+        "mid-day",
+        "middle of the day"
+      ],
+      "rules": [
+        "Use IM_FRAC or NF_FRAC for finite focus when appropriate",
+        "Prefer midday soundscapes (Dharapani, Spa, Lush Infinity)"
+      ],
+      "focus_cue": "IM",
+      "viz_cue": null,
+      "preferred_sounds": [
+        "DH",
+        "SP",
+        "LI"
       ]
     },
     "evening": {
@@ -677,13 +698,14 @@
       ],
       "rules": [
         "Use EV_* (evening visualization (EV_*)) for visualization",
-        "Calming sounds"
+        "Prefer Ocean, Samagaun (ES), or Lush Infinity; do not use Oasis (OA) for evening or night timely sessions"
       ],
       "focus_cue": "IM",
       "viz_cue": "EV_KM_FRAC",
       "preferred_sounds": [
         "OC",
-        "SP"
+        "ES",
+        "LI"
       ]
     },
     "anxiety": {
@@ -853,13 +875,29 @@
       "sleep": [
         "OC",
         "BD"
+      ],
+      "morning_soundscape": [
+        "OA",
+        "BD",
+        "PT"
+      ],
+      "noon_soundscape": [
+        "DH",
+        "SP",
+        "LI"
+      ],
+      "wind_down": [
+        "OC",
+        "ES",
+        "LI"
       ]
     },
     "default_by_session_type": {
       "relaxation": "SP",
       "focus": "LI",
       "sleep": "OC",
-      "morning": "LI",
+      "morning": "OA",
+      "noon": "DH",
       "evening": "OC",
       "default": "LI"
     }
