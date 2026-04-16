@@ -246,3 +246,72 @@ struct ChatMessage: Identifiable, Codable {
         return text.isEmpty ? " " : text
     }
 }
+
+// MARK: - Unified AI request (history + last-session snapshot)
+
+extension ChatMessage {
+    /// Assistant `content` for POST /ai/request, including custom meditations embedded in recommendation cards.
+    var aiRequestAssistantContent: String {
+        if let meditation {
+            return meditation.description
+        }
+        if let single = singleRecommendation {
+            switch single.item.type {
+            case .custom(let meditation):
+                let intro = single.item.introMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+                if intro.isEmpty { return meditation.description }
+                return "\(intro)\n\n\(meditation.description)"
+            case .path, .explore:
+                return content
+            }
+        }
+        if let dual = dualRecommendation {
+            var parts: [String] = []
+            let pIntro = dual.primary.introMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !pIntro.isEmpty { parts.append(pIntro) }
+            if case .custom(let m) = dual.primary.type { parts.append(m.description) }
+            if let sec = dual.secondary {
+                let sIntro = sec.introMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !sIntro.isEmpty { parts.append(sIntro) }
+                if case .custom(let m) = sec.type { parts.append(m.description) }
+            }
+            let joined = parts.joined(separator: "\n\n")
+            return joined.isEmpty ? content : joined
+        }
+        return content
+    }
+
+    /// Most recent custom meditation in the transcript (chat card or Sensei recommendation), for server snapshot.
+    static func lastCustomMeditationSnapshot(in messages: [ChatMessage]) -> AIServerRequestContext.LastMeditationSnapshot? {
+        for message in messages.reversed() where !message.isUser {
+            if let meditation = message.meditation {
+                return snapshot(from: meditation)
+            }
+            if let single = message.singleRecommendation,
+               case .custom(let meditation) = single.item.type {
+                return snapshot(from: meditation)
+            }
+            if let dual = message.dualRecommendation {
+                if let secondary = dual.secondary, case .custom(let meditation) = secondary.type {
+                    return snapshot(from: meditation)
+                }
+                if case .custom(let meditation) = dual.primary.type {
+                    return snapshot(from: meditation)
+                }
+            }
+        }
+        return nil
+    }
+
+    private static func snapshot(from meditation: AITimerResponse) -> AIServerRequestContext.LastMeditationSnapshot {
+        let config = meditation.meditationConfiguration
+        let desc = meditation.description
+        let snippet = desc.count > 500 ? String(desc.prefix(500)) : desc
+        let trimmedSnippet = snippet.trimmingCharacters(in: .whitespacesAndNewlines)
+        return AIServerRequestContext.LastMeditationSnapshot(
+            durationMinutes: config.duration,
+            title: config.title,
+            descriptionSnippet: trimmedSnippet.isEmpty ? nil : trimmedSnippet
+        )
+    }
+}

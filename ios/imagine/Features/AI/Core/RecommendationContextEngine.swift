@@ -158,6 +158,7 @@ extension RecommendationContextEngine {
                 pathInfo: nil,
                 exploreInfo: nil,
                 lastMeditationDuration: nil,
+                lastMeditationSnapshot: nil,
                 recentBackgroundSounds: nil,
                 meditationThemes: context.timeOfDay.senseiMeditationThemeTags,
                 blueprintId: context.timeOfDay.senseiMeditationBlueprintId.rawValue

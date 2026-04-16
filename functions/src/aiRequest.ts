@@ -16,6 +16,14 @@ import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
 
 const TAG = "[Server][AI]";
 
+/** Factual summary of the most recent custom meditation the client showed (not inferred). */
+export interface LastMeditationSnapshot {
+  durationMinutes: number;
+  title?: string;
+  /** Short excerpt of the generated session description for the classifier */
+  descriptionSnippet?: string;
+}
+
 export interface AIRequestContext {
   pathInfo?: {
     nextStepTitle: string;
@@ -26,7 +34,13 @@ export interface AIRequestContext {
     sessionTitle: string;
     timeOfDay: string;
   } | null;
+  /**
+   * Legacy client-only hint. Ignored for duration when `lastMeditationSnapshot` + turn classifier apply.
+   * Older app versions may still send this.
+   */
   lastMeditationDuration?: number;
+  /** Richer than duration alone; preferred for revise vs create and preserve-duration decisions. */
+  lastMeditationSnapshot?: LastMeditationSnapshot | null;
   /** Last N background sound IDs used; server down-weights these for variety */
   recentBackgroundSounds?: string[];
   /** Optional canonical theme tags (morning, evening, noon, night, sleep, gratitude); merged with explore + prompt */
@@ -270,6 +284,149 @@ Respond ONLY with compact JSON: {"historyQueryType":"last_session_nadir|all_time
   }
 }
 
+type MeditationTurnType = "revise_recent" | "create_new" | "clarify";
+
+interface MeditationTurnClassification {
+  turn: MeditationTurnType;
+  preserveTotalDurationUnlessOverridden: boolean;
+  clarificationMessage?: string;
+  /** When set, prefer this as the user instruction for meditation generation (normalized). */
+  effectiveUserInstruction?: string;
+}
+
+function defaultMeditationTurn(): MeditationTurnClassification {
+  return {
+    turn: "create_new",
+    preserveTotalDurationUnlessOverridden: false,
+  };
+}
+
+/** Single-line JSON logs for tuning; grep: `AI_DEBUG MEDITATION_TURN` */
+function logAIDebugMeditationTurn(
+  step: "input" | "llm_raw" | "parsed" | "route" | "fallback",
+  payload: Record<string, unknown>
+): void {
+  try {
+    functions.logger.info(`${TAG} AI_DEBUG MEDITATION_TURN ${step} ${JSON.stringify(payload)}`);
+  } catch {
+    functions.logger.info(`${TAG} AI_DEBUG MEDITATION_TURN ${step} (payload not serializable)`);
+  }
+}
+
+/**
+ * LLM: is the user revising the last offered custom meditation, starting fresh, or unclear (e.g. bare "yes")?
+ */
+async function classifyMeditationTurn(
+  userPrompt: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  snapshot: LastMeditationSnapshot | null | undefined,
+  apiKey: string
+): Promise<MeditationTurnClassification> {
+  const lastAssistant = [...conversationHistory].reverse().find((m) => m.role === "assistant");
+  const lastAssistantPreview =
+    lastAssistant?.content != null
+      ? lastAssistant.content.length > 500
+        ? `${lastAssistant.content.slice(0, 500)}…`
+        : lastAssistant.content
+      : null;
+  logAIDebugMeditationTurn("input", {
+    userPromptPreview: userPrompt.length > 320 ? `${userPrompt.slice(0, 320)}…` : userPrompt,
+    userPromptLen: userPrompt.length,
+    historyLen: conversationHistory.length,
+    lastAssistantContentPreview: lastAssistantPreview,
+    snapshot:
+      snapshot && typeof snapshot.durationMinutes === "number"
+        ? {
+            durationMinutes: snapshot.durationMinutes,
+            title: snapshot.title ?? null,
+            descriptionSnippetLen: snapshot.descriptionSnippet?.length ?? 0,
+            descriptionSnippetPreview:
+              snapshot.descriptionSnippet != null && snapshot.descriptionSnippet.length > 240
+                ? `${snapshot.descriptionSnippet.slice(0, 240)}…`
+                : snapshot.descriptionSnippet ?? null,
+          }
+        : null,
+  });
+
+  const snapJson =
+    snapshot && typeof snapshot.durationMinutes === "number"
+      ? JSON.stringify({
+          durationMinutes: snapshot.durationMinutes,
+          title: snapshot.title ?? null,
+          descriptionSnippet: snapshot.descriptionSnippet ?? null,
+        })
+      : "null";
+
+  const systemPrompt = `You classify the user's LATEST message for a meditation app where they may have just received a custom meditation (card) in chat.
+
+The client may send lastMeditationSnapshot (facts only): ${snapJson}
+
+Classify into exactly one turn:
+- revise_recent: They want to CHANGE the most recent custom meditation they were shown or discussed (duration, breathwork, modules, background, wording tweaks, "same but shorter", "add body scan", "remove mantra", "yes" meaning go ahead with a change YOU just proposed in your immediately previous assistant message).
+- create_new: They want a NEW meditation unrelated to tweaking the last one, OR there is no prior custom session in the conversation, OR they clearly ask for something different from scratch.
+- clarify: Short confirmations ("yes", "ok", "sure") or vague replies when there is NO clear referent in the immediately previous assistant message (e.g. no pending offer to shorten/lengthen/add). Ask ONE short friendly question.
+
+Also set preserveTotalDurationUnlessOverridden:
+- true when revise_recent and they did NOT specify a new total length (e.g. "add breathwork", "remove mantra", "swap X for Y" without a new minute count).
+- false when they give a new total duration, or create_new, or clarify.
+
+effectiveUserInstruction: optional single-line imperative combining their intent for the generator (omit if empty).
+
+Respond ONLY with compact JSON on one line, no markdown:
+{"turn":"revise_recent|create_new|clarify","preserveTotalDurationUnlessOverridden":true|false,"clarificationMessage":"string or omit","effectiveUserInstruction":"string or omit"}`;
+
+  try {
+    const content = await callOpenAI(userPrompt, systemPrompt, conversationHistory, apiKey);
+    const rawTrim = content.trim();
+    logAIDebugMeditationTurn("llm_raw", {
+      rawLen: rawTrim.length,
+      rawPreview: rawTrim.length > 600 ? `${rawTrim.slice(0, 600)}…` : rawTrim,
+    });
+    let s = rawTrim;
+    if (s.startsWith("```json")) s = s.slice(7);
+    if (s.startsWith("```")) s = s.slice(3);
+    if (s.endsWith("```")) s = s.slice(0, -3);
+    s = s.trim();
+    const first = s.indexOf("{");
+    const last = s.lastIndexOf("}");
+    if (first >= 0 && last > first) s = s.slice(first, last + 1);
+    const parsed = JSON.parse(s) as {
+      turn?: string;
+      preserveTotalDurationUnlessOverridden?: boolean;
+      clarificationMessage?: string;
+      effectiveUserInstruction?: string;
+    };
+    const t = (parsed.turn ?? "").toLowerCase();
+    const turn: MeditationTurnType =
+      t === "revise_recent" || t === "create_new" || t === "clarify" ? t : "create_new";
+    const preserve = Boolean(parsed.preserveTotalDurationUnlessOverridden);
+    const clarification =
+      typeof parsed.clarificationMessage === "string" ? parsed.clarificationMessage.trim() : undefined;
+    const effective =
+      typeof parsed.effectiveUserInstruction === "string"
+        ? parsed.effectiveUserInstruction.trim()
+        : undefined;
+    const result: MeditationTurnClassification = {
+      turn,
+      preserveTotalDurationUnlessOverridden: preserve,
+      clarificationMessage: clarification && clarification.length > 0 ? clarification : undefined,
+      effectiveUserInstruction: effective && effective.length > 0 ? effective : undefined,
+    };
+    logAIDebugMeditationTurn("parsed", {
+      turn: result.turn,
+      preserveTotalDurationUnlessOverridden: result.preserveTotalDurationUnlessOverridden,
+      clarificationMessage: result.clarificationMessage ?? null,
+      effectiveUserInstruction: result.effectiveUserInstruction ?? null,
+    });
+    return result;
+  } catch (e) {
+    functions.logger.warn(`${TAG} classifyMeditationTurn parse error, defaulting create_new: ${e}`);
+    const fallback = defaultMeditationTurn();
+    logAIDebugMeditationTurn("fallback", { error: String(e), defaultedTo: fallback.turn });
+    return fallback;
+  }
+}
+
 function randomUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -408,15 +565,65 @@ export async function processAIRequest(
   }
 
   if (intent === "meditation") {
+    const turn = await classifyMeditationTurn(
+      prompt,
+      conversationHistory,
+      context.lastMeditationSnapshot ?? undefined,
+      apiKey
+    );
+
+    if (turn.turn === "clarify") {
+      const clarifyText =
+        turn.clarificationMessage?.trim() ||
+        "What would you like to change about your last meditation—or should we start a fresh one?";
+      functions.logger.info(`${TAG} meditation clarify -> conversation text`);
+      logAIDebugMeditationTurn("route", {
+        branch: "clarify_conversation",
+        clarifyTextPreview: clarifyText.length > 400 ? `${clarifyText.slice(0, 400)}…` : clarifyText,
+      });
+      return { intent: "conversation", content: { type: "text", text: clarifyText } };
+    }
+
+    const generationPrompt =
+      turn.effectiveUserInstruction && turn.effectiveUserInstruction.length > 0
+        ? turn.effectiveUserInstruction
+        : prompt;
+
+    const snapMin = context.lastMeditationSnapshot?.durationMinutes;
+    let lastMeditationDurationForGeneration: number | undefined;
+    if (
+      turn.turn === "revise_recent" &&
+      turn.preserveTotalDurationUnlessOverridden &&
+      typeof snapMin === "number" &&
+      snapMin > 0 &&
+      snapMin <= 120
+    ) {
+      lastMeditationDurationForGeneration = snapMin;
+    }
+
+    logAIDebugMeditationTurn("route", {
+      branch: "generate_meditation",
+      turn: turn.turn,
+      preserveTotalDurationUnlessOverridden: turn.preserveTotalDurationUnlessOverridden,
+      snapshotDurationMinutes: snapMin ?? null,
+      lastMeditationDurationForGeneration: lastMeditationDurationForGeneration ?? null,
+      generationPromptPreview:
+        generationPrompt.length > 500 ? `${generationPrompt.slice(0, 500)}…` : generationPrompt,
+      generationPromptLen: generationPrompt.length,
+      usedEffectiveUserInstruction: Boolean(
+        turn.effectiveUserInstruction && turn.effectiveUserInstruction.length > 0
+      ),
+    });
+
     const catalogs = await loadCatalogs();
     const voiceId = body.voiceId ?? "Asaf";
     const { meditation, usedFallback, fractionalCompositionContext } =
       await generateAIMeditation({
-        prompt,
+        prompt: generationPrompt,
         conversationHistory,
         catalogs,
         apiKey,
-        lastMeditationDuration: context.lastMeditationDuration,
+        lastMeditationDuration: lastMeditationDurationForGeneration,
         recentBackgroundSounds: context.recentBackgroundSounds,
         exploreTimeOfDay: context.exploreInfo?.timeOfDay ?? null,
         clientMeditationThemes: context.meditationThemes,

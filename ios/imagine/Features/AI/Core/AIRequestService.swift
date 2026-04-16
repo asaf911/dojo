@@ -14,8 +14,17 @@ private let kTag = "[Server][AI]"
 struct AIServerRequestContext: Encodable {
     var pathInfo: PathInfo?
     var exploreInfo: ExploreInfo?
-    /// Duration of last meditation; used when user modifies (e.g. "remove breathwork") so server preserves duration
+    /// Legacy field; server prefers ``lastMeditationSnapshot`` and ``classifyMeditationTurn`` for duration preservation.
     var lastMeditationDuration: Int?
+    /// Factual summary of the last custom meditation shown in chat (for revise vs create classification).
+    var lastMeditationSnapshot: LastMeditationSnapshot?
+
+    struct LastMeditationSnapshot: Encodable {
+        let durationMinutes: Int
+        let title: String?
+        let descriptionSnippet: String?
+    }
+
     /// Last N background sound IDs used; server down-weights these for variety
     var recentBackgroundSounds: [String]?
     /// Optional canonical theme tags (`morning`, `evening`, `noon`, `night`, `sleep`, `gratitude`); merged with prompt and `exploreInfo.timeOfDay` on the server

@@ -11,7 +11,10 @@ struct UnifiedTypingView: View {
     @State private var displayedText = ""
     @State private var currentIndex = 0
     @State private var isComplete = false
-    
+    @State private var typingTimer: Timer?
+    /// When true, timer callbacks must not call `onComplete` (view was removed mid-animation).
+    @State private var typingCancelled = false
+
     enum ContentType {
         case text(String)
         case meditation(AITimerResponse)
@@ -57,16 +60,33 @@ struct UnifiedTypingView: View {
                         )
                 }
             )
+            .onDisappear {
+                // Critical: without this, the timer keeps firing after SwiftUI removes the view
+                // (e.g. a newer AI message becomes latest), and onComplete can clear conversation typing state.
+                typingCancelled = true
+                typingTimer?.invalidate()
+                typingTimer = nil
+                if !isComplete {
+                    isTyping = false
+                }
+            }
     }
     
     private func startTypingAnimation() {
+        typingTimer?.invalidate()
+        typingTimer = nil
+        typingCancelled = false
         displayedText = ""
         currentIndex = 0
         isComplete = false
         isTyping = true
         
         // Typing animation slowed by 30% for smoother experience
-        Timer.scheduledTimer(withTimeInterval: AnimationConstants.typingInterval, repeats: true) { timer in
+        typingTimer = Timer.scheduledTimer(withTimeInterval: AnimationConstants.typingInterval, repeats: true) { timer in
+            if typingCancelled {
+                timer.invalidate()
+                return
+            }
             if currentIndex < fullText.count {
                 let index = fullText.index(fullText.startIndex, offsetBy: currentIndex)
                 let character = fullText[index]
@@ -79,6 +99,8 @@ struct UnifiedTypingView: View {
                 }
             } else {
                 timer.invalidate()
+                typingTimer = nil
+                guard !typingCancelled else { return }
                 isComplete = true
                 isTyping = false
                 onComplete()

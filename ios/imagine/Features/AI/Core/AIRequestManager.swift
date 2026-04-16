@@ -147,7 +147,7 @@ class AIRequestManager: ObservableObject {
                 logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
 
                 // Build context for path/explore guidance; capture step/session for notifications
-                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds, exploreMeditationThemes, exploreBlueprintId) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?, [String]?, String?) in
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationSnapshot, recentBackgroundSounds, exploreMeditationThemes, exploreBlueprintId) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, AIServerRequestContext.LastMeditationSnapshot?, [String]?, [String]?, String?) in
                     ExploreRecommendationManager.shared.loadAudioFiles()
                     let pm = PathProgressManager.shared
                     let em = ExploreRecommendationManager.shared
@@ -182,22 +182,38 @@ class AIRequestManager: ObservableObject {
                             blueprintId = nil
                         }
                     }
-                    let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
-                        ? strongSelf.lastMeditation?.meditationConfiguration.duration
-                        : nil
+                    let snapshot = ChatMessage.lastCustomMeditationSnapshot(in: historyCopy)
                     let recent: [String]? = strongSelf.recentBackgroundSoundIds.isEmpty ? nil : strongSelf.recentBackgroundSoundIds
-                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent, meditationThemes, blueprintId)
+                    return (path, explore, nextStep, session, pm.allStepsCompleted, snapshot, recent, meditationThemes, blueprintId)
                 }
 
                 let context = AIServerRequestContext(
                     pathInfo: pathInfo,
                     exploreInfo: exploreInfo,
-                    lastMeditationDuration: lastMeditationDuration,
+                    lastMeditationDuration: nil,
+                    lastMeditationSnapshot: lastMeditationSnapshot,
                     recentBackgroundSounds: recentBackgroundSounds,
                     meditationThemes: exploreMeditationThemes,
                     blueprintId: exploreBlueprintId
                 )
-                let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
+                let historyItems = historyCopy.map { msg in
+                    ConversationHistoryItem(
+                        role: msg.isUser ? "user" : "assistant",
+                        content: msg.isUser ? msg.content : msg.aiRequestAssistantContent
+                    )
+                }
+
+                if let snap = lastMeditationSnapshot {
+                    logger.aiChat("🧠 AI_DEBUG [MEDITATION_TURN_CTX] snapshot durationMin=\(snap.durationMinutes) title=\(snap.title ?? "-") snippetChars=\(snap.descriptionSnippet?.count ?? 0)")
+                } else {
+                    logger.aiChat("🧠 AI_DEBUG [MEDITATION_TURN_CTX] snapshot=nil")
+                }
+                let tailSummary = historyItems.suffix(2).map { item -> String in
+                    let flat = item.content.replacingOccurrences(of: "\n", with: " ")
+                    let preview = flat.count > 220 ? String(flat.prefix(220)) + "…" : flat
+                    return "\(item.role) len=\(item.content.count) preview=\(preview)"
+                }.joined(separator: " || ")
+                logger.aiChat("🧠 AI_DEBUG [MEDITATION_TURN_CTX] promptLen=\(trimmedPromptCopy.count) historyLen=\(historyItems.count) last2=[\(tailSummary)]")
 
                 let response = try await AIRequestService.shared.processAIRequest(
                     prompt: trimmedPromptCopy,
@@ -205,6 +221,19 @@ class AIRequestManager: ObservableObject {
                     context: context,
                     triggerContext: "AIRequestManager|processUserMessage"
                 )
+
+                let rspSummary: String
+                switch response.content {
+                case .meditation:
+                    rspSummary = "content=meditation"
+                case .text(let t):
+                    let flat = t.replacingOccurrences(of: "\n", with: " ")
+                    let preview = flat.count > 600 ? String(flat.prefix(600)) + "…" : flat
+                    rspSummary = "content=text len=\(t.count) preview=\(preview)"
+                case .history(let q):
+                    rspSummary = "content=history historyQueryType=\(q ?? "nil")"
+                }
+                logger.aiChat("🧠 AI_DEBUG [MEDITATION_TURN_RSP] intent=\(response.intent) \(rspSummary)")
 
                 let intent = response.intent
                 let updatedCtx = AIRequestContext(request_id: ctx.request_id, user_prompt: ctx.user_prompt, prompt_length: ctx.prompt_length, request_type: intent, history_len: ctx.history_len)
@@ -677,16 +706,6 @@ class AIRequestManager: ObservableObject {
         return isExplicit
     }
 
-    /// Detects modification requests (e.g. "remove breathwork", "no breathwork") so we can pass lastMeditationDuration
-    private func isModificationRequest(_ prompt: String) -> Bool {
-        let lower = prompt.lowercased()
-        let signals = [
-            "remove breath", "remove breathwork", "no breathwork", "without breathwork",
-            "skip breath", "no breath", "add ", "extend", "make it longer", "make it shorter",
-            "change ", "switch ", "replace ", "different "
-        ]
-        return signals.contains { lower.contains($0) }
-    }
 }
 
 // MARK: - Quick Intent Helpers

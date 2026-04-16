@@ -529,6 +529,22 @@ struct AIChatContainerView: View {
             ])
             
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] Recommendation shown - phase=\(recommendation.currentPhase.displayName) type=\(recommendation.item.type.analyticsType)")
+            
+            // Custom card: invite tweaks (same copy pool as journey auto-custom). Path/Explore cards skip.
+            if recommendation.item.isCustom {
+                let dur = recommendation.item.customMeditation?.meditationConfiguration.duration ?? 0
+                // Wait for intro typing on the card (~1–3s) so UnifiedTypingView can finish or cancel cleanly
+                // before we become latest; avoids orphaned timers stomping typing state.
+                let followUpDelay: TimeInterval = 2.4
+                logger.aiChat("🧠 AI_DEBUG [REC_FOLLOWUP] scheduling change-invite after custom card in \(followUpDelay)s contentId=\(recommendation.contentId) durationMin=\(dur)")
+                DispatchQueue.main.asyncAfter(deadline: .now() + followUpDelay) {
+                    let line = Self.randomCustomMeditationFollowUpLine()
+                    self.conversationState.addAIMessage(text: line)
+                    logger.aiChat("🧠 AI_DEBUG [REC_FOLLOWUP] appended change-invite chars=\(line.count) preview=\(String(line.prefix(120)))…")
+                }
+            } else {
+                logger.aiChat("🧠 AI_DEBUG [REC_FOLLOWUP] skip change-invite (not custom) type=\(recommendation.item.type.analyticsType)")
+            }
         }
     }
     
@@ -583,9 +599,6 @@ struct AIChatContainerView: View {
             // Generate meditation - this will show thinking indicator automatically
             // and handleGeneratedMeditation will be called when ready
             self.manager.generateMeditation(prompt: prompt, conversationHistory: [])
-            
-            // Set flag to add follow-up message after meditation is generated
-            self.pendingCustomFollowUp = true
             
             logger.aiChat("🧠 AI_DEBUG [JOURNEY] Custom meditation generation started")
         }
@@ -848,9 +861,6 @@ struct AIChatContainerView: View {
         // Generate meditation
         self.manager.generateMeditation(prompt: prompt, conversationHistory: [])
         
-        // Set flag to add follow-up message
-        self.pendingCustomFollowUp = true
-        
         logger.aiChat("🧠 AI_DEBUG [JOURNEY] First custom meditation generation started")
     }
     
@@ -936,6 +946,19 @@ struct AIChatContainerView: View {
         }
     }
 
+    private static let customMeditationFollowUpLines: [String] = [
+        "If you want it shorter, longer, calmer, or with more breathwork—say the word and I'll reshape it.",
+        "Want a different length, more body scan, or less voice? Just tell me what to change.",
+        "Happy to tweak duration, background, or modules—whatever would suit you better.",
+        "Prefer it tighter, softer, or with a different focus? Describe it and I'll adjust.",
+        "Tell me if you'd like this session nudged in any direction—length, breath, or style.",
+    ]
+
+    private static func randomCustomMeditationFollowUpLine() -> String {
+        customMeditationFollowUpLines.randomElement()
+            ?? "Tell me if you'd like to adjust length, breathwork, or focus."
+    }
+
     private func handleGeneratedMeditation(_ newMeditation: AITimerResponse?) {
         if let meditation = newMeditation {
             logger.aiChat("🧠 AI_DEBUG [MEDITATION]: handleGeneratedMeditation started")
@@ -951,14 +974,12 @@ struct AIChatContainerView: View {
             startButtonAnimation()
             // Keyboard stays suppressed (aiResponding) - will be released when typing completes
             
-            // Add follow-up message for auto-generated custom meditations
-            if pendingCustomFollowUp {
-                pendingCustomFollowUp = false
-                // Small delay so the meditation card appears first
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    self.conversationState.addAIMessage(text: "Just ask if you want something different.")
-                    logger.aiChat("🧠 AI_DEBUG [JOURNEY] Custom meditation follow-up added")
-                }
+            // Change-invite after every AI-generated meditation card (typed description + card finish first).
+            logger.aiChat("🧠 AI_DEBUG [CUSTOM_GEN_FOLLOWUP] scheduling change-invite after meditation card")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+                let line = Self.randomCustomMeditationFollowUpLine()
+                self.conversationState.addAIMessage(text: line)
+                logger.aiChat("🧠 AI_DEBUG [CUSTOM_GEN_FOLLOWUP] appended change-invite chars=\(line.count)")
             }
         }
     }
@@ -2088,8 +2109,6 @@ struct AIChatContainerView: View {
     @State private var thinkingMessageId: UUID? = nil
     
     // MARK: - Customization phase state
-    @State private var pendingCustomFollowUp: Bool = false
-    
     // MARK: - Post-session prompt state
     @State private var pendingPostSessionPrompt: Bool = false
     @State private var pendingPostSessionPromptIsPathComplete: Bool = false

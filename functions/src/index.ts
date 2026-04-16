@@ -1207,6 +1207,11 @@ export const postAIRequest = functions.runWith({
             pathInfo?: { nextStepTitle: string; completedCount: number; totalCount: number } | null;
             exploreInfo?: { sessionTitle: string; timeOfDay: string } | null;
             lastMeditationDuration?: number;
+            lastMeditationSnapshot?: {
+              durationMinutes: number;
+              title?: string;
+              descriptionSnippet?: string;
+            } | null;
             recentBackgroundSounds?: string[];
             meditationThemes?: string[];
             blueprintId?: string | null;
