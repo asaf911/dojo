@@ -12,13 +12,13 @@ extension Array where Element == CueSetting {
     /// Hard cap for a single create-session practice (matches legacy wheel max).
     static var createFlowMaxPracticeMinutes: Int { 60 }
 
-    /// Sum of explicit fractional module lengths (minutes). `INT_FRAC` is excluded — its length comes from the session on the server.
+    /// Sum of sequential step lengths (minutes): fractional modules + monolithic body scans (`BS1`…). Intro excluded.
     func sumFractionalPracticeMinutes(excludingIndex excluded: Int? = nil) -> Int {
         enumerated().reduce(0) { acc, pair in
             if let ex = excluded, pair.offset == ex { return acc }
             let cs = pair.element
-            guard cs.isFractional, cs.cue.id != "INT_FRAC" else { return acc }
-            let chunk = Swift.max(1, Swift.min(Self.createFlowMaxPracticeMinutes, cs.fractionalDuration ?? 1))
+            guard cs.isCreateSequentialModule else { return acc }
+            let chunk = Swift.max(1, Swift.min(Self.createFlowMaxPracticeMinutes, Self.createSequentialModuleDurationMinutes(cs)))
             return acc + chunk
         }
     }
@@ -29,15 +29,63 @@ extension Array where Element == CueSetting {
         return Swift.min(Self.createFlowMaxPracticeMinutes, Swift.max(1, sum))
     }
 
-    /// Keeps total fractional time within the cap, clamps minute triggers to valid slots, and coerces invalid rows when practice is very short.
+    /// Keeps total fractional time within the cap, assigns timed fractional modules to a **sequential** practice timeline,
+    /// then clamps **non-fractional** minute triggers to valid slots.
     mutating func reconcileCreateScreenAutoSession() {
         shrinkFractionalSumIfOverCap()
 
         let practice = computedPracticeMinutesForCreateScreen()
-        clampAndDedupeMinuteTriggers(practiceMinutes: practice)
+        applySequentialTimedFractionalTriggers()
+        clampAndDedupeNonFractionalMinuteTriggers(practiceMinutes: practice)
     }
 
     // MARK: - Private
+
+    /// Minutes one sequential create step occupies (fractional `fractionalDuration`, or catalog / id for `BS*` monoliths).
+    /// Shared with `CueConfigurationView` for stepper caps and monolithic labels.
+    static func createSequentialModuleDurationMinutes(_ cs: CueSetting) -> Int {
+        guard cs.isCreateSequentialModule else { return 0 }
+        if cs.isFractional {
+            return Swift.max(1, cs.fractionalDuration ?? 1)
+        }
+        if let fd = cs.fractionalDuration {
+            return Swift.max(1, fd)
+        }
+        if let d = CatalogsManager.shared.bodyScanDurations[cs.cue.id] {
+            return Swift.max(1, d)
+        }
+        if cs.cue.isMonolithicBodyScanCatalogCue, let n = Int(cs.cue.id.dropFirst(2)), n > 0 {
+            return Swift.min(createFlowMaxPracticeMinutes, n)
+        }
+        return 1
+    }
+
+    /// Places each sequential create step immediately after the previous one on the practice timeline (order = list order).
+    private mutating func applySequentialTimedFractionalTriggers() {
+        var cumulativePracticeMinutes = 0
+
+        for i in indices {
+            guard self[i].isCreateSequentialModule else { continue }
+
+            let durationMin = Swift.max(1, Self.createSequentialModuleDurationMinutes(self[i]))
+
+            if cumulativePracticeMinutes == 0 {
+                let startTakenElsewhere = containsStartTrigger(excludingIndex: i)
+                if !startTakenElsewhere {
+                    self[i].triggerType = .start
+                    self[i].minute = nil
+                } else {
+                    self[i].triggerType = .minute
+                    self[i].minute = 0
+                }
+            } else {
+                self[i].triggerType = .minute
+                self[i].minute = cumulativePracticeMinutes
+            }
+
+            cumulativePracticeMinutes += durationMin
+        }
+    }
 
     private mutating func shrinkFractionalSumIfOverCap() {
         var safety = 0
@@ -55,7 +103,7 @@ extension Array where Element == CueSetting {
     private func indexOfLargestSplittableFractionalDuration() -> Int? {
         var bestIdx: Int?
         var bestVal = 0
-        for (i, cs) in enumerated() where cs.isFractional && cs.cue.id != "INT_FRAC" {
+        for (i, cs) in enumerated() where cs.isFractional && cs.cue.id != "INT_FRAC" && !cs.cue.isMonolithicBodyScanCatalogCue {
             let v = cs.fractionalDuration ?? 1
             if v > bestVal {
                 bestVal = v
@@ -65,18 +113,18 @@ extension Array where Element == CueSetting {
         return bestIdx
     }
 
-    private mutating func clampAndDedupeMinuteTriggers(practiceMinutes: Int) {
+    private mutating func clampAndDedupeNonFractionalMinuteTriggers(practiceMinutes: Int) {
         let p = Swift.max(1, practiceMinutes)
         let maxMinuteSlot = p - 1
 
         if maxMinuteSlot < 1 {
-            for i in indices where self[i].triggerType == .minute {
+            for i in indices where self[i].triggerType == .minute && !self[i].isCreateSequentialModule {
                 coerceAwayFromMinuteTrigger(at: i)
             }
             return
         }
 
-        for i in indices where self[i].triggerType == .minute {
+        for i in indices where self[i].triggerType == .minute && !self[i].isCreateSequentialModule {
             if self[i].minute == nil {
                 self[i].minute = 1
             } else if let m = self[i].minute {
@@ -84,7 +132,7 @@ extension Array where Element == CueSetting {
             }
         }
 
-        resolveDuplicateMinuteTriggers(maxMinuteSlot: maxMinuteSlot)
+        resolveDuplicateNonFractionalMinuteTriggers(maxMinuteSlot: maxMinuteSlot)
     }
 
     private mutating func coerceAwayFromMinuteTrigger(at index: Int) {
@@ -117,13 +165,27 @@ extension Array where Element == CueSetting {
         }
     }
 
-    private mutating func resolveDuplicateMinuteTriggers(maxMinuteSlot: Int) {
+    private mutating func resolveDuplicateNonFractionalMinuteTriggers(maxMinuteSlot: Int) {
         var used = Set<Int>()
         for i in 0..<self.count {
-            guard self[i].triggerType == .minute else { continue }
+            guard self[i].isCreateSequentialModule else { continue }
+            switch self[i].triggerType {
+            case .minute:
+                if let m = self[i].minute {
+                    used.insert(Swift.min(Swift.max(0, m), maxMinuteSlot))
+                }
+            case .start:
+                used.insert(0)
+            default:
+                break
+            }
+        }
+
+        for i in 0..<self.count {
+            guard self[i].triggerType == .minute, !self[i].isCreateSequentialModule else { continue }
             var m = self[i].minute ?? 1
             m = Swift.min(Swift.max(1, m), maxMinuteSlot)
-            while used.contains(m), m > 1 {
+            while used.contains(m) && m > 1 {
                 m -= 1
             }
             if used.contains(m) {

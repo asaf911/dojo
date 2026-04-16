@@ -375,15 +375,18 @@ private struct SessionLengthReadout: View {
     let hasIntroFractional: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .center, spacing: 8) {
             Text("\(practiceMinutes) min")
-                .nunitoFont(size: 42, style: .bold)
+                .allenoireFont(size: 36)
                 .foregroundColor(.white)
+                .baselineOffset(-2)
                 .monospacedDigit()
+                .multilineTextAlignment(.center)
 
             Text("Add steps")
                 .nunitoFont(size: 14, style: .regular)
                 .foregroundColor(.foregroundLightGray.opacity(0.92))
+                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             if hasIntroFractional {
@@ -391,10 +394,11 @@ private struct SessionLengthReadout: View {
                 Text("With Dojo intro on your timeline: about \(totalSec / 60)m \(totalSec % 60)s total.")
                     .nunitoFont(size: 13, style: .regular)
                     .foregroundColor(.foregroundLightGray.opacity(0.85))
+                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 8)
     }
 }
@@ -415,12 +419,12 @@ private struct TimerViewPreviewShell: View {
 
 struct TimerView_Previews: PreviewProvider {
     static var previews: some View {
-        TabView {
+        Group {
             TimerViewPreviewShell(useDevServer: true)
-                .tabItem { Text("Dev") }
+                .previewDisplayName("Create (Dev server)")
 
             TimerViewPreviewShell(useDevServer: false)
-                .tabItem { Text("Prod") }
+                .previewDisplayName("Create (Production server)")
         }
     }
 }

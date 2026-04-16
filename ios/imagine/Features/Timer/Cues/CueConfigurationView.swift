@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// This view lets the user add up to 5 cues-each with a scheduled trigger (Start, End, or a minute value) and a selected cue sound.
+/// Steps: modules play in list order (durations stack on the practice timeline). Bells/other cues still pick Start / minute / End.
 struct CueConfigurationView: View {
     /// Practice length from the create screen (derived from module durations).
     let practiceMinutes: Int
@@ -40,7 +40,7 @@ struct CueConfigurationView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Cues")
+            Text("Steps")
                 .nunitoFont(size: 18, style: .medium)
                 .foregroundColor(.foregroundLightGray)
             
@@ -48,7 +48,7 @@ struct CueConfigurationView: View {
                 HStack(alignment: .center, spacing: 6) {
                     cueNameMenu(index: index)
 
-                    if cueSettings[index].isFractional {
+                    if cueSettings[index].isCreateSequentialModule || cueSettings[index].cue.id == "INT_FRAC" {
                         fractionalOrAutoRow(index: index)
                     } else {
                         standardTriggerRow(index: index)
@@ -70,7 +70,7 @@ struct CueConfigurationView: View {
             
             if cueSettings.count < maxCues {
                 Button(action: addCue) {
-                    Text("+ Add")
+                    Text("+ Add Step")
                         .nunitoFont(size: 18, style: .medium)
                         .kerning(0.07)
                         .multilineTextAlignment(.center)
@@ -92,6 +92,20 @@ struct CueConfigurationView: View {
             }
         }
     }
+
+    /// Default minutes when picking a fractional module: match the nearest **earlier** timed module, or **5** if none.
+    private func referenceFractionalMinutesForNewModule(beforeIndex index: Int) -> Int {
+        var i = index - 1
+        while i >= 0 {
+            let cs = cueSettings[i]
+            if cs.isCreateSequentialModule {
+                let d = [CueSetting].createSequentialModuleDurationMinutes(cs)
+                return Swift.max(1, Swift.min([CueSetting].createFlowMaxPracticeMinutes, d))
+            }
+            i -= 1
+        }
+        return 5
+    }
     
     // MARK: - Row Builders
 
@@ -101,17 +115,23 @@ struct CueConfigurationView: View {
             ForEach(catalogsManager.cues) { cue in
                 Button(cue.name) {
                     cueSettings[index].cue = cue
-                    if CueSetting(cue: cue).isFractional {
+                    if cue.isMonolithicBodyScanCatalogCue {
+                        let fromCatalog = CatalogsManager.shared.bodyScanDurations[cue.id]
+                        let parsed = Int(cue.id.dropFirst(2)).flatMap { $0 > 0 ? $0 : nil }
+                        let base = fromCatalog ?? parsed ?? 5
+                        let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+                        let cap = Swift.max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
+                        cueSettings[index].fractionalDuration = Swift.min(base, cap)
+                    } else if CueSetting(cue: cue).isFractional {
                         if cue.id == "INT_FRAC" {
                             cueSettings[index].fractionalDuration = nil
                             cueSettings[index].triggerType = .start
                             cueSettings[index].minute = nil
                         } else {
                             let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
-                            let defaultChunk = max(1, min(10, [CueSetting].createFlowMaxPracticeMinutes - sumOthers))
-                            let cap = max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
-                            let prior = cueSettings[index].fractionalDuration
-                            cueSettings[index].fractionalDuration = min(prior ?? defaultChunk, cap)
+                            let cap = Swift.max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
+                            let reference = referenceFractionalMinutesForNewModule(beforeIndex: index)
+                            cueSettings[index].fractionalDuration = Swift.min(Swift.max(1, reference), cap)
                         }
                     } else {
                         cueSettings[index].fractionalDuration = nil
@@ -135,48 +155,37 @@ struct CueConfigurationView: View {
     @ViewBuilder
     private func fractionalOrAutoRow(index: Int) -> some View {
         if cueSettings[index].cue.id == "INT_FRAC" {
-            Text("Start (prelude)")
+            Text("Intro")
                 .nunitoFont(size: 16, style: .medium)
+                .foregroundColor(.foregroundLightGray.opacity(0.9))
+        } else if cueSettings[index].cue.isMonolithicBodyScanCatalogCue {
+            let d = [CueSetting].createSequentialModuleDurationMinutes(cueSettings[index])
+            Text("\(d) min")
+                .nunitoFont(size: 16, style: .bold)
                 .foregroundColor(.foregroundLightGray)
+                .monospacedDigit()
+        } else if cueSettings[index].allowsManualFractionalDuration {
+            let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+            let maxForThis = max(1, min([CueSetting].createFlowMaxPracticeMinutes, [CueSetting].createFlowMaxPracticeMinutes - sumOthers))
+            FractionalDurationStepper(
+                duration: Binding(
+                    get: {
+                        let cap = maxForThis
+                        return min(cueSettings[index].fractionalDuration ?? cap, cap)
+                    },
+                    set: { cueSettings[index].fractionalDuration = min($0, maxForThis) }
+                ),
+                range: 1...maxForThis
+            )
         } else {
-            if cueSettings[index].allowsManualFractionalDuration {
-                let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
-                let maxForThis = max(1, min([CueSetting].createFlowMaxPracticeMinutes, [CueSetting].createFlowMaxPracticeMinutes - sumOthers))
-                FractionalDurationStepper(
-                    duration: Binding(
-                        get: {
-                            let cap = maxForThis
-                            return min(cueSettings[index].fractionalDuration ?? cap, cap)
-                        },
-                        set: { cueSettings[index].fractionalDuration = min($0, maxForThis) }
-                    ),
-                    range: 1...maxForThis
-                )
-
-                Text("at")
-                    .nunitoFont(size: 16, style: .medium)
-                    .foregroundColor(.foregroundLightGray)
-            } else {
-                Text("length from session")
-                    .nunitoFont(size: 14, style: .regular)
-                    .foregroundColor(.foregroundLightGray.opacity(0.9))
-
-                Text("at")
-                    .nunitoFont(size: 16, style: .medium)
-                    .foregroundColor(.foregroundLightGray)
-            }
-
-            triggerMenu(index: index)
+            Text("length from session")
+                .nunitoFont(size: 14, style: .regular)
+                .foregroundColor(.foregroundLightGray.opacity(0.9))
         }
     }
 
     @ViewBuilder
     private func standardTriggerRow(index: Int) -> some View {
-        Text("will play at")
-            .nunitoFont(size: 16, style: .medium)
-            .foregroundColor(.foregroundLightGray)
-            .layoutPriority(1)
-
         triggerMenu(index: index)
     }
 

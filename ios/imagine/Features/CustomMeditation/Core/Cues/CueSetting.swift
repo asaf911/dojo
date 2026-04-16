@@ -44,6 +44,15 @@ struct CueSetting: Identifiable, Codable, Equatable {
     }
 }
 
+extension CueSetting {
+    /// Steps that chain on the practice timeline: fractional modules (except intro) + catalog monolithic body scans (`BS1`…).
+    var isCreateSequentialModule: Bool {
+        if cue.id == "INT_FRAC" { return false }
+        if isFractional { return true }
+        return cue.isMonolithicBodyScanCatalogCue
+    }
+}
+
 // MARK: - Fractional Cue Collapsing
 
 extension Array where Element == CueSetting {

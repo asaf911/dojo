@@ -61,3 +61,12 @@ struct Cue: Codable, Identifiable, Equatable {
         case id, name, url, urlsByVoice, parallelSfx
     }
 }
+
+extension Cue {
+    /// Catalog monolithic body scans (`BS1` … `BS12`) — fixed-length steps on the create screen.
+    var isMonolithicBodyScanCatalogCue: Bool {
+        guard id.hasPrefix("BS"), id.count >= 3 else { return false }
+        let rest = String(id.dropFirst(2))
+        return !rest.isEmpty && rest.allSatisfy(\.isNumber)
+    }
+}
