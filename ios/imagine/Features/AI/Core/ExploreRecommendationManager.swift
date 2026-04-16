@@ -221,10 +221,9 @@ class ExploreRecommendationManager: ObservableObject {
                 let sessionTagsLower = session.tags.map { $0.lowercased() }
                 return hurdleTags.contains { tag in sessionTagsLower.contains(tag) }
             }
-            let hurdleEligible = hurdleMatches.filter { !excludedIds.contains($0.id) }
-            logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] hurdle=\(hurdleContext.hurdleId) hurdleCandidates=\(hurdleMatches.count) timeCandidates=\(timeMatchingSessions.count) hurdleEligible=\(hurdleEligible.count)")
+            logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] hurdle=\(hurdleContext.hurdleId) hurdleCandidates=\(hurdleMatches.count) timeCandidates=\(timeMatchingSessions.count)")
             
-            if let session = hurdleEligible.randomElement() {
+            if let session = pickRankedSession(hurdleMatches, matchingTagsOrdered: matchingTags, excluding: excludedIds) {
                 logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] ✅ hurdle-targeted selection: session=\(session.id) title=\(session.title)")
                 return session
             }
@@ -244,10 +243,9 @@ class ExploreRecommendationManager: ObservableObject {
         }
         
         // Step 2: Time-only selection (standard behavior, not reached when requireHurdleMatch=true)
-        let eligible = timeMatchingSessions.filter { !excludedIds.contains($0.id) }
-        logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] time-only: found \(timeMatchingSessions.count) matching, \(eligible.count) eligible after exclusions")
+        logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] time-only: found \(timeMatchingSessions.count) matching")
         
-        if let session = eligible.randomElement() {
+        if let session = pickRankedSession(timeMatchingSessions, matchingTagsOrdered: matchingTags, excluding: excludedIds) {
             logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] ✅ time-only selection: session=\(session.id) title=\(session.title) premium=\(session.premium)")
             return session
         }
@@ -258,9 +256,8 @@ class ExploreRecommendationManager: ObservableObject {
             return nil
         }
         
-        // Step 3: Final fallback — any time-oriented session not excluded
-        let fallbackEligible = timeOrientedSessions.filter { !excludedIds.contains($0.id) }
-        if let fallbackSession = fallbackEligible.randomElement() {
+        // Step 3: Final fallback — any time-oriented session not excluded (stable order by id)
+        if let fallbackSession = pickStableTimeOrientedFallback(excluding: excludedIds) {
             logger.aiChat("🧠 AI_DEBUG [EXPLORE_SELECT] fallback to any session=\(fallbackSession.id) title=\(fallbackSession.title)")
             return fallbackSession
         }
@@ -474,6 +471,41 @@ class ExploreRecommendationManager: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    /// Prefer the earliest tag in `matchingTagsOrdered` present on the session (e.g. evening before sleep).
+    private func timeTagMatchScore(for session: AudioFile, matchingTagsOrdered: [String]) -> Int {
+        let tagsLower = Set(session.tags.map { $0.lowercased() })
+        var best = Int.max
+        for (index, tag) in matchingTagsOrdered.enumerated() {
+            if tagsLower.contains(tag.lowercased()) {
+                best = min(best, index)
+            }
+        }
+        return best
+    }
+    
+    /// Deterministic pick: best time-tag match, then `id` ascending.
+    private func pickRankedSession(
+        _ sessions: [AudioFile],
+        matchingTagsOrdered: [String],
+        excluding excludedIds: Set<String>
+    ) -> AudioFile? {
+        let eligible = sessions.filter { !excludedIds.contains($0.id) }
+        guard !eligible.isEmpty else { return nil }
+        return eligible.min(by: { a, b in
+            let sa = timeTagMatchScore(for: a, matchingTagsOrdered: matchingTagsOrdered)
+            let sb = timeTagMatchScore(for: b, matchingTagsOrdered: matchingTagsOrdered)
+            if sa != sb { return sa < sb }
+            return a.id < b.id
+        })
+    }
+    
+    /// When no session matches the current time bucket, fall back to any time-oriented session (stable by id).
+    private func pickStableTimeOrientedFallback(excluding excludedIds: Set<String>) -> AudioFile? {
+        let eligible = timeOrientedSessions.filter { !excludedIds.contains($0.id) }
+        guard !eligible.isEmpty else { return nil }
+        return eligible.min(by: { $0.id < $1.id })
+    }
     
     /// Filters all audio files to find time-oriented sessions
     private func updateTimeOrientedSessions() {

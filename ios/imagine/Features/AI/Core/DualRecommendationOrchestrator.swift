@@ -2,13 +2,13 @@
 //  DualRecommendationOrchestrator.swift
 //  imagine
 //
-//  Central coordinator for dual recommendations.
-//  Implements a clean four-step decision framework:
+//  Central coordinator for Sensei recommendations in AI chat.
+//  Implements a four-step decision framework; Step 4 (secondary) is legacy-only.
 //
 //  Step 1 — Determine UserMode (learn | personal)
 //  Step 2 — Build RecommendationContext (time, hurdle, greeting, excluded IDs)
 //  Step 3 — Select Primary  (mode-specific role)
-//  Step 4 — Select Secondary (mode-specific role, contrast or complement)
+//  Step 4 — Select Secondary (deprecated: learn = complementary, personal = contrast)
 //
 //  Session selection (Explore vs Custom) is delegated entirely to
 //  RecommendationContextEngine — the orchestrator never branches on content type.
@@ -19,8 +19,10 @@ import Combine
 
 // MARK: - Dual Recommendation Orchestrator
 
-/// Coordinates the four-step dual recommendation framework.
-/// Single entry point for AI chat to get both primary and secondary options.
+/// Coordinates Sensei recommendation selection for AI chat (path, explore, custom).
+///
+/// The product path is a **single** recommendation; the legacy dual-card API remains
+/// for compatibility but is deprecated.
 @MainActor
 class DualRecommendationOrchestrator: ObservableObject {
 
@@ -39,7 +41,7 @@ class DualRecommendationOrchestrator: ObservableObject {
     // MARK: - Published State
 
     @Published private(set) var isGenerating: Bool = false
-    @Published private(set) var lastRecommendation: DualRecommendation?
+    @Published private(set) var lastRecommendation: SingleRecommendation?
 
     // MARK: - Deduplication
 
@@ -55,29 +57,106 @@ class DualRecommendationOrchestrator: ObservableObject {
 
     // MARK: - Main Entry Point
 
-    /// Get dual recommendations.
+    /// Returns one Sensei recommendation for the current journey state.
     ///
     /// - Parameter includeGreeting: When true, prepends a timely greeting
     ///   (e.g. "Good evening, Asaf."). Pass false for post-session and
     ///   transition-triggered calls.
+    func getSingleRecommendation(includeGreeting: Bool = false) async -> SingleRecommendation? {
+        isGenerating = true
+        defer { isGenerating = false }
+
+        guard let built = await buildRecommendationCore(includeSecondary: false, includeGreeting: includeGreeting) else {
+            return nil
+        }
+
+        let result = SingleRecommendation(
+            item: built.primary,
+            userMode: built.userMode,
+            currentPhase: built.currentPhase,
+            routineProgress: built.routineProgress
+        )
+
+        if !built.primary.isPath {
+            recentlyRecommendedIds.insert(built.primary.contentId)
+        }
+
+        lastRecommendation = result
+        let primaryGoal = inferGoalFromPrimary(built.primary)
+        ContextStateManager.shared.recordPrimaryShown(goalContext: primaryGoal)
+
+        if built.primary.isCustom {
+            SharedUserStorage.save(value: true, forKey: .hasReceivedFirstCustomMeditation)
+        }
+
+        logger.aiChat("🎯 DUAL_REC: Done (single) — recentlyRecommended=\(recentlyRecommendedIds.count) primaryGoal=\(primaryGoal.rawValue)")
+        return result
+    }
+
+    /// Legacy API that also selects an optional second card.
+    @available(*, deprecated, message: "Use getSingleRecommendation(); dual secondary cards are deprecated.")
     func getDualRecommendation(includeGreeting: Bool = false) async -> DualRecommendation? {
         isGenerating = true
         defer { isGenerating = false }
 
-        // Onboarding must be complete before showing any recommendations.
+        guard let built = await buildRecommendationCore(includeSecondary: true, includeGreeting: includeGreeting) else {
+            return nil
+        }
+
+        let result = DualRecommendation(
+            primary: built.primary,
+            secondary: built.secondary,
+            userMode: built.userMode,
+            currentPhase: built.currentPhase,
+            routineProgress: built.routineProgress
+        )
+
+        if !result.primary.isPath {
+            recentlyRecommendedIds.insert(result.primary.contentId)
+        }
+        if let sec = result.secondary, !sec.isPath {
+            recentlyRecommendedIds.insert(sec.contentId)
+        }
+
+        lastRecommendation = SingleRecommendation(
+            item: result.primary,
+            userMode: result.userMode,
+            currentPhase: result.currentPhase,
+            routineProgress: result.routineProgress
+        )
+        let primaryGoal = inferGoalFromPrimary(result.primary)
+        ContextStateManager.shared.recordPrimaryShown(goalContext: primaryGoal)
+
+        if result.primary.isCustom || result.secondary?.isCustom == true {
+            SharedUserStorage.save(value: true, forKey: .hasReceivedFirstCustomMeditation)
+        }
+
+        logger.aiChat("🎯 DUAL_REC: Done (dual legacy) — recentlyRecommended=\(recentlyRecommendedIds.count) primaryGoal=\(primaryGoal.rawValue)")
+        return result
+    }
+
+    private struct BuiltRecommendationCore {
+        let primary: RecommendationItem
+        let secondary: RecommendationItem?
+        let userMode: UserMode
+        let currentPhase: JourneyPhase
+        let routineProgress: RoutineProgress?
+    }
+
+    /// Shared selection pipeline: Steps 1–3 always; Step 4 (secondary) when `includeSecondary` is true.
+    private func buildRecommendationCore(includeSecondary: Bool, includeGreeting: Bool) async -> BuiltRecommendationCore? {
         guard SenseiOnboardingState.shared.isComplete else {
             logger.aiChat("🎯 DUAL_REC: Skipped — onboarding not complete")
             return nil
         }
 
-        // ── Step 1: Determine mode ────────────────────────────────────────────
         let phase = journeyManager.currentPhase
         guard let mode = UserMode.from(phase: phase) else {
             logger.aiChat("🎯 DUAL_REC: Pre-app phase (\(phase.displayName)) — no recommendations")
             return nil
         }
 
-        let routineCount    = journeyManager.getRoutineCompletionCount()
+        let routineCount = journeyManager.getRoutineCompletionCount()
         let routineProgress = RoutineProgress(
             completed: routineCount,
             required: ProductJourneyManager.routinesRequiredForCustomization
@@ -85,15 +164,12 @@ class DualRecommendationOrchestrator: ObservableObject {
 
         logger.aiChat("🎯 DUAL_REC: mode=\(mode.displayName) phase=\(phase.displayName) routines=\(routineCount) hurdle=\(UserPreferencesManager.shared.hurdle ?? "nil")")
 
-        // ── Step 2: Build context ─────────────────────────────────────────────
         let context = await buildRecommendationContext(
             mode: mode,
             includeGreeting: includeGreeting
         )
 
-        // ── Step 3: Select primary ────────────────────────────────────────────
         let primary: RecommendationItem?
-
         switch mode {
         case .learn:
             primary = await selectLearnPrimary(context: context)
@@ -108,61 +184,39 @@ class DualRecommendationOrchestrator: ObservableObject {
 
         logger.aiChat("🎯 DUAL_REC: primary=\(primary.type.analyticsType) '\(primary.contentTitle)'")
 
-        // ── Step 4: Select secondary ──────────────────────────────────────────
-        // Build a secondary context that excludes the primary to avoid duplicates.
-        // If primary was Custom, secondary is not the first custom — only one gets the enhanced prompt.
-        let secondaryIsFirstCustom = context.isFirstCustomMeditation && !primary.isCustom
-        let secondaryContext = RecommendationContext(
-            timeOfDay: context.timeOfDay,
-            hurdleContext: context.hurdleContext,
-            excludedContentIds: context.excludedContentIds.union([primary.contentId]),
-            welcomeGreeting: context.welcomeGreeting,
-            contextMessage: context.contextMessage,
-            isFirstWelcome: context.isFirstWelcome,
-            goal: context.goal,
-            isFirstCustomMeditation: secondaryIsFirstCustom,
-            isFirstPersonalRecommendation: context.isFirstPersonalRecommendation
-        )
-
         let secondary: RecommendationItem?
-
-        switch mode {
-        case .learn:
-            secondary = await contextEngine.selectComplementary(secondaryContext)
-        case .personal:
-            secondary = await contextEngine.selectContrast(secondaryContext, primary.type)
+        if includeSecondary {
+            let secondaryIsFirstCustom = context.isFirstCustomMeditation && !primary.isCustom
+            let secondaryContext = RecommendationContext(
+                timeOfDay: context.timeOfDay,
+                hurdleContext: context.hurdleContext,
+                excludedContentIds: context.excludedContentIds.union([primary.contentId]),
+                welcomeGreeting: context.welcomeGreeting,
+                contextMessage: context.contextMessage,
+                isFirstWelcome: context.isFirstWelcome,
+                goal: context.goal,
+                isFirstCustomMeditation: secondaryIsFirstCustom,
+                isFirstPersonalRecommendation: context.isFirstPersonalRecommendation
+            )
+            switch mode {
+            case .learn:
+                secondary = await contextEngine.selectComplementary(secondaryContext)
+            case .personal:
+                secondary = await contextEngine.selectContrast(secondaryContext, primary.type)
+            }
+            logger.aiChat("🎯 DUAL_REC: secondary=\(secondary?.type.analyticsType ?? "none")")
+        } else {
+            secondary = nil
+            logger.aiChat("🎯 DUAL_REC: secondary=skipped (single recommendation path)")
         }
 
-        logger.aiChat("🎯 DUAL_REC: secondary=\(secondary?.type.analyticsType ?? "none")")
-
-        // ── Output ────────────────────────────────────────────────────────────
-        let result = DualRecommendation(
+        return BuiltRecommendationCore(
             primary: primary,
             secondary: secondary,
             userMode: mode,
             currentPhase: phase,
             routineProgress: routineProgress
         )
-
-        // Track non-path IDs to avoid consecutive repeats on the next call.
-        if !result.primary.isPath {
-            recentlyRecommendedIds.insert(result.primary.contentId)
-        }
-        if let sec = result.secondary, !sec.isPath {
-            recentlyRecommendedIds.insert(sec.contentId)
-        }
-
-        lastRecommendation = result
-        let primaryGoal = inferGoalFromPrimary(result.primary)
-        ContextStateManager.shared.recordPrimaryShown(goalContext: primaryGoal)
-
-        // Mark first custom meditation as received when we deliver any Custom (primary or secondary)
-        if result.primary.isCustom || result.secondary?.isCustom == true {
-            SharedUserStorage.save(value: true, forKey: .hasReceivedFirstCustomMeditation)
-        }
-
-        logger.aiChat("🎯 DUAL_REC: Done — recentlyRecommended=\(recentlyRecommendedIds.count) primaryGoal=\(primaryGoal.rawValue)")
-        return result
     }
 
     /// Infer GoalContext from a recommended primary for Context State diversity tracking.
@@ -334,17 +388,22 @@ class DualRecommendationOrchestrator: ObservableObject {
     }
 
     func seedRecentlyRecommended(from conversation: [ChatMessage]) {
-        guard let lastRec = conversation.last(where: { $0.dualRecommendation != nil }),
-              let dualRec = lastRec.dualRecommendation else {
-            logger.aiChat("🎯 DUAL_REC: Seed skipped — no dual recommendation in conversation history")
+        guard let lastRec = conversation.last(where: { $0.singleRecommendation != nil || $0.dualRecommendation != nil }) else {
+            logger.aiChat("🎯 DUAL_REC: Seed skipped — no recommendation in conversation history")
             return
         }
 
-        if !dualRec.primary.isPath {
-            recentlyRecommendedIds.insert(dualRec.primary.contentId)
-        }
-        if let secondary = dualRec.secondary, !secondary.isPath {
-            recentlyRecommendedIds.insert(secondary.contentId)
+        if let single = lastRec.singleRecommendation {
+            if !single.item.isPath {
+                recentlyRecommendedIds.insert(single.item.contentId)
+            }
+        } else if let dualRec = lastRec.dualRecommendation {
+            if !dualRec.primary.isPath {
+                recentlyRecommendedIds.insert(dualRec.primary.contentId)
+            }
+            if let secondary = dualRec.secondary, !secondary.isPath {
+                recentlyRecommendedIds.insert(secondary.contentId)
+            }
         }
 
         logger.aiChat("🎯 DUAL_REC: Seeded \(recentlyRecommendedIds.count) ids from conversation history")

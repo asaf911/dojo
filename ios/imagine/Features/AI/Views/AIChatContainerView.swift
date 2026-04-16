@@ -283,7 +283,7 @@ struct AIChatContainerView: View {
     // MARK: - Journey Recommendation
     
     /// Check if we should show a recommendation based on user's journey phase.
-    /// Uses DualRecommendationOrchestrator to get both primary and secondary options.
+    /// Uses ``DualRecommendationOrchestrator`` to get one Sensei recommendation.
     private func checkAndShowRecommendation() {
         #if DEBUG
         print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
@@ -293,65 +293,57 @@ struct AIChatContainerView: View {
         
         logger.aiChat("🧠 AI_DEBUG [JOURNEY] checkAndShowRecommendation() called")
         
-        // Only show if onboarding is complete
-        let onboardingComplete = SenseiOnboardingState.shared.isComplete
-        #if DEBUG
-        print("📊 JOURNEY: [DEV_SKIP]   1. SenseiOnboardingState.isComplete: \(onboardingComplete)")
-        #endif
-        guard onboardingComplete else {
-            #if DEBUG
-            print("📊 JOURNEY: [DEV_SKIP] ❌ BLOCKED: onboarding not complete")
-            print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
-            #endif
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - onboarding not complete")
-            logTimelySkip(reason: "onboarding_incomplete")
-            return
-        }
-
-        if TimelyRecommendationGate.shared.isInFlight {
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - timely fetch already in flight")
-            logTimelySkip(reason: "timely_fetch_in_flight")
-            return
-        }
-
-        // If post-session flow is still active, defer timely suggestion.
-        // We'll retry after prompt resolution.
-        if isPostSessionFlowActive() {
-            hasDeferredTimelyRecommendationCheck = true
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - post-session prompt flow active, deferring timely suggestion")
-            logTimelySkip(reason: "prompt_active")
-            return
-        }
-
-        // Check slot-based rules - one timely launch suggestion per time slot per day.
-        // (Recommendations are appended to the existing conversation thread,
-        // so conversation emptiness is intentionally not checked here.)
-        let shouldAutoSuggest = ExploreRecommendationManager.shared.shouldAutoSuggestTimelyNow()
+        let currentPhase = ProductJourneyManager.shared.currentPhase
+        let userMode = UserMode.from(phase: currentPhase)
+        let timelySlotRuleApplies = (userMode == .personal)
+        let shouldAutoSuggest = timelySlotRuleApplies
+            ? ExploreRecommendationManager.shared.shouldAutoSuggestTimelyNow()
+            : true
         let usedDevTimeOverride = ExploreRecommendationManager.shared.isDevTimeOverrideActive()
-        #if DEBUG
-        print("📊 JOURNEY: [DEV_SKIP]   3. shouldAutoSuggestTimelyNow: \(shouldAutoSuggest)")
-        print("📊 JOURNEY: [DEV_SKIP]      lastSuggestedSlot: \(ExploreRecommendationManager.shared.getLastSuggestedSlot() ?? "nil")")
-        print("📊 JOURNEY: [DEV_SKIP]      currentSlot: \(ExploreRecommendationManager.shared.getCurrentSlotKey())")
-        #endif
-        guard shouldAutoSuggest else {
+        
+        let precheckInput = TimelyPrecheckInput(
+            senseiOnboardingComplete: SenseiOnboardingState.shared.isComplete,
+            timelyFetchInFlight: TimelyRecommendationGate.shared.isInFlight,
+            postSessionFlowActive: isPostSessionFlowActive(),
+            timelySlotRuleApplies: timelySlotRuleApplies,
+            timelySlotAvailable: shouldAutoSuggest,
+            devTimeOverrideActive: usedDevTimeOverride
+        )
+        
+        let evaluation = TimelyRecommendationPolicy.live.evaluatePrecheck(precheckInput)
+        
+        let consumeTimelySlotOnSuccess: Bool
+        let devOverrideActiveForTask: Bool
+        switch evaluation {
+        case .skip(let reason, let clearDev, let deferLater):
             #if DEBUG
-            print("📊 JOURNEY: [DEV_SKIP] ❌ BLOCKED: slot already suggested")
+            print("📊 JOURNEY: [DEV_SKIP]   1. SenseiOnboardingState.isComplete: \(precheckInput.senseiOnboardingComplete)")
+            print("📊 JOURNEY: [DEV_SKIP]   timelySlotRuleApplies: \(timelySlotRuleApplies) shouldAutoSuggestTimelyNow: \(shouldAutoSuggest)")
+            print("📊 JOURNEY: [DEV_SKIP]      lastSuggestedSlot: \(ExploreRecommendationManager.shared.getLastSuggestedSlot() ?? "nil")")
+            print("📊 JOURNEY: [DEV_SKIP]      currentSlot: \(ExploreRecommendationManager.shared.getCurrentSlotKey())")
+            print("📊 JOURNEY: [DEV_SKIP] ❌ BLOCKED: \(reason)")
             print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
             #endif
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] skipped - slot already suggested")
-            logTimelySkip(reason: "slot_used")
-            if usedDevTimeOverride {
+            if deferLater {
+                hasDeferredTimelyRecommendationCheck = true
+            }
+            logTimelySkip(reason: reason)
+            if clearDev {
                 ExploreRecommendationManager.shared.clearDevTimeOverride()
             }
             return
+        case .proceed(let consumeSlot, let devActive):
+            consumeTimelySlotOnSuccess = consumeSlot
+            devOverrideActiveForTask = devActive
         }
         
-        let currentPhase = ProductJourneyManager.shared.currentPhase
         #if DEBUG
+        print("📊 JOURNEY: [DEV_SKIP]   1. SenseiOnboardingState.isComplete: true")
+        print("📊 JOURNEY: [DEV_SKIP]   timelySlotRuleApplies: \(timelySlotRuleApplies) consumeSlotOnSuccess: \(consumeTimelySlotOnSuccess)")
         print("📊 JOURNEY: [DEV_SKIP]   4. currentPhase: \(currentPhase.displayName)")
         print("📊 JOURNEY: [DEV_SKIP] ✅ ALL CONDITIONS PASSED - fetching recommendation...")
         #endif
-        logger.aiChat("🧠 AI_DEBUG [JOURNEY] current phase: \(currentPhase.displayName) - using dual recommendation orchestrator")
+        logger.aiChat("🧠 AI_DEBUG [JOURNEY] current phase: \(currentPhase.displayName) - using recommendation orchestrator")
 
         // For returning users, show a brief timely greeting before thinking appears.
         addTimelyGreetingIfNeeded()
@@ -364,25 +356,24 @@ struct AIChatContainerView: View {
         TimelyRecommendationGate.shared.isInFlight = true
         isTimelyRecommendationInFlight = true
 
-        // Use the new dual recommendation orchestrator
         timelyRecommendationTask?.cancel()
         timelyRecommendationTask = Task {
             #if DEBUG
-            print("📊 JOURNEY: [DEV_SKIP] Calling DualRecommendationOrchestrator.getDualRecommendation()...")
+            print("📊 JOURNEY: [DEV_SKIP] Calling DualRecommendationOrchestrator.getSingleRecommendation()...")
             #endif
             
             // Greeting is shown as a dedicated chat message above thinking.
             // Disable orchestrator greeting here to avoid duplicated greeting copy.
-            guard let dualRec = await DualRecommendationOrchestrator.shared.getDualRecommendation(includeGreeting: false) else {
+            guard let rec = await DualRecommendationOrchestrator.shared.getSingleRecommendation(includeGreeting: false) else {
                 #if DEBUG
-                print("📊 JOURNEY: [DEV_SKIP] ❌ getDualRecommendation() returned nil!")
+                print("📊 JOURNEY: [DEV_SKIP] ❌ getSingleRecommendation() returned nil!")
                 print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
                 #endif
-                logger.aiChat("🧠 AI_DEBUG [JOURNEY] no dual recommendation available")
+                logger.aiChat("🧠 AI_DEBUG [JOURNEY] no recommendation available")
                 await MainActor.run { removeThinkingMessageIfNeeded() }
                 await MainActor.run {
                     logTimelySkip(reason: "generation_failed")
-                    if usedDevTimeOverride {
+                    if devOverrideActiveForTask {
                         ExploreRecommendationManager.shared.clearDevTimeOverride()
                     }
                     TimelyRecommendationGate.shared.isInFlight = false
@@ -394,24 +385,25 @@ struct AIChatContainerView: View {
             
             #if DEBUG
             print("📊 JOURNEY: [DEV_SKIP] ✅ Got recommendation!")
-            print("📊 JOURNEY: [DEV_SKIP]   - primary type: \(dualRec.primary.type.analyticsType)")
-            print("📊 JOURNEY: [DEV_SKIP]   - secondary type: \(dualRec.secondary?.type.analyticsType ?? "none")")
+            print("📊 JOURNEY: [DEV_SKIP]   - type: \(rec.item.type.analyticsType)")
             #endif
             
-            // Display dual recommendation (thinking message is removed inside displayDualRecommendation)
+            // Display recommendation (thinking message is removed inside displaySenseiRecommendation)
             await MainActor.run {
                 #if DEBUG
                 print("📊 JOURNEY: [DEV_SKIP] Displaying recommendation...")
                 print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
                 #endif
-                ExploreRecommendationManager.shared.markTimelySlotAsSuggested()
-                AnalyticsManager.shared.logEvent("timely_suggest_slot_marked_after_success", parameters: [
-                    "slot": ExploreRecommendationManager.shared.getCurrentSlotKey(),
-                    "phase": ProductJourneyManager.shared.currentPhase.analyticsName
-                ])
+                if consumeTimelySlotOnSuccess {
+                    ExploreRecommendationManager.shared.markTimelySlotAsSuggested()
+                    AnalyticsManager.shared.logEvent("timely_suggest_slot_marked_after_success", parameters: [
+                        "slot": ExploreRecommendationManager.shared.getCurrentSlotKey(),
+                        "phase": ProductJourneyManager.shared.currentPhase.analyticsName
+                    ])
+                }
                 self.lastRecommendationTrigger = .timely
-                displayDualRecommendation(dualRec)
-                if usedDevTimeOverride {
+                displaySenseiRecommendation(rec)
+                if devOverrideActiveForTask {
                     ExploreRecommendationManager.shared.clearDevTimeOverride()
                 }
                 TimelyRecommendationGate.shared.isInFlight = false
@@ -513,36 +505,30 @@ struct AIChatContainerView: View {
         }
     }
     
-    /// Displays a dual recommendation (primary + optional secondary) in the chat
-    private func displayDualRecommendation(_ recommendation: DualRecommendation) {
-        // Seed the orchestrator's exclusion set so the next recommendation avoids repeats.
-        // This also covers the initial recommendation shown on app launch.
-        var shownIds: [String] = [recommendation.primaryContentId]
-        if let secondary = recommendation.secondary {
-            shownIds.append(secondary.contentId)
-        }
-        DualRecommendationOrchestrator.shared.markAsRecentlyRecommended(shownIds)
+    /// Displays one Sensei recommendation in the chat.
+    private func displaySenseiRecommendation(_ recommendation: SingleRecommendation) {
+        DualRecommendationOrchestrator.shared.markAsRecentlyRecommended([recommendation.contentId])
         
         // Atomically swap the thinking animation out and the recommendation in.
         // removeThinkingMessageIfNeeded() is a no-op if no thinking message is present,
-        // so this is safe to call even when displayDualRecommendation is triggered by
+        // so this is safe to call even when displaySenseiRecommendation is triggered by
         // paths other than checkAndShowRecommendation (e.g. post-session).
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.removeThinkingMessageIfNeeded()
-            self.conversationState.addDualRecommendation(recommendation)
+            self.conversationState.addSingleRecommendation(recommendation)
             
-            // Track analytics
+            // Track analytics (event name unchanged for dashboards)
             AnalyticsManager.shared.logEvent("dual_recommendation_shown", parameters: [
                 "phase": recommendation.currentPhase.analyticsName,
-                "primary_type": recommendation.primary.type.analyticsType,
-                "primary_id": recommendation.primaryContentId,
-                "secondary_type": recommendation.secondary?.type.analyticsType ?? "none",
-                "secondary_id": recommendation.secondaryContentId,
-                "has_secondary": recommendation.hasBothOptions,
+                "primary_type": recommendation.item.type.analyticsType,
+                "primary_id": recommendation.contentId,
+                "secondary_type": "none",
+                "secondary_id": "none",
+                "has_secondary": false,
                 "routine_progress": recommendation.routineProgress?.completed ?? 0
             ])
             
-            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Dual recommendation shown - phase=\(recommendation.currentPhase.displayName) primary=\(recommendation.primary.type.analyticsType) secondary=\(recommendation.secondary?.type.analyticsType ?? "none")")
+            logger.aiChat("🧠 AI_DEBUG [JOURNEY] Recommendation shown - phase=\(recommendation.currentPhase.displayName) type=\(recommendation.item.type.analyticsType)")
         }
     }
     
@@ -903,17 +889,17 @@ struct AIChatContainerView: View {
             let transitionMessage = "From now on, I'll suggest daily routines based on the time of day."
             self.conversationState.addAIMessage(text: transitionMessage)
             
-            // Step 3: After another delay, show dual recommendation
+            // Step 3: After another delay, show Sensei recommendation
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 Task {
-                    guard let dualRec = await DualRecommendationOrchestrator.shared.getDualRecommendation() else {
-                        logger.aiChat("🧠 AI_DEBUG [JOURNEY] ❌ No dual recommendation available for Path → Daily Routines transition")
+                    guard let rec = await DualRecommendationOrchestrator.shared.getSingleRecommendation() else {
+                        logger.aiChat("🧠 AI_DEBUG [JOURNEY] ❌ No recommendation available for Path → Daily Routines transition")
                         return
                     }
                     await MainActor.run {
                         self.lastRecommendationTrigger = .transition
-                        self.displayDualRecommendation(dualRec)
-                        logger.aiChat("🧠 AI_DEBUG [JOURNEY] ✅ Dual recommendation shown for Path → Daily Routines transition")
+                        self.displaySenseiRecommendation(rec)
+                        logger.aiChat("🧠 AI_DEBUG [JOURNEY] ✅ Recommendation shown for Path → Daily Routines transition")
                     }
                 }
             }
@@ -2000,7 +1986,7 @@ struct AIChatContainerView: View {
         hasDeferredTimelyRecommendationCheck = false
         
         if wantsMore {
-            // User wants more — fetch and show dual recommendation
+            // User wants more — fetch and show a Sensei recommendation
             // No user message echo needed; the highlighted button is sufficient feedback.
             #if DEBUG
             print("[PostSessionPrompt] User said YES - fetching recommendation...")
@@ -2008,9 +1994,9 @@ struct AIChatContainerView: View {
             logger.aiChat("🤔 [POST_SESSION_PROMPT] User said YES - fetching recommendation")
             
             Task {
-                guard let dualRec = await DualRecommendationOrchestrator.shared.getDualRecommendation() else {
+                guard let rec = await DualRecommendationOrchestrator.shared.getSingleRecommendation() else {
                     #if DEBUG
-                    print("[PostSessionPrompt] ❌ getDualRecommendation() returned nil")
+                    print("[PostSessionPrompt] ❌ getSingleRecommendation() returned nil")
                     #endif
                     logger.aiChat("🤔 [POST_SESSION_PROMPT] ❌ No recommendation available")
                     await MainActor.run {
@@ -2020,13 +2006,13 @@ struct AIChatContainerView: View {
                 }
                 
                 #if DEBUG
-                print("[PostSessionPrompt] ✅ Got recommendation - primary=\(dualRec.primary.type.analyticsType) secondary=\(dualRec.secondary?.type.analyticsType ?? "none")")
+                print("[PostSessionPrompt] ✅ Got recommendation - type=\(rec.item.type.analyticsType)")
                 #endif
                 
                 await MainActor.run {
                     self.lastRecommendationTrigger = .postPractice
-                    self.displayDualRecommendation(dualRec)
-                    logger.aiChat("🤔 [POST_SESSION_PROMPT] ✅ Dual recommendation shown after YES response")
+                    self.displaySenseiRecommendation(rec)
+                    logger.aiChat("🤔 [POST_SESSION_PROMPT] ✅ Recommendation shown after YES response")
                 }
             }
         } else {

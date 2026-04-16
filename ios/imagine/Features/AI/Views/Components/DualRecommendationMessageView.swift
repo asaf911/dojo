@@ -13,11 +13,11 @@ import SwiftUI
 
 // MARK: - Dual Recommendation Message View
 
-/// Main view for rendering dual recommendations in AI chat
-/// Shows primary recommendation first, then secondary with a divider
+/// Main view for rendering Sensei recommendations in AI chat (single current path or legacy dual).
+/// Shows primary recommendation first, then optional secondary with a divider.
 struct DualRecommendationMessageView: View {
     let message: ChatMessage
-    let dualRecommendation: DualRecommendation
+    let payload: RecommendationChatPayload
     @ObservedObject var conversationState: AIConversationState
     @ObservedObject var manager: AIRequestManager
     let isLatestMessage: Bool
@@ -37,7 +37,7 @@ struct DualRecommendationMessageView: View {
     @State private var typingStage: Int = 0
     @State private var welcomeComplete: Bool = false
     /// Tracks whether the first-welcome context message has finished typing.
-    /// Only relevant when `dualRecommendation.primary.contextMessage != nil`.
+    /// Only relevant when `payload.primary.contextMessage != nil`.
     @State private var contextComplete: Bool = false
     @State private var showPrimaryCard: Bool = false
     @State private var showSecondaryDivider: Bool = false
@@ -64,25 +64,25 @@ struct DualRecommendationMessageView: View {
     
     /// Check if primary recommendation is a path (uses persistent completion)
     private var isPrimaryPath: Bool {
-        if case .path = dualRecommendation.primary.type { return true }
+        if case .path = payload.primary.type { return true }
         return false
     }
     
     /// Check if secondary recommendation is a path (uses persistent completion)
     private var isSecondaryPath: Bool {
-        guard let secondary = dualRecommendation.secondary else { return false }
+        guard let secondary = payload.secondary else { return false }
         if case .path = secondary.type { return true }
         return false
     }
     
     /// Check if this recommendation has a welcome greeting
     private var hasWelcomeGreeting: Bool {
-        dualRecommendation.primary.welcomeGreeting != nil
+        payload.primary.welcomeGreeting != nil
     }
     
     /// Check if this recommendation has a contextual body message
     private var hasContextMessage: Bool {
-        dualRecommendation.primary.contextMessage != nil
+        payload.primary.contextMessage != nil
     }
     
     // MARK: - Body
@@ -93,7 +93,7 @@ struct DualRecommendationMessageView: View {
             primarySection
             
             // MARK: - Secondary Recommendation Section (if exists)
-            if dualRecommendation.secondary != nil {
+            if payload.secondary != nil {
                 secondarySection
             }
         }
@@ -136,8 +136,8 @@ struct DualRecommendationMessageView: View {
     private var primarySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Greeting — first-ever welcome is bold purple; timely greetings are regular sensei text
-            if let welcome = dualRecommendation.primary.welcomeGreeting {
-                let isWelcome = dualRecommendation.primary.isFirstWelcome
+            if let welcome = payload.primary.welcomeGreeting {
+                let isWelcome = payload.primary.isFirstWelcome
                 
                 if isLatestMessage && !welcomeComplete {
                     if isWelcome {
@@ -178,7 +178,7 @@ struct DualRecommendationMessageView: View {
             // Context message — shown after welcome, replaces the intro on the first-ever recommendation.
             // Explains why this meditation was chosen, referencing the user's hurdle naturally.
             // When present it drives the card-reveal sequence itself (no separate intro message shown).
-            if let context = dualRecommendation.primary.contextMessage, welcomeComplete {
+            if let context = payload.primary.contextMessage, welcomeComplete {
                 if isLatestMessage && !contextComplete {
                     UnifiedTypingView(
                         content: .text(context),
@@ -194,7 +194,7 @@ struct DualRecommendationMessageView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             NotificationCenter.default.post(name: .aiScrollTrigger, object: nil)
                         }
-                        if dualRecommendation.secondary != nil {
+                        if payload.secondary != nil {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showSecondaryDivider = true
@@ -219,7 +219,7 @@ struct DualRecommendationMessageView: View {
             if !hasContextMessage && (!hasWelcomeGreeting || welcomeComplete) {
                 if isLatestMessage && typingStage == 0 {
                     UnifiedTypingView(
-                        content: .text(dualRecommendation.primary.introMessage),
+                        content: .text(payload.primary.introMessage),
                         isTyping: $conversationState.isTyping,
                         conversationCount: conversationState.conversation.count
                     ) {
@@ -232,7 +232,7 @@ struct DualRecommendationMessageView: View {
                             NotificationCenter.default.post(name: .aiScrollTrigger, object: nil)
                         }
                         // Continue to secondary after a delay
-                        if dualRecommendation.secondary != nil {
+                        if payload.secondary != nil {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showSecondaryDivider = true
@@ -247,7 +247,7 @@ struct DualRecommendationMessageView: View {
                     }
                 } else if !isLatestMessage || typingStage >= 1 {
                     // Static primary intro
-                    Text(dualRecommendation.primary.introMessage)
+                    Text(payload.primary.introMessage)
                         .nunitoFont(size: 16, style: .medium)
                         .foregroundColor(.white)
                 }
@@ -276,7 +276,7 @@ struct DualRecommendationMessageView: View {
     
     @ViewBuilder
     private var secondarySection: some View {
-        if let secondary = dualRecommendation.secondary {
+        if let secondary = payload.secondary {
             // Secondary intro message (no divider - just "Or..." message)
             if isLatestMessage && typingStage == 2 {
                 UnifiedTypingView(
@@ -318,7 +318,7 @@ struct DualRecommendationMessageView: View {
     @ViewBuilder
     private var primaryCardView: some View {
         let _ = print("[DualRec] Rendering primaryCardView - primaryCompleted: \(primaryCompleted), secondaryCompleted: \(secondaryCompleted), playedCard: \(String(describing: playedCard)), msgId: \(message.id)")
-        switch dualRecommendation.primary.type {
+        switch payload.primary.type {
         case .path(let pathStep):
             AIPathRecommendationCardView(
                 pathStep: pathStep,

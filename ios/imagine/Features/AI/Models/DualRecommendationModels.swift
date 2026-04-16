@@ -4,8 +4,8 @@
 //
 //  Created for Dual Recommendation System
 //
-//  Data models for the dual recommendation system that displays
-//  both primary and secondary session options in the AI chat.
+//  Models for Sensei recommendations in AI chat: ``SingleRecommendation`` (current path),
+//  legacy ``DualRecommendation`` (persisted two-card transcripts), and shared pieces.
 //
 
 import Foundation
@@ -164,9 +164,60 @@ struct RoutineProgress: Equatable, Codable {
     }
 }
 
+// MARK: - Single Recommendation (current product path)
+
+/// One Sensei recommendation card with the same journey metadata as the legacy dual payload.
+struct SingleRecommendation: Equatable {
+    let item: RecommendationItem
+    let userMode: UserMode
+    /// Retained for analytics event tagging. Not used for recommendation logic.
+    let currentPhase: JourneyPhase
+    let routineProgress: RoutineProgress?
+    
+    /// Content ID for analytics
+    var contentId: String { item.contentId }
+}
+
+extension SingleRecommendation: Codable {
+    enum CodingKeys: String, CodingKey {
+        case item, userMode, currentPhase, routineProgress
+    }
+}
+
+// MARK: - Chat presentation payload (primary + optional secondary)
+
+/// Normalized shape for ``DualRecommendationMessageView`` so it can render both
+/// ``SingleRecommendation`` transcripts and legacy ``DualRecommendation`` transcripts.
+struct RecommendationChatPayload: Equatable {
+    let primary: RecommendationItem
+    let secondary: RecommendationItem?
+    let userMode: UserMode
+    let currentPhase: JourneyPhase
+    let routineProgress: RoutineProgress?
+    
+    init(single: SingleRecommendation) {
+        self.primary = single.item
+        self.secondary = nil
+        self.userMode = single.userMode
+        self.currentPhase = single.currentPhase
+        self.routineProgress = single.routineProgress
+    }
+    
+    init(dual: DualRecommendation) {
+        self.primary = dual.primary
+        self.secondary = dual.secondary
+        self.userMode = dual.userMode
+        self.currentPhase = dual.currentPhase
+        self.routineProgress = dual.routineProgress
+    }
+}
+
 // MARK: - Dual Recommendation
 
-/// The combined result with primary and optional secondary recommendation
+/// Legacy dual-card recommendation result (primary + optional secondary).
+///
+/// New chat messages should use ``SingleRecommendation`` instead; this type remains
+/// for decoding persisted conversations that still contain two-card payloads.
 struct DualRecommendation: Equatable {
     let primary: RecommendationItem
     let secondary: RecommendationItem?
@@ -176,7 +227,7 @@ struct DualRecommendation: Equatable {
     let currentPhase: JourneyPhase
     let routineProgress: RoutineProgress?
     
-    /// Whether we have both recommendations
+    /// Whether we have both recommendations (legacy dual-card transcripts only).
     var hasBothOptions: Bool {
         secondary != nil
     }

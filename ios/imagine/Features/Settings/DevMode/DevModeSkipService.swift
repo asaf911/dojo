@@ -113,7 +113,8 @@ final class DevModeSkipService: ObservableObject {
         // Routine count
         setRoutineCount(snapshot.routineCount)
 
-        // Timely recommendation override for dev testing.
+        // Timely recommendation override for dev testing (must stay aligned with
+        // `ExploreRecommendationManager.TimeOfDay.current()` and `TimelyRecommendationPolicy` slot rules).
         // Timely destinations force the time slot; all other destinations clear it.
         applyTimelySlotOverride(for: destination)
         

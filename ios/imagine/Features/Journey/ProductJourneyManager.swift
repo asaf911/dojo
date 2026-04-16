@@ -200,7 +200,7 @@ class ProductJourneyManager: ObservableObject {
         }
         
         // Personalized Phase — Track B users stay in dailyRoutines permanently.
-        // The recommendation engine (DualRecommendationOrchestrator) handles the progression
+        // The recommendation orchestrator handles the progression
         // from pre-recorded sessions to AI-custom meditations based on hurdle fit quality.
         // The routine counter is preserved in storage for analytics but no longer gates phase transitions.
         let routineCount = getRoutineCompletionCount()

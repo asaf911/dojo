@@ -111,7 +111,10 @@ struct ChatMessage: Identifiable, Codable {
     /// Explore session recommendation from Sensei (pre-recorded sessions)
     let exploreRecommendation: AudioFile?
     
-    /// Dual recommendation with primary and secondary options
+    /// Current product path: one Sensei recommendation card with journey metadata.
+    let singleRecommendation: SingleRecommendation?
+    
+    /// Legacy persisted transcripts may still contain two-card dual recommendations.
     let dualRecommendation: DualRecommendation?
     
     /// Post-session prompt asking if the user wants to meditate more
@@ -131,6 +134,7 @@ struct ChatMessage: Identifiable, Codable {
         heartRateData: ChatHeartRateData? = nil,
         pathRecommendation: PathStep? = nil,
         exploreRecommendation: AudioFile? = nil,
+        singleRecommendation: SingleRecommendation? = nil,
         dualRecommendation: DualRecommendation? = nil,
         postSessionPrompt: PostSessionPrompt? = nil,
         timestamp: Date = Date()
@@ -146,6 +150,7 @@ struct ChatMessage: Identifiable, Codable {
         self.heartRateData = heartRateData
         self.pathRecommendation = pathRecommendation
         self.exploreRecommendation = exploreRecommendation
+        self.singleRecommendation = singleRecommendation
         self.dualRecommendation = dualRecommendation
         self.postSessionPrompt = postSessionPrompt
         self.timestamp = timestamp
@@ -166,7 +171,13 @@ struct ChatMessage: Identifiable, Codable {
         exploreRecommendation != nil
     }
     
+    /// Convenience check: structured Sensei recommendation (single current path or legacy dual).
+    var isStructuredSenseiRecommendation: Bool {
+        singleRecommendation != nil || dualRecommendation != nil
+    }
+    
     /// Convenience check: is this a dual recommendation message?
+    @available(*, deprecated, renamed: "isStructuredSenseiRecommendation")
     var isDualRecommendation: Bool {
         dualRecommendation != nil
     }
@@ -178,35 +189,41 @@ struct ChatMessage: Identifiable, Codable {
     
     init(message: SenseiOnboardingMessage, id: UUID = UUID(), timestamp: Date = Date()) {
         let text = Self.formattedMessageText(for: message)
-        self.init(id: id, content: text, isUser: false, meditation: nil, senseiMessage: message, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: text, isUser: false, meditation: nil, senseiMessage: message, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
     }
     
     init(question: SenseiOnboardingQuestion, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: question.question, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: question, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: question.question, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: question, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
     }
     
     init(promptEducation: SenseiOnboardingPromptEducation, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: promptEducation.preamble, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: promptEducation, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: promptEducation.preamble, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: promptEducation, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
     }
     
     /// Convenience initializer for path recommendation messages
     init(pathStep: PathStep, recommendationText: String, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: recommendationText, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: pathStep, exploreRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: recommendationText, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: pathStep, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
     }
     
     /// Convenience initializer for explore recommendation messages
     init(exploreSession: AudioFile, recommendationText: String, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: recommendationText, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: exploreSession, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: recommendationText, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: exploreSession, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
     }
     
-    /// Convenience initializer for dual recommendation messages
+    /// Convenience initializer for single Sensei recommendation messages.
+    init(singleRecommendation: SingleRecommendation, id: UUID = UUID(), timestamp: Date = Date()) {
+        self.init(id: id, content: singleRecommendation.item.introMessage, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: singleRecommendation, dualRecommendation: nil, postSessionPrompt: nil, timestamp: timestamp)
+    }
+    
+    /// Convenience initializer for legacy dual recommendation messages.
+    @available(*, deprecated, message: "Use init(singleRecommendation:) for new messages.")
     init(dualRecommendation: DualRecommendation, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: dualRecommendation.primary.introMessage, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, dualRecommendation: dualRecommendation, postSessionPrompt: nil, timestamp: timestamp)
+        self.init(id: id, content: dualRecommendation.primary.introMessage, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: dualRecommendation, postSessionPrompt: nil, timestamp: timestamp)
     }
     
     /// Convenience initializer for post-session prompt messages
     init(postSessionPrompt: PostSessionPrompt, question: String, id: UUID = UUID(), timestamp: Date = Date()) {
-        self.init(id: id, content: question, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, dualRecommendation: nil, postSessionPrompt: postSessionPrompt, timestamp: timestamp)
+        self.init(id: id, content: question, isUser: false, meditation: nil, senseiMessage: nil, senseiQuestion: nil, senseiPromptEducation: nil, postPracticeContent: nil, heartRateData: nil, pathRecommendation: nil, exploreRecommendation: nil, singleRecommendation: nil, dualRecommendation: nil, postSessionPrompt: postSessionPrompt, timestamp: timestamp)
     }
     
     private static func formattedMessageText(for message: SenseiOnboardingMessage) -> String {

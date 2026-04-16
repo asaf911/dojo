@@ -135,10 +135,29 @@ class AIConversationState: ObservableObject {
         return message.id
     }
     
-    /// Adds a dual recommendation message with primary and optional secondary options
+    /// Adds one Sensei recommendation (path, explore, or custom) with journey metadata.
+    @discardableResult
+    func addSingleRecommendation(_ recommendation: SingleRecommendation) -> UUID {
+        let message = ChatMessage(singleRecommendation: recommendation)
+        conversation.append(message)
+        latestAIMessageId = message.id
+        isTyping = true
+        isTypingComplete = false
+        visibleButtons.removeAll()
+        logger.aiChat("🧠 AI_DEBUG [REC] addSingleRecommendation id=\(message.id) type=\(recommendation.item.type.analyticsType)")
+        return message.id
+    }
+    
+    /// Legacy dual-card message (primary + optional secondary).
+    @available(*, deprecated, message: "Use addSingleRecommendation(_:).")
     @discardableResult
     func addDualRecommendation(_ recommendation: DualRecommendation) -> UUID {
-        let message = ChatMessage(dualRecommendation: recommendation)
+        let message = ChatMessage(
+            content: recommendation.primary.introMessage,
+            isUser: false,
+            singleRecommendation: nil,
+            dualRecommendation: recommendation
+        )
         conversation.append(message)
         latestAIMessageId = message.id
         isTyping = true
@@ -305,7 +324,7 @@ class AIConversationState: ObservableObject {
             logger.aiChat("🧠 AI_DEBUG [CHAT_LOAD] Successfully decoded \(saved.count) messages")
             
             // Filter out any empty placeholder AI bubbles and cap size
-            let filtered = saved.filter { $0.isUser || !$0.content.isEmpty || $0.meditation != nil || $0.senseiMessage != nil || $0.senseiQuestion != nil || $0.senseiPromptEducation != nil || $0.postPracticeContent != nil || $0.pathRecommendation != nil || $0.exploreRecommendation != nil || $0.dualRecommendation != nil || $0.postSessionPrompt != nil }
+            let filtered = saved.filter { $0.isUser || !$0.content.isEmpty || $0.meditation != nil || $0.senseiMessage != nil || $0.senseiQuestion != nil || $0.senseiPromptEducation != nil || $0.postPracticeContent != nil || $0.pathRecommendation != nil || $0.exploreRecommendation != nil || $0.singleRecommendation != nil || $0.dualRecommendation != nil || $0.postSessionPrompt != nil }
             conversation = Array(filtered.suffix(maxPersistedMessages))
             
             // Ensure no typing animation is triggered for restored messages
@@ -380,7 +399,7 @@ class AIConversationState: ObservableObject {
         }
         
         // Exclude temporary "Thinking..." placeholders (empty AI content without meditation)
-        let filtered = conversation.filter { $0.isUser || !$0.content.isEmpty || $0.meditation != nil || $0.senseiMessage != nil || $0.senseiQuestion != nil || $0.senseiPromptEducation != nil || $0.postPracticeContent != nil || $0.pathRecommendation != nil || $0.exploreRecommendation != nil || $0.dualRecommendation != nil || $0.postSessionPrompt != nil }
+        let filtered = conversation.filter { $0.isUser || !$0.content.isEmpty || $0.meditation != nil || $0.senseiMessage != nil || $0.senseiQuestion != nil || $0.senseiPromptEducation != nil || $0.postPracticeContent != nil || $0.pathRecommendation != nil || $0.exploreRecommendation != nil || $0.singleRecommendation != nil || $0.dualRecommendation != nil || $0.postSessionPrompt != nil }
         let trimmed = Array(filtered.suffix(maxPersistedMessages))
         
         // Verify encoding works before saving

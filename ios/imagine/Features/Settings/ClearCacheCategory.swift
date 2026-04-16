@@ -17,7 +17,9 @@ enum ClearCacheCategory: CaseIterable {
     case onboarding   // App onboarding only
     case pathProgress // Path step completion progress
     case aiChatHistory // AI chat conversation history
-    case dailyRecommendationSlot // Daily timely-slot tracking keys
+    /// Daily timely-slot tracking keys (`lastTimelyLaunchSuggestedSlot`, non-timely, legacy, dev overrides).
+    /// Clearing these resets the same contract `TimelyRecommendationPolicy` + dev skips rely on.
+    case dailyRecommendationSlot
     case clearUIDAndSignOut  // New case for complete reset with sign out
 
     var displayName: String {

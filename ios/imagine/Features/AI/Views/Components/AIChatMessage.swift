@@ -31,6 +31,7 @@ struct AIChatMessage: View {
     /// Whether this message contains card content that should span full width
     private var hasCardContent: Bool {
         message.meditation != nil ||
+        message.singleRecommendation != nil ||
         message.dualRecommendation != nil ||
         message.pathRecommendation != nil ||
         message.exploreRecommendation != nil ||
@@ -95,11 +96,21 @@ struct AIChatMessage: View {
                             isLatestMessage: isLatestMessage,
                             onPlay: onPlay
                         )
-                    } else if let dualRec = message.dualRecommendation {
-                        // Dual recommendation with primary and secondary options
+                    } else if let single = message.singleRecommendation {
                         DualRecommendationMessageView(
                             message: message,
-                            dualRecommendation: dualRec,
+                            payload: RecommendationChatPayload(single: single),
+                            conversationState: conversationState,
+                            manager: manager,
+                            isLatestMessage: isLatestMessage,
+                            onPathPlay: onDualPathPlay,
+                            onExplorePlay: onDualExplorePlay,
+                            onCustomPlay: onDualCustomPlay
+                        )
+                    } else if let dualRec = message.dualRecommendation {
+                        DualRecommendationMessageView(
+                            message: message,
+                            payload: RecommendationChatPayload(dual: dualRec),
                             conversationState: conversationState,
                             manager: manager,
                             isLatestMessage: isLatestMessage,
@@ -323,7 +334,7 @@ struct AIChatMessage: View {
             
             // Note: Path next-step and path-complete recommendations are now handled
             // as separate dual recommendation messages after post-practice typing completes,
-            // triggered by AIChatContainerView via DualRecommendationOrchestrator.
+            // triggered by AIChatContainerView via the recommendation orchestrator.
         }
         .onAppear {
             if isLatestMessage && conversationState.isTyping {

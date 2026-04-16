@@ -7,7 +7,7 @@
 //  custom meditation prompt for hurdle-targeted content).
 //
 //  Usage:
-//  - Read once in DualRecommendationOrchestrator.getDualRecommendation()
+//  - Read when ``DualRecommendationOrchestrator`` builds ``RecommendationContext``
 //  - Pass to ExploreRecommendationManager.getTimeAppropriateSession(excluding:hurdleContext:)
 //  - Pass to MessageContext for personalized intro messages
 //
