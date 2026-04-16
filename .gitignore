@@ -93,3 +93,6 @@ node_modules
 
 # Local npm cache (optional; avoids broken ~/.npm permissions during firebase predeploy)
 .npm-cache/
+
+# Marketing web: local env overrides (e.g. GA in dev)
+web/.env*.local

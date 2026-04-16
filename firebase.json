@@ -15,6 +15,9 @@
   "hosting": {
     "public": "web/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "predeploy": ["npm --prefix web ci", "npm --prefix web run build"]
+    "predeploy": [
+      "npm --prefix web ci --cache .npm-cache",
+      "npm --prefix web run build"
+    ]
   }
 }
