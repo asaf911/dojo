@@ -24,6 +24,14 @@ import {
   resolveMeditationThemes,
   themeCompositionHints,
 } from "./meditationThemes";
+import {
+  pickBackgroundSoundForBlueprint,
+  pickBinauralBeatForBlueprint,
+  resolveBlueprintFromContext,
+  getBlueprintCueHintMerge,
+  vizChosenForBlueprintTerminal,
+  type MeditationBlueprint,
+} from "./meditationBlueprints";
 import { pickDisplayTitle } from "./aiMeditationDisplayTitle";
 
 export interface AIGeneratedTimer {
@@ -330,20 +338,34 @@ function buildFallbackMetadata(
   prefs: { isSleep: boolean; isEvening: boolean },
   catalogs: LoadedCatalogs,
   recentBackgroundSounds: string[] | undefined,
-  displayTitle: string
+  displayTitle: string,
+  blueprint: MeditationBlueprint | null
 ): { title: string; description: string; backgroundSoundId: string; binauralBeatId: string } {
   const soundIds = catalogs.backgroundSounds.map((s) => s.id);
   const beatIds = catalogs.binauralBeats.map((b) => b.id);
+  const bgPick = blueprint
+    ? pickBackgroundSoundForBlueprint(
+        catalogs.backgroundSounds,
+        "None",
+        blueprint.audioHints.backgroundSound,
+        recentBackgroundSounds
+      )
+    : pickWeightedRandomFromCatalog(
+        catalogs.backgroundSounds,
+        "None",
+        recentBackgroundSounds
+      );
   const bgId =
-    pickWeightedRandomFromCatalog(
-      catalogs.backgroundSounds,
-      "None",
-      recentBackgroundSounds
-    )?.id ??
+    bgPick?.id ??
     soundIds.find((id) => id !== "None") ??
     "SP";
-  const bbId =
-    pickRandomFromCatalog(catalogs.binauralBeats)?.id ?? beatIds[0] ?? "BB10";
+  const bbPick = blueprint
+    ? pickBinauralBeatForBlueprint(
+        catalogs.binauralBeats,
+        blueprint.audioHints.binauralBeat
+      )
+    : pickRandomFromCatalog(catalogs.binauralBeats);
+  const bbId = bbPick?.id ?? beatIds[0] ?? "BB10";
   return {
     title: displayTitle,
     description: "A guided meditation tailored to your request.",
@@ -365,6 +387,8 @@ export interface GenerateAIMeditationInput {
   exploreTimeOfDay?: string | null;
   /** Explicit theme tags from the client (canonical ids) */
   clientMeditationThemes?: string[];
+  /** Optional product blueprint id (e.g. timely.morning); server resolves structure + audio bias */
+  clientBlueprintId?: string | null;
 }
 
 export type { FractionalCompositionContext } from "./meditationThemes";
@@ -386,6 +410,7 @@ export async function generateAIMeditation(
     recentBackgroundSounds,
     exploreTimeOfDay,
     clientMeditationThemes,
+    clientBlueprintId,
   } = input;
 
   let duration =
@@ -436,6 +461,12 @@ export async function generateAIMeditation(
     prefs,
   });
 
+  const blueprint = resolveBlueprintFromContext({
+    clientBlueprintId: clientBlueprintId ?? null,
+    themes,
+    prefs,
+  });
+
   const evVariant = resolveEveningVisualizationVariant({
     prompt,
     llmWants: userOverrides?.wantsEveningVisualization ?? null,
@@ -456,16 +487,21 @@ export async function generateAIMeditation(
   } else if (userOverrides?.wantsMorningVisualization != null) {
     vizChosen =
       userOverrides.wantsMorningVisualization === "gratitude" ? "MV_GR" : "MV_KM";
-  } else if (evVariant != null && mvVariant == null) {
-    vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
-  } else if (mvVariant != null && evVariant == null) {
-    vizChosen = mvVariant === "MV_GR" ? "MV_GR" : "MV_KM";
-  } else if (evVariant != null && mvVariant != null) {
-    // Single visualization: prefer evening when both theme resolvers fire.
-    vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
-    functions.logger.info(
-      `${TAG_AI} vizArb ev=${evVariant} mv=${mvVariant} -> ${vizChosen}`
-    );
+  } else if (blueprint) {
+    vizChosen = vizChosenForBlueprintTerminal(blueprint, themes);
+  }
+
+  if (vizChosen == null) {
+    if (evVariant != null && mvVariant == null) {
+      vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
+    } else if (mvVariant != null && evVariant == null) {
+      vizChosen = mvVariant === "MV_GR" ? "MV_GR" : "MV_KM";
+    } else if (evVariant != null && mvVariant != null) {
+      vizChosen = evVariant === "EV_GR" ? "EV_GR" : "EV_KM";
+      functions.logger.info(
+        `${TAG_AI} vizArb ev=${evVariant} mv=${mvVariant} -> ${vizChosen}`
+      );
+    }
   }
 
   const userPinnedModuleMinutes =
@@ -473,12 +509,36 @@ export async function generateAIMeditation(
     overrides.bodyScanMinutes != null ||
     overrides.breathMinutes != null;
 
+  const isNightDual = blueprint?.terminalMode === "NIGHT_IM_THEN_EV";
+
+  if (
+    isNightDual &&
+    !userPinnedModuleMinutes &&
+    overrides.focusType !== "IM" &&
+    overrides.focusType !== "NF"
+  ) {
+    const minEv = Math.max(
+      2,
+      minFocusMinutesForVisualizationFocus(duration, prompt)
+    );
+    const minIm = 1;
+    allocation = rebalanceAllocationForMinimumFocus(
+      allocation,
+      duration,
+      minEv + minIm
+    );
+    functions.logger.info(
+      `${TAG_AI} night_dual rebalance minIm=${minIm} minEv=${minEv} focus=${allocation.focus}`
+    );
+  }
+
   const shouldReserveVisualizationViz =
     vizChosen != null &&
     !prefs.isSleep &&
     overrides.focusType !== "IM" &&
     overrides.focusType !== "NF" &&
-    !userPinnedModuleMinutes;
+    !userPinnedModuleMinutes &&
+    !isNightDual;
 
   if (shouldReserveVisualizationViz) {
     const minFocus = minFocusMinutesForVisualizationFocus(duration, prompt);
@@ -493,20 +553,22 @@ export async function generateAIMeditation(
   }
 
   const themeHintOptions =
-    vizChosen != null && allocation.focus > 0
-      ? {
-          forcedFocusFractionalId:
-            vizChosen === "EV_GR"
-              ? ("EV_GR_FRAC" as const)
-              : vizChosen === "EV_KM"
-                ? ("EV_KM_FRAC" as const)
-                : vizChosen === "MV_GR"
-                  ? ("MV_GR_FRAC" as const)
-                  : ("MV_KM_FRAC" as const),
-        }
-      : undefined;
+    isNightDual
+      ? undefined
+      : vizChosen != null && allocation.focus > 0
+        ? {
+            forcedFocusFractionalId:
+              vizChosen === "EV_GR"
+                ? ("EV_GR_FRAC" as const)
+                : vizChosen === "EV_KM"
+                  ? ("EV_KM_FRAC" as const)
+                  : vizChosen === "MV_GR"
+                    ? ("MV_GR_FRAC" as const)
+                    : ("MV_KM_FRAC" as const),
+          }
+        : undefined;
 
-  const { fractionalContext: fractionalCompositionContext, cueHints } =
+  let { fractionalContext: fractionalCompositionContext, cueHints } =
     themeCompositionHints(
       themes,
       prefs,
@@ -514,6 +576,25 @@ export async function generateAIMeditation(
       allocation.focus,
       themeHintOptions
     );
+
+  const userChoseImNf =
+    overrides.focusType === "IM" || overrides.focusType === "NF";
+  if (blueprint && !userChoseImNf) {
+    const patch = getBlueprintCueHintMerge({
+      blueprint,
+      themes,
+      prefs,
+      focusMinutes: allocation.focus,
+      userChoseImNf: false,
+    });
+    if (patch) {
+      if (patch.cueHints.secondFocusFractionalId) {
+        delete cueHints.focusFractionalId;
+      }
+      Object.assign(fractionalCompositionContext, patch.fractionalContext);
+      Object.assign(cueHints, patch.cueHints);
+    }
+  }
 
   const bodyScanDirectionForCue =
     userOverrides?.bodyScanDirection === "up" ||
@@ -579,23 +660,40 @@ export async function generateAIMeditation(
     );
     const beatIds = catalogs.binauralBeats.map((b) => b.id);
     const soundIds = catalogs.backgroundSounds.map((s) => s.id);
+    const bgPick = blueprint
+      ? pickBackgroundSoundForBlueprint(
+          catalogs.backgroundSounds,
+          "None",
+          blueprint.audioHints.backgroundSound,
+          recentBackgroundSounds
+        )
+      : pickWeightedRandomFromCatalog(
+          catalogs.backgroundSounds,
+          "None",
+          recentBackgroundSounds
+        );
+    const bbFromBlueprint = blueprint
+      ? pickBinauralBeatForBlueprint(
+          catalogs.binauralBeats,
+          blueprint.audioHints.binauralBeat
+        )
+      : undefined;
     metadata = {
       title: displayTitle,
       description: ai.description?.trim() || "A guided meditation tailored to your request.",
       backgroundSoundId:
-        pickWeightedRandomFromCatalog(
-          catalogs.backgroundSounds,
-          "None",
-          recentBackgroundSounds
-        )?.id ??
+        bgPick?.id ??
         soundIds.find((id) => id !== "None") ??
         "SP",
       binauralBeatId:
-        ai.binauralBeatId && beatIds.includes(ai.binauralBeatId)
+        (bbFromBlueprint?.id && beatIds.includes(bbFromBlueprint.id)
+          ? bbFromBlueprint.id
+          : undefined) ??
+        (ai.binauralBeatId && beatIds.includes(ai.binauralBeatId)
           ? ai.binauralBeatId
-          : pickRandomFromCatalog(catalogs.binauralBeats)?.id ??
-            beatIds[0] ??
-            "BB10",
+          : pickRandomFromCatalog(catalogs.binauralBeats)?.id) ??
+        beatIds[0] ??
+        "BB10",
     };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
@@ -607,7 +705,8 @@ export async function generateAIMeditation(
       prefs,
       catalogs,
       recentBackgroundSounds,
-      displayTitle
+      displayTitle,
+      blueprint
     );
     usedFallback = true;
   }

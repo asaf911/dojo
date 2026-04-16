@@ -44,6 +44,8 @@
 		3F01D9D104950AA3767D1859 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64A5BD069478A86C6E10B88 /* AuthService.swift */; };
 		4117442ACEF57187212762B0 /* ExploreRecommendationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */; };
 		TMELYPLCY01BUILD00001 /* TimelyRecommendationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */; };
+		MRNGAIPRMPT01BUILD01 /* MorningTimelyMeditationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */; };
+		SMEDBP01BUILD00001 /* SenseiMeditationBlueprintID.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */; };
 		43FA8C9330363FC8C2BE7EB8 /* PreviewMeditationContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F93969AB422354CC4EF62BD /* PreviewMeditationContent.swift */; };
 		454D50864E50C0B4B5B66C92 /* FractionalModules+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EAF3304F3CEDB992799F57C /* FractionalModules+Mapping.swift */; };
 		47280EC18D2C7C4C710056AE /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA90476AFE4FB30399A33A2 /* UserProfile.swift */; };
@@ -471,6 +473,8 @@
 		5B6DD32FB36DFDA5BBBB03BD /* GlassEffectModifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlassEffectModifier.swift; sourceTree = "<group>"; };
 		603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExploreRecommendationManager.swift; sourceTree = "<group>"; };
 		TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimelyRecommendationPolicy.swift; sourceTree = "<group>"; };
+		MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningTimelyMeditationPrompt.swift; sourceTree = "<group>"; };
+		SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiMeditationBlueprintID.swift; sourceTree = "<group>"; };
 		6403F55772AE3E2AA8F914AB /* Last7DaysChartView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Last7DaysChartView.swift; path = imagine/Features/Insights/Last7DaysChartView.swift; sourceTree = SOURCE_ROOT; };
 		6694B8E099A652B2D47D7336 /* SenseiStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiStyle.swift; sourceTree = "<group>"; };
 		6CB71ED255650E85F9E83427 /* OnboardingResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingResponses.swift; sourceTree = "<group>"; };
@@ -1435,6 +1439,8 @@
 				4B806BBAE3BDBBA7A7E5A025 /* UnifiedPostSessionManager.swift */,
 				603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */,
 				TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */,
+				MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */,
+				SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */,
 				304FB0E0009D89CE955A3E06 /* DualRecommendationOrchestrator.swift */,
 				305FC1F1110E9ADF066B4F17 /* RecommendationMessageService.swift */,
 				E4B5DBE34F20A0F88337B16F /* HurdleRecommendationContext.swift */,
@@ -2431,6 +2437,8 @@
 				A14E3CE71F36CA88965AAFB6 /* AnalyticsRouter.swift in Sources */,
 				4117442ACEF57187212762B0 /* ExploreRecommendationManager.swift in Sources */,
 				TMELYPLCY01BUILD00001 /* TimelyRecommendationPolicy.swift in Sources */,
+				MRNGAIPRMPT01BUILD01 /* MorningTimelyMeditationPrompt.swift in Sources */,
+				SMEDBP01BUILD00001 /* SenseiMeditationBlueprintID.swift in Sources */,
 				B211CA907177F10959DD6D1D /* JourneyPhase.swift in Sources */,
 				628BFD615ABAAE55E1105C0F /* JourneyRecommendation.swift in Sources */,
 				EFBEA0CF7A2FAB6503A7CA36 /* ProductJourneyManager.swift in Sources */,

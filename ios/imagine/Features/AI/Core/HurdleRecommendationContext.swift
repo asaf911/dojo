@@ -8,7 +8,7 @@
 //
 //  Usage:
 //  - Read when ``DualRecommendationOrchestrator`` builds ``RecommendationContext``
-//  - Pass to ExploreRecommendationManager.getTimeAppropriateSession(excluding:hurdleContext:)
+//  - Threaded into custom-meditation prompts (Explore catalog is Library-only for suggestions).
 //  - Pass to MessageContext for personalized intro messages
 //
 //  Hurdle IDs mirror HurdleScreenContent.HurdleOption.id from onboarding.

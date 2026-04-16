@@ -3,9 +3,34 @@ import { test } from "node:test";
 import {
   allocatePhases,
   allocatePhasesFromOverrides,
+  extractSessionPreferences,
   minFocusMinutesForMorningVisualization,
+  promptIndicatesSleepPracticeIntent,
   rebalanceAllocationForMinimumFocus,
 } from "./phaseAllocation";
+
+test("promptIndicatesSleepPracticeIntent: negated sleep copy (morning blueprint) → false", () => {
+  const p =
+    "never sleep hypnosis. Do not use sleep, goodnight, or drift to sleep cues. Morning visualization.";
+  assert.equal(promptIndicatesSleepPracticeIntent(p.toLowerCase()), false);
+});
+
+test("promptIndicatesSleepPracticeIntent: explicit sleep meditation → true", () => {
+  assert.equal(
+    promptIndicatesSleepPracticeIntent(
+      "Create a 10-minute sleep meditation to quiet my mind".toLowerCase()
+    ),
+    true
+  );
+});
+
+test("extractSessionPreferences: morning blueprint with sleep words → isSleep false", () => {
+  const prefs = extractSessionPreferences(
+    "Morning meditation. Never sleep hypnosis. Do not use sleep in the title."
+  );
+  assert.equal(prefs.isSleep, false);
+  assert.equal(prefs.isMorning, true);
+});
 
 test("minFocusMinutesForMorningVisualization: 4m default → 2", () => {
   assert.equal(

@@ -265,13 +265,13 @@ enum JourneySkipDestination: String, CaseIterable {
         case .customPractices:
             return "Track B (mind_wont_slow_down) — 3/3 sessions, full AI customization"
         case .timelyMorning:
-            return "Force morning timely recommendation in AI chat (slot override)"
+            return "Force morning timely in chat (slot override); keeps existing Sensei messages"
         case .timelyNoon:
-            return "Force noon timely recommendation in AI chat (slot override)"
+            return "Force noon timely in chat (slot override); keeps existing Sensei messages"
         case .timelyEvening:
-            return "Force evening timely recommendation in AI chat (slot override)"
+            return "Force evening timely in chat (slot override); keeps existing Sensei messages"
         case .timelyNight:
-            return "Force night timely recommendation in AI chat (slot override)"
+            return "Force night timely in chat (slot override); keeps existing Sensei messages"
         }
     }
     
@@ -307,6 +307,11 @@ enum JourneySkipDestination: String, CaseIterable {
         default:
             return nil
         }
+    }
+
+    /// Dev timely-slot skips preview recommendations without wiping the Sensei transcript.
+    var preservesChatHistoryForTimelySimulation: Bool {
+        timelySlotOverride != nil
     }
 }
 

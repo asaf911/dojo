@@ -147,7 +147,7 @@ class AIRequestManager: ObservableObject {
                 logger.eventMessage("🤖 AI_MEDITATION_UI: Calling AI service...")
 
                 // Build context for path/explore guidance; capture step/session for notifications
-                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds, exploreMeditationThemes) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?, [String]?) in
+                let (pathInfo, exploreInfo, capturedNextStep, capturedSession, pathAllCompleted, lastMeditationDuration, recentBackgroundSounds, exploreMeditationThemes, exploreBlueprintId) = await MainActor.run { () -> (AIServerRequestContext.PathInfo?, AIServerRequestContext.ExploreInfo?, PathStep?, AudioFile?, Bool, Int?, [String]?, [String]?, String?) in
                     ExploreRecommendationManager.shared.loadAudioFiles()
                     let pm = PathProgressManager.shared
                     let em = ExploreRecommendationManager.shared
@@ -165,6 +165,7 @@ class AIRequestManager: ObservableObject {
                     var explore: AIServerRequestContext.ExploreInfo?
                     var session: AudioFile?
                     var meditationThemes: [String]?
+                    var blueprintId: String?
                     if em.shouldRecommendExplore() || strongSelf.isExplicitPreRecordedRequest(trimmedPromptCopy),
                        let s = em.getTimeAppropriateSession() {
                         explore = AIServerRequestContext.ExploreInfo(
@@ -172,22 +173,20 @@ class AIRequestManager: ObservableObject {
                             timeOfDay: em.getCurrentTimeOfDayName()
                         )
                         session = s
-                        switch ExploreRecommendationManager.TimeOfDay.current() {
-                        case .morning: meditationThemes = ["morning"]
-                        case .noon: meditationThemes = ["noon"]
-                        case .evening: meditationThemes = ["evening"]
-                        case .night: meditationThemes = ["sleep"]
-                        }
-                        if ExploreRecommendationManager.TimeOfDay.current() == .night,
+                        let slot = ExploreRecommendationManager.TimeOfDay.current()
+                        meditationThemes = slot.senseiMeditationThemeTags
+                        blueprintId = slot.senseiMeditationBlueprintId.rawValue
+                        if slot == .night,
                            Self.promptSignalsExplicitMorning(trimmedPromptCopy) {
                             meditationThemes = nil
+                            blueprintId = nil
                         }
                     }
                     let lastDur: Int? = strongSelf.isModificationRequest(trimmedPromptCopy)
                         ? strongSelf.lastMeditation?.meditationConfiguration.duration
                         : nil
                     let recent: [String]? = strongSelf.recentBackgroundSoundIds.isEmpty ? nil : strongSelf.recentBackgroundSoundIds
-                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent, meditationThemes)
+                    return (path, explore, nextStep, session, pm.allStepsCompleted, lastDur, recent, meditationThemes, blueprintId)
                 }
 
                 let context = AIServerRequestContext(
@@ -195,7 +194,8 @@ class AIRequestManager: ObservableObject {
                     exploreInfo: exploreInfo,
                     lastMeditationDuration: lastMeditationDuration,
                     recentBackgroundSounds: recentBackgroundSounds,
-                    meditationThemes: exploreMeditationThemes
+                    meditationThemes: exploreMeditationThemes,
+                    blueprintId: exploreBlueprintId
                 )
                 let historyItems = historyCopy.map { ConversationHistoryItem(role: $0.isUser ? "user" : "assistant", content: $0.meditation?.description ?? $0.content) }
 

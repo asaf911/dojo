@@ -31,6 +31,8 @@ export interface AIRequestContext {
   recentBackgroundSounds?: string[];
   /** Optional canonical theme tags (morning, evening, noon, night, sleep, gratitude); merged with explore + prompt */
   meditationThemes?: string[];
+  /** Optional product blueprint id (e.g. timely.morning); see meditationBlueprints.ts */
+  blueprintId?: string | null;
 }
 
 export interface AIRequestBody {
@@ -418,6 +420,7 @@ export async function processAIRequest(
         recentBackgroundSounds: context.recentBackgroundSounds,
         exploreTimeOfDay: context.exploreInfo?.timeOfDay ?? null,
         clientMeditationThemes: context.meditationThemes,
+        clientBlueprintId: context.blueprintId ?? null,
       });
     const pkg = buildMeditationPackage(
       meditation,

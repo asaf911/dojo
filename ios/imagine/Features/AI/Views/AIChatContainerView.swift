@@ -64,8 +64,8 @@ struct AIChatContainerView: View {
         .onReceive(PostSessionMessageStore.shared.publisher) { report in
             handlePostPracticeReport(report)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .aiOnboardingCleared)) { _ in
-            handleOnboardingCleared()
+        .onReceive(NotificationCenter.default.publisher(for: .aiOnboardingCleared)) { notification in
+            handleOnboardingCleared(notification)
         }
         .onReceive(NotificationCenter.default.publisher(for: .aiTriggerSubscription)) { _ in
             handleSubscriptionTrigger()
@@ -633,22 +633,31 @@ struct AIChatContainerView: View {
         }
     }
     
-    private func handleOnboardingCleared() {
+    private func handleOnboardingCleared(_ notification: Notification = Notification(name: .aiOnboardingCleared)) {
+        let preserveSenseiConversation =
+            (notification.userInfo?[AIOnboardingClearedNotification.preserveSenseiConversationKey] as? Bool) == true
+
         #if DEBUG
         print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
-        print("📊 JOURNEY: [DEV_SKIP] handleOnboardingCleared() received!")
+        print("📊 JOURNEY: [DEV_SKIP] handleOnboardingCleared() received! preserveSenseiConversation=\(preserveSenseiConversation)")
         print("📊 JOURNEY: [DEV_SKIP] Slot state: \(ExploreRecommendationManager.shared.getLastSuggestedSlot() ?? "nil")")
         #endif
         
-        logger.aiChat("🧠 AI_DEBUG onboarding_notice received=aiOnboardingCleared")
-        SenseiOnboardingState.shared.resetForCurrentUser()
+        logger.aiChat("🧠 AI_DEBUG onboarding_notice received=aiOnboardingCleared preserve_chat=\(preserveSenseiConversation)")
+        if !preserveSenseiConversation {
+            SenseiOnboardingState.shared.resetForCurrentUser()
+        }
         resetDeferredRecommendationState()
         onboardingSteps = SenseiOnboardingScript.steps(firstName: SenseiOnboardingScript.currentFirstName())
         hasQueuedOnboarding = false
         activeActionMessageId = nil
         
-        // Clear conversation to ensure fresh start
-        conversationState.clearConversation()
+        if preserveSenseiConversation {
+            conversationState.loadIfNeeded()
+        } else {
+            // Clear conversation to ensure fresh start
+            conversationState.clearConversation()
+        }
         
         // Queue onboarding if needed
         let queued = queueOnboardingIfNeeded(force: true)

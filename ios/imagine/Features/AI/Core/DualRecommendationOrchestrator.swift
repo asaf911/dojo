@@ -10,8 +10,8 @@
 //  Step 3 — Select Primary  (mode-specific role)
 //  Step 4 — Select Secondary (deprecated: learn = complementary, personal = contrast)
 //
-//  Session selection (Explore vs Custom) is delegated entirely to
-//  RecommendationContextEngine — the orchestrator never branches on content type.
+//  Personal-mode session selection is delegated to RecommendationContextEngine (custom only).
+//  Path selection uses PathProgressManager directly in this class.
 //
 
 import Foundation
@@ -19,7 +19,7 @@ import Combine
 
 // MARK: - Dual Recommendation Orchestrator
 
-/// Coordinates Sensei recommendation selection for AI chat (path, explore, custom).
+/// Coordinates Sensei recommendation selection for AI chat (Path + custom meditations; no Explore catalog).
 ///
 /// The product path is a **single** recommendation; the legacy dual-card API remains
 /// for compatibility but is deprecated.
@@ -34,7 +34,6 @@ class DualRecommendationOrchestrator: ObservableObject {
 
     private let journeyManager  = ProductJourneyManager.shared
     private let pathManager     = PathProgressManager.shared
-    private let exploreManager  = ExploreRecommendationManager.shared
     private let messageService  = RecommendationMessageService.shared
     private let contextEngine   = RecommendationContextEngine.live
 
@@ -353,10 +352,9 @@ class DualRecommendationOrchestrator: ObservableObject {
         pathManager.shouldRecommendPath() && pathManager.nextStep != nil
     }
 
+    /// Pre-recorded Explore sessions are not offered as Sensei suggestions (Library only).
     func canRecommendExplore() -> Bool {
-        pathManager.allStepsCompleted &&
-        exploreManager.isLoaded &&
-        exploreManager.getTimeAppropriateSession() != nil
+        false
     }
 
     func isInTeaseCustomState() -> Bool {

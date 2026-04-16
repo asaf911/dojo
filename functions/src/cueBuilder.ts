@@ -207,16 +207,48 @@ function buildCuesFromAllocationFractional(
   }
 
   if (focus > 0) {
-    const focusFrac =
-      options?.themeCueHints?.focusFractionalId &&
+    const dualSecond = options?.themeCueHints?.secondFocusFractionalId;
+    const allowDual =
+      Boolean(dualSecond) &&
       merged.focusType !== "NF" &&
-      merged.focusType !== "IM"
-        ? options.themeCueHints.focusFractionalId
-        : merged.focusType === "NF"
-          ? "NF_FRAC"
-          : "IM_FRAC";
-    cues.push({ id: focusFrac, trigger: String(currentMinute) });
-    currentMinute += Math.min(10, focus);
+      merged.focusType !== "IM" &&
+      focus >= 2;
+
+    if (allowDual) {
+      const firstMinutes = Math.max(1, Math.floor(focus / 2));
+      const secondMinutes = focus - firstMinutes;
+      const firstFrac =
+        options?.themeCueHints?.focusFractionalId &&
+        merged.focusType !== "NF" &&
+        merged.focusType !== "IM"
+          ? options.themeCueHints.focusFractionalId
+          : merged.focusType === "NF"
+            ? "NF_FRAC"
+            : "IM_FRAC";
+      cues.push({
+        id: firstFrac,
+        trigger: String(currentMinute),
+        durationMinutes: firstMinutes,
+      });
+      currentMinute += firstMinutes;
+      cues.push({
+        id: dualSecond!,
+        trigger: String(currentMinute),
+        durationMinutes: secondMinutes,
+      });
+      currentMinute += secondMinutes;
+    } else {
+      const focusFrac =
+        options?.themeCueHints?.focusFractionalId &&
+        merged.focusType !== "NF" &&
+        merged.focusType !== "IM"
+          ? options.themeCueHints.focusFractionalId
+          : merged.focusType === "NF"
+            ? "NF_FRAC"
+            : "IM_FRAC";
+      cues.push({ id: focusFrac, trigger: String(currentMinute) });
+      currentMinute += Math.min(10, focus);
+    }
   }
 
   return cues;

@@ -2,24 +2,20 @@
 //  RecommendationContextEngine.swift
 //  imagine
 //
-//  Session selection service for the dual recommendation framework.
+//  Session selection service for Sensei recommendations (custom meditations; Path is separate).
 //  Responsible for one thing: given a role and context, return the most
 //  appropriate session. Whether that session is Explore or Custom is an
 //  implementation detail — the caller only cares about the result.
 //
-//  Three selection roles:
+//  Three selection roles (Sensei suggestions are **custom meditations only**; Path
+//  recommendations come from PathProgressManager, not this engine. Pre-recorded Explore
+//  sessions are discovered in Library — not suggested here.)
 //
-//  selectContextual    — Personal Mode primary.
-//                        Hurdle-matched Explore if available; otherwise Custom.
+//  selectContextual    — Personal Mode primary: always Custom.
 //
-//  selectContrast      — Personal Mode secondary.
-//                        Flips the primary's content type for balance and variety.
-//                        Explore primary → Custom secondary.
-//                        Custom primary  → Explore secondary (or shorter Custom).
+//  selectContrast      — Personal Mode secondary (legacy dual): Custom variants only.
 //
-//  selectComplementary — Learn Mode secondary.
-//                        Contextual session that complements a Path primary.
-//                        Explore (hurdle-biased) if available; otherwise Custom.
+//  selectComplementary — Learn Mode secondary (legacy dual): Custom only.
 //
 
 import Foundation
@@ -94,7 +90,6 @@ struct RecommendationContextEngine {
 extension RecommendationContextEngine {
 
     @MainActor static let live: RecommendationContextEngine = {
-        let exploreManager = ExploreRecommendationManager.shared
         let messageService = RecommendationMessageService.shared
 
         // Technique lenses diversify custom meditation prompts so consecutive
@@ -122,6 +117,13 @@ extension RecommendationContextEngine {
         }
 
         func buildCustomPrompt(duration: Int, context: RecommendationContext) -> String {
+            if context.timeOfDay == .morning {
+                return MorningTimelyMeditationPrompt.buildCreatePrompt(
+                    duration: duration,
+                    context: context
+                )
+            }
+
             let lens = lenses.randomElement() ?? lenses[0]
 
             if context.isFirstCustomMeditation {
@@ -152,11 +154,19 @@ extension RecommendationContextEngine {
         func generateCustom(duration: Int, context: RecommendationContext) async -> AITimerResponse? {
             let prompt = buildCustomPrompt(duration: duration, context: context)
             logger.aiChat("🎯 CTX_ENGINE: generating custom prompt='\(prompt)'")
+            let aiContext = AIServerRequestContext(
+                pathInfo: nil,
+                exploreInfo: nil,
+                lastMeditationDuration: nil,
+                recentBackgroundSounds: nil,
+                meditationThemes: context.timeOfDay.senseiMeditationThemeTags,
+                blueprintId: context.timeOfDay.senseiMeditationBlueprintId.rawValue
+            )
             do {
                 let response = try await AIRequestService.shared.processAIRequest(
                     prompt: prompt,
                     conversationHistory: [],
-                    context: nil,
+                    context: aiContext,
                     triggerContext: "RecommendationContextEngine|generateCustom"
                 )
                 if case .meditation(let package) = response.content {
@@ -176,35 +186,8 @@ extension RecommendationContextEngine {
         let selectContextual: @MainActor (_ context: RecommendationContext) async -> RecommendationItem? = { context in
             let timeOfDayName = context.timeOfDay.displayName
 
-            // Hurdle-matched Explore is the most personalised structured option.
-            if exploreManager.isLoaded,
-               let exploreSession = exploreManager.getTimeAppropriateSession(
-                   excluding: context.excludedContentIds,
-                   hurdleContext: context.hurdleContext,
-                   requireHurdleMatch: true
-               ) {
-                logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Explore hurdle-match → '\(exploreSession.title)'")
-                let message: String
-                if context.contextMessage != nil {
-                    message = ""  // Context replaces intro on first welcome — skip API call
-                } else {
-                    message = await messageService.generateExplorePrimary(
-                        sessionTags: exploreSession.tags,
-                        timeOfDay: timeOfDayName,
-                        hurdleContext: context.hurdleContext
-                    )
-                }
-                return RecommendationItem(
-                    type: .explore(exploreSession),
-                    introMessage: message,
-                    welcomeGreeting: context.welcomeGreeting,
-                    isFirstWelcome: context.isFirstWelcome,
-                    contextMessage: context.contextMessage
-                )
-            }
-
-            // No hurdle-matched Explore — Custom is more personalised than a generic Explore session.
-            logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: No Explore hurdle-match → generating Custom")
+            // Personal track: Sensei suggests custom meditations only (Explore lives in Library).
+            logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Custom primary (Explore not offered in Sensei)")
             let primaryDuration = context.isFirstPersonalRecommendation ? 5 : 10
             guard let custom = await generateCustom(duration: primaryDuration, context: context) else {
                 logger.aiChat("🎯 CTX_ENGINE [CONTEXTUAL]: Custom generation failed")
@@ -214,7 +197,10 @@ extension RecommendationContextEngine {
             if context.contextMessage != nil {
                 message = ""  // Context replaces intro on first welcome — skip API call
             } else {
-                message = await messageService.generateCustomOnlyPrimary(timeOfDay: timeOfDayName)
+                message = await messageService.generateCustomOnlyPrimary(
+                    timeOfDay: timeOfDayName,
+                    meditationDurationMinutes: primaryDuration
+                )
             }
             return RecommendationItem(
                 type: .custom(custom),
@@ -240,25 +226,9 @@ extension RecommendationContextEngine {
                 return RecommendationItem(type: .custom(custom), introMessage: message)
 
             case .custom, .path:
-                // Primary was generated (or path) → secondary should lean structured.
-                if exploreManager.isLoaded,
-                   let exploreSession = exploreManager.getTimeAppropriateSession(
-                       excluding: context.excludedContentIds,
-                       hurdleContext: context.hurdleContext
-                   ) {
-                    logger.aiChat("🎯 CTX_ENGINE [CONTRAST]: Primary=Custom → Explore secondary '\(exploreSession.title)'")
-                    let message = await messageService.generateExploreSecondary(
-                        sessionTags: exploreSession.tags,
-                        timeOfDay: timeOfDayName,
-                        hurdleContext: context.hurdleContext
-                    )
-                    return RecommendationItem(type: .explore(exploreSession), introMessage: message)
-                }
-
-                // No Explore available — shorter Custom duration as contrast-by-commitment.
-                // First Personal: secondary = 10 min (flipped for faster primary time-to-value).
+                // Primary was Custom or Path → secondary is Custom only (no Explore in Sensei).
                 let secondaryDuration = context.isFirstPersonalRecommendation ? 10 : 5
-                logger.aiChat("🎯 CTX_ENGINE [CONTRAST]: Primary=Custom, no Explore → \(secondaryDuration)-min Custom secondary")
+                logger.aiChat("🎯 CTX_ENGINE [CONTRAST]: Primary=Custom|Path → \(secondaryDuration)-min Custom secondary")
                 guard let shortCustom = await generateCustom(duration: secondaryDuration, context: context) else { return nil }
                 let shortMessage = await messageService.generateCustomSecondary(duration: secondaryDuration, timeOfDay: timeOfDayName)
                 return RecommendationItem(type: .custom(shortCustom), introMessage: shortMessage)
@@ -270,24 +240,8 @@ extension RecommendationContextEngine {
         let selectComplementary: @MainActor (_ context: RecommendationContext) async -> RecommendationItem? = { context in
             let timeOfDayName = context.timeOfDay.displayName
 
-            // Try Explore biased toward hurdle but without a strict match requirement,
-            // so the Path user always gets a meaningful secondary.
-            if exploreManager.isLoaded,
-               let exploreSession = exploreManager.getTimeAppropriateSession(
-                   excluding: context.excludedContentIds,
-                   hurdleContext: context.hurdleContext
-               ) {
-                logger.aiChat("🎯 CTX_ENGINE [COMPLEMENTARY]: Explore → '\(exploreSession.title)'")
-                let message = await messageService.generateExploreSecondary(
-                    sessionTags: exploreSession.tags,
-                    timeOfDay: timeOfDayName,
-                    hurdleContext: context.hurdleContext
-                )
-                return RecommendationItem(type: .explore(exploreSession), introMessage: message)
-            }
-
-            // No Explore — Custom as complementary option.
-            logger.aiChat("🎯 CTX_ENGINE [COMPLEMENTARY]: No Explore → generating Custom secondary")
+            // Learn track secondary: Custom only (Path primary is separate; Explore in Library).
+            logger.aiChat("🎯 CTX_ENGINE [COMPLEMENTARY]: Custom secondary (Explore not offered in Sensei)")
             guard let custom = await generateCustom(duration: 10, context: context) else { return nil }
             let message = await messageService.generateCustomSecondaryAlt(timeOfDay: timeOfDayName)
             return RecommendationItem(type: .custom(custom), introMessage: message)

@@ -326,67 +326,19 @@ class ProductJourneyManager: ObservableObject {
         return .path(step: step, message: message, welcomeGreeting: welcomeGreeting)
     }
     
-    /// Get daily routine recommendation from ExploreRecommendationManager
-    /// NOTE: This returns synchronously from cached data. For async loading, use getDailyRoutineRecommendationAsync
+    /// Legacy journey hook for daily routines. Sensei no longer surfaces Explore catalog sessions here—
+    /// users open Library for pre-recorded routines; chat suggestions use custom meditations via
+    /// ``RecommendationContextEngine`` / ``DualRecommendationOrchestrator``.
     private func getDailyRoutineRecommendation() -> JourneyRecommendation? {
-        logger.aiChat("🧭 JOURNEY: getDailyRoutineRecommendation() called - isLoaded=\(ExploreRecommendationManager.shared.isLoaded)")
-        
-        // Check if already loaded
-        guard ExploreRecommendationManager.shared.isLoaded else {
-            logger.aiChat("🧭 JOURNEY: Daily routine recommendation skipped - ExploreRecommendationManager not yet loaded")
-            // Trigger a load for next time
-            ExploreRecommendationManager.shared.loadAudioFiles()
-            return nil
-        }
-        
-        guard ExploreRecommendationManager.shared.shouldRecommendExplore() else {
-            logger.aiChat("🧭 JOURNEY: Daily routine recommendation skipped - shouldRecommendExplore=false")
-            return nil
-        }
-        
-        guard let session = ExploreRecommendationManager.shared.getTimeAppropriateSession() else {
-            logger.aiChat("🧭 JOURNEY: Daily routine recommendation skipped - no time-appropriate session")
-            return nil
-        }
-        
-        let message = ExploreRecommendationManager.shared.getRecommendationMessage(for: session)
-        let timeOfDay = ExploreRecommendationManager.shared.getCurrentTimeOfDayName()
-        
-        logger.aiChat("🧭 JOURNEY: Returning daily routine recommendation for session=\(session.id) time=\(timeOfDay)")
-        return .dailyRoutine(session: session, message: message, timeOfDay: timeOfDay)
+        logger.aiChat("🧭 JOURNEY: getDailyRoutineRecommendation() — disabled (Sensei is custom-only; Explore in Library)")
+        return nil
     }
     
     /// Get daily routine recommendation asynchronously, waiting for audio files to load
     /// Use this when you need to ensure files are loaded before checking
     func getDailyRoutineRecommendationAsync(completion: @escaping (JourneyRecommendation?) -> Void) {
-        logger.aiChat("🧭 JOURNEY: getDailyRoutineRecommendationAsync() called")
-        
-        ExploreRecommendationManager.shared.loadAudioFilesWithCompletion { [weak self] in
-            guard self != nil else {
-                completion(nil)
-                return
-            }
-            
-            logger.aiChat("🧭 JOURNEY: Audio files loaded, checking for recommendation...")
-            
-            guard ExploreRecommendationManager.shared.shouldRecommendExplore() else {
-                logger.aiChat("🧭 JOURNEY: Daily routine recommendation skipped - shouldRecommendExplore=false (after async load)")
-                completion(nil)
-                return
-            }
-            
-            guard let session = ExploreRecommendationManager.shared.getTimeAppropriateSession() else {
-                logger.aiChat("🧭 JOURNEY: Daily routine recommendation skipped - no time-appropriate session (after async load)")
-                completion(nil)
-                return
-            }
-            
-            let message = ExploreRecommendationManager.shared.getRecommendationMessage(for: session)
-            let timeOfDay = ExploreRecommendationManager.shared.getCurrentTimeOfDayName()
-            
-            logger.aiChat("🧭 JOURNEY: ✅ Returning daily routine recommendation for session=\(session.id) time=\(timeOfDay)")
-            completion(.dailyRoutine(session: session, message: message, timeOfDay: timeOfDay))
-        }
+        logger.aiChat("🧭 JOURNEY: getDailyRoutineRecommendationAsync() — disabled (Sensei is custom-only; Explore in Library)")
+        completion(nil)
     }
     
     // MARK: - Routine Completion Tracking (for Customization Unlock)

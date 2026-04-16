@@ -3,7 +3,11 @@
  * Drives INT_FRAC greeting family, focus fractional (MV / EV vs IM/NF), and insight cue.
  */
 
-import type { SessionPreferences, UserStructureOverrides } from "./phaseAllocation";
+import type {
+  SessionPreferences,
+  UserStructureOverrides,
+} from "./phaseAllocation";
+import { promptIndicatesSleepPracticeIntent } from "./phaseAllocation";
 
 export const MEDITATION_THEME_IDS = [
   "morning",
@@ -36,6 +40,8 @@ export type ThemeCompositionHints = {
     | "MV_GR_FRAC"
     | "EV_KM_FRAC"
     | "EV_GR_FRAC";
+  /** Second focus row (e.g. night: IM then evening visualization). Requires `focus >= 2`. */
+  secondFocusFractionalId?: "EV_KM_FRAC" | "EV_GR_FRAC";
 };
 
 function isMeditationThemeId(s: string): s is MeditationThemeId {
@@ -77,11 +83,7 @@ export function extractThemesFromText(text: string): MeditationThemeId[] {
   ) {
     found.add("night");
   }
-  if (
-    /sleep|nap|bedtime|fall asleep|drift off|slumber|insomnia|good\s+night/.test(
-      lower
-    )
-  ) {
+  if (promptIndicatesSleepPracticeIntent(lower)) {
     found.add("sleep");
   }
   if (/gratitude|grateful|thankful/.test(lower)) {
@@ -193,12 +195,6 @@ export function resolveMorningVisualizationVariant(args: {
   if (args.llmWants === "key_moments") return "MV_KM";
 
   const lower = args.prompt.toLowerCase();
-  const vizCue =
-    /\bvisuali[sz]ations?\b|\bvisuali[sz]e\b|\bimagin(e|ing)\b|\benvision\b|\bkey\s+moments?\b|\bguided\s+imagery\b/.test(
-      lower
-    );
-  if (!vizCue) return null;
-
   const gratitudeTheme = args.mergedThemes.includes("gratitude");
   const morningTheme =
     args.mergedThemes.includes("morning") ||
@@ -210,9 +206,18 @@ export function resolveMorningVisualizationVariant(args: {
     if (eveningOnlyWithoutMorning(args.mergedThemes)) return null;
     return "MV_GR";
   }
-  if (morningTheme) {
+  // Morning (slot or copy): always reserve morning visualization — do not require
+  // the word "visualize" (product blueprints describe "Morning visualization" as a segment label).
+  if (morningTheme && !eveningOnlyWithoutMorning(args.mergedThemes)) {
     return "MV_KM";
   }
+
+  const vizCue =
+    /\bvisuali[sz]ations?\b|\bvisuali[sz]e\b|\bimagin(e|ing)\b|\benvision\b|\bkey\s+moments?\b|\bguided\s+imagery\b/.test(
+      lower
+    );
+  if (!vizCue) return null;
+
   return null;
 }
 

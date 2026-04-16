@@ -457,7 +457,10 @@ class ExploreRecommendationManager: ObservableObject {
         let prompt: String
         switch timeOfDay {
         case .morning:
-            prompt = "Create a 10-minute morning meditation to start my day with clarity and positive energy"
+            prompt = MorningTimelyMeditationPrompt.buildCreatePrompt(
+                duration: 10,
+                context: RecommendationContext(timeOfDay: timeOfDay)
+            )
         case .noon:
             prompt = "Create a 10-minute midday meditation to reset my focus and release tension"
         case .evening:

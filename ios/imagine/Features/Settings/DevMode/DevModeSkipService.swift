@@ -44,8 +44,16 @@ final class DevModeSkipService: ObservableObject {
         
         let snapshot = destination.stateSnapshot
         
-        // 1. Clear chat history for fresh experience
-        clearChatHistory()
+        // 1. Chat / scratch state: timely simulations keep Sensei history; other skips start fresh.
+        if destination.preservesChatHistoryForTimelySimulation {
+            DualRecommendationOrchestrator.shared.clearRecentlyRecommended()
+            ContextStateManager.shared.clear()
+            #if DEBUG
+            print("📊 DEV_SKIP: [CLEAR_CHAT] Timely sim — kept aiChatHistory; cleared recommendation dedup + context state")
+            #endif
+        } else {
+            clearChatHistory()
+        }
         
         // 2. Apply state snapshot
         applySnapshot(snapshot, for: destination)
@@ -60,7 +68,11 @@ final class DevModeSkipService: ObservableObject {
         }
         
         // 5. Notify UI to refresh
-        NotificationCenter.default.post(name: .aiOnboardingCleared, object: nil)
+        let onboardingClearedUserInfo: [AnyHashable: Any]? =
+            destination.preservesChatHistoryForTimelySimulation
+            ? [AIOnboardingClearedNotification.preserveSenseiConversationKey: true]
+            : nil
+        NotificationCenter.default.post(name: .aiOnboardingCleared, object: nil, userInfo: onboardingClearedUserInfo)
         
         // 6. Verify state
         let verification = verifyState(for: destination)

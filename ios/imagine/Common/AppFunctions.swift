@@ -358,3 +358,9 @@ extension Notification.Name {
     static let practiceCompletedNotification = Notification.Name("practiceCompletedNotification")
     static let pathStepCompletedNotification = Notification.Name("pathStepCompletedNotification")
 }
+
+/// UserInfo keys for ``Notification.Name.aiOnboardingCleared``.
+enum AIOnboardingClearedNotification {
+    /// When true, Sensei transcript is intentionally preserved (dev timely slot simulation).
+    static let preserveSenseiConversationKey = "preserveSenseiConversation"
+}

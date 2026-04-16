@@ -215,6 +215,7 @@ private struct PostMeditationsAIRequestBody: Encodable {
     let conversationHistory: [ConversationHistoryItem]
     let maxDuration: Int?
     let meditationThemes: [String]?
+    let blueprintId: String?
 }
 
 // MARK: - Service (struct of closures)
@@ -239,7 +240,8 @@ struct MeditationsService {
         _ conversationHistory: [ConversationHistoryItem],
         _ maxDuration: Int?,
         _ triggerContext: String?,
-        _ meditationThemes: [String]?
+        _ meditationThemes: [String]?,
+        _ blueprintId: String?
     ) async throws -> MeditationPackage
 }
 
@@ -315,7 +317,7 @@ extension MeditationsService {
                 throw error
             }
         },
-        createMeditationAI: { prompt, conversationHistory, maxDuration, triggerContext, meditationThemes in
+        createMeditationAI: { prompt, conversationHistory, maxDuration, triggerContext, meditationThemes, blueprintId in
             let tag = "[Server][Meditations-AI]"
             let trigger = triggerContext ?? "unknown"
             let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
@@ -329,7 +331,8 @@ extension MeditationsService {
                 prompt: prompt,
                 conversationHistory: conversationHistory,
                 maxDuration: maxDuration,
-                meditationThemes: meditationThemes
+                meditationThemes: meditationThemes,
+                blueprintId: blueprintId
             )
             request.httpBody = try JSONEncoder().encode(body)
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -386,7 +389,7 @@ extension MeditationsService {
                 }
             )
         },
-        createMeditationAI: { _, _, _, _, _ in
+        createMeditationAI: { _, _, _, _, _, _ in
             try await Task.sleep(nanoseconds: 500_000_000)
             return MeditationPackage(
                 id: "preview-ai-\(UUID().uuidString.prefix(8))",

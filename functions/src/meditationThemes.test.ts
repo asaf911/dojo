@@ -8,6 +8,7 @@ import {
   themesFromExploreTimeOfDay,
 } from "./meditationThemes";
 import type { UserStructureOverrides } from "./phaseAllocation";
+import { extractSessionPreferences } from "./phaseAllocation";
 
 test("themesFromExploreTimeOfDay maps midday → noon, night → sleep", () => {
   assert.deepEqual(themesFromExploreTimeOfDay("midday"), ["noon"]);
@@ -75,6 +76,43 @@ test("resolveMorningVisualizationVariant: morning + visualization → MV_KM", ()
     }),
     "MV_KM"
   );
+});
+
+test("resolveMorningVisualizationVariant: client morning theme without visualize keyword → MV_KM", () => {
+  assert.equal(
+    resolveMorningVisualizationVariant({
+      prompt: "Ten minute morning arc: intro, breath, body, closing.",
+      llmWants: null,
+      mergedThemes: ["morning"],
+    }),
+    "MV_KM"
+  );
+});
+
+test("resolveMeditationThemes: morning blueprint negations do not add sleep", () => {
+  const prompt =
+    "Create a 10-minute morning meditation. Never sleep hypnosis. Do not use sleep or goodnight in the title.";
+  const prefs = extractSessionPreferences(prompt);
+  const themes = resolveMeditationThemes({
+    prompt,
+    prefs,
+    clientThemes: ["morning"],
+  });
+  assert.ok(themes.includes("morning"));
+  assert.ok(!themes.includes("sleep"), `unexpected sleep in ${themes.join(",")}`);
+});
+
+test("themeCompositionHints: morning blueprint is not sleepish → MV_KM focus hint", () => {
+  const prompt =
+    "Create a 10-minute morning meditation. Never sleep hypnosis. Morning visualization.";
+  const prefs = extractSessionPreferences(prompt);
+  const themes = resolveMeditationThemes({
+    prompt,
+    prefs,
+    clientThemes: ["morning"],
+  });
+  const { cueHints } = themeCompositionHints(themes, prefs, {}, 3);
+  assert.equal(cueHints.focusFractionalId, "MV_KM_FRAC");
 });
 
 test("resolveMorningVisualizationVariant: gratitude + visualization → MV_GR", () => {

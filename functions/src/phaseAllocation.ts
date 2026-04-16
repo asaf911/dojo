@@ -268,6 +268,30 @@ export function allocatePhasesFromOverrides(
 }
 
 /**
+ * True when sleep-related wording means a **sleep / bedtime** practice request.
+ * Phrases like "never sleep hypnosis" or "not for sleep" (common in morning blueprints) must NOT set `isSleep`.
+ */
+export function promptIndicatesSleepPracticeIntent(lower: string): boolean {
+  if (
+    !/\b(sleep|nap|bedtime|fall\s+asleep|drift\s+off|slumber|insomnia|good\s+night)\b/.test(
+      lower
+    )
+  ) {
+    return false;
+  }
+  if (
+    /\b(never|not|no|without|avoid|don'?t)\b[\s\S]{0,80}\b(sleep|hypnosis|good\s*night)\b/i.test(
+      lower
+    )
+  ) {
+    return /\b(sleep\s+meditation|meditation\s+for\s+sleep|meditation\s+to\s+sleep|help\s+me\s+sleep|fall\s+asleep|restful\s+sleep)\b/i.test(
+      lower
+    );
+  }
+  return true;
+}
+
+/**
  * Extracts session preferences from user prompt (regex-based).
  */
 export function extractSessionPreferences(prompt: string): SessionPreferences {
@@ -280,10 +304,7 @@ export function extractSessionPreferences(prompt: string): SessionPreferences {
       lower.includes("no breath") ||
       lower.includes("without breath") ||
       lower.includes("remove breath"),
-    isSleep:
-      /sleep|nap|bedtime|fall asleep|drift off|slumber|insomnia|good\s+night/.test(
-        lower
-      ),
+    isSleep: promptIndicatesSleepPracticeIntent(lower),
     isMorning: /morning|moning|wake up|start day|energize|sunrise/.test(lower),
     isEvening: /evening|wind down|after work|sunset|end of day/.test(lower),
   };

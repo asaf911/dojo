@@ -38,6 +38,8 @@ enum MessageEssence: String, CaseIterable {
     case customPrimary
     case customSecondary
     case customOnlyPrimary
+    /// Morning custom card — matches structured 10m arc (intro, breathwork, body scan, visualization).
+    case customOnlyPrimaryMorning
     case customSecondaryAlt
     
     // Special
@@ -56,7 +58,7 @@ enum MessageEssence: String, CaseIterable {
         case .pathIntroContinue:
             return "Encourage continuing to next step - acknowledge progress. End with colon."
         case .explorePrimaryMorning:
-            return "Recommend morning session - reference the fresh start of the day. End with colon."
+            return "Recommend a morning session—fresh start, energizing (not sleep). Hint it rounds out breath, body, and light visualization. End with colon."
         case .explorePrimaryNoon:
             return "Recommend midday reset - reference taking a break. End with colon."
         case .explorePrimaryEvening:
@@ -81,6 +83,8 @@ enum MessageEssence: String, CaseIterable {
             return "Offer shorter custom option - start with 'Or', mention it's quicker. End with colon."
         case .customOnlyPrimary:
             return "Present time-appropriate custom meditation. End with colon."
+        case .customOnlyPrimaryMorning:
+            return "Present a custom morning meditation Sensei is creating for them: well-rounded flow (intro, breathwork, body scan, energizing morning visualization—not sleep). Use CONTEXT duration if given (5 or 10 minutes) so your wording matches length. One short warm line. End with colon."
         case .customSecondaryAlt:
             return "Offer custom meditation as alternative - start with 'Or'. End with colon."
         case .teaseCustomization:
@@ -131,6 +135,9 @@ enum MessageEssence: String, CaseIterable {
         case .customOnlyPrimary:
             let time = context.timeOfDay ?? "today"
             return "Here's one for your \(time):"
+        case .customOnlyPrimaryMorning:
+            let mins = context.duration ?? 10
+            return "Here's a rounded \(mins)-minute start to your morning:"
         case .customSecondaryAlt:
             return "Or I can create one for you:"
         case .teaseCustomization:
@@ -163,6 +170,7 @@ enum MessageEssence: String, CaseIterable {
         case .customPrimary: return 35
         case .customSecondary: return 40
         case .customOnlyPrimary: return 40
+        case .customOnlyPrimaryMorning: return 72
         case .customSecondaryAlt: return 40
         case .teaseCustomization: return 55
         case .firstWelcomeContext: return 130
@@ -480,9 +488,13 @@ final class RecommendationMessageService {
     }
     
     /// Generate custom-only primary message
-    func generateCustomOnlyPrimary(timeOfDay: String) async -> String {
-        let context = MessageContext(timeOfDay: timeOfDay)
-        return await generate(essence: .customOnlyPrimary, context: context)
+    /// - Parameter meditationDurationMinutes: When set, included in context (e.g. 5 vs 10 for morning copy).
+    func generateCustomOnlyPrimary(timeOfDay: String, meditationDurationMinutes: Int? = nil) async -> String {
+        let context = MessageContext(timeOfDay: timeOfDay, duration: meditationDurationMinutes)
+        let essence: MessageEssence = timeOfDay.lowercased() == "morning"
+            ? .customOnlyPrimaryMorning
+            : .customOnlyPrimary
+        return await generate(essence: essence, context: context)
     }
     
     /// Generate custom secondary alternative message

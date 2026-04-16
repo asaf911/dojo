@@ -20,6 +20,8 @@ struct AIServerRequestContext: Encodable {
     var recentBackgroundSounds: [String]?
     /// Optional canonical theme tags (`morning`, `evening`, `noon`, `night`, `sleep`, `gratitude`); merged with prompt and `exploreInfo.timeOfDay` on the server
     var meditationThemes: [String]?
+    /// Optional product blueprint id (e.g. `timely.morning`); must match `BLUEPRINT_IDS` in `functions/src/meditationBlueprints.ts`
+    var blueprintId: String?
 
     struct PathInfo: Encodable {
         let nextStepTitle: String

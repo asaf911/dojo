@@ -792,6 +792,8 @@ interface PostMeditationsRequest {
   maxDuration?: number;
   /** Canonical theme tags merged server-side with prompt-derived themes */
   meditationThemes?: string[];
+  /** Product blueprint id (e.g. timely.morning); optional */
+  blueprintId?: string | null;
 }
 
 function randomUUID(): string {
@@ -872,6 +874,7 @@ export const postMeditations = functions.runWith({
             catalogs,
             apiKey,
             clientMeditationThemes: body.meditationThemes,
+            clientBlueprintId: body.blueprintId ?? null,
           });
 
         if (!useFractionalModulesInCatalogsAndAI()) {
@@ -1205,6 +1208,8 @@ export const postAIRequest = functions.runWith({
             exploreInfo?: { sessionTitle: string; timeOfDay: string } | null;
             lastMeditationDuration?: number;
             recentBackgroundSounds?: string[];
+            meditationThemes?: string[];
+            blueprintId?: string | null;
           },
         },
         () => Promise.resolve(loadCatalogs()),
