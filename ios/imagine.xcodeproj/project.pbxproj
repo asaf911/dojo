@@ -43,9 +43,6 @@
 		3E48D8C567B368A4E29A209F /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0023DB63D898F4881E3B113 /* InsightsView.swift */; };
 		3F01D9D104950AA3767D1859 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B64A5BD069478A86C6E10B88 /* AuthService.swift */; };
 		4117442ACEF57187212762B0 /* ExploreRecommendationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */; };
-		TMELYPLCY01BUILD00001 /* TimelyRecommendationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */; };
-		MRNGAIPRMPT01BUILD01 /* MorningTimelyMeditationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */; };
-		SMEDBP01BUILD00001 /* SenseiMeditationBlueprintID.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */; };
 		43FA8C9330363FC8C2BE7EB8 /* PreviewMeditationContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F93969AB422354CC4EF62BD /* PreviewMeditationContent.swift */; };
 		454D50864E50C0B4B5B66C92 /* FractionalModules+Mapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EAF3304F3CEDB992799F57C /* FractionalModules+Mapping.swift */; };
 		47280EC18D2C7C4C710056AE /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA90476AFE4FB30399A33A2 /* UserProfile.swift */; };
@@ -141,7 +138,6 @@
 		A56A5E002D6D962800508EB1 /* CueConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */; };
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
-		CSAUTODUR01BUILD0001 /* CueSetting+CreateSessionDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSAUTODUR01FILE00001 /* CueSetting+CreateSessionDuration.swift */; };
 		A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */; };
 		A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */; };
 		A56B87AA2D35EE00002BEAD2 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */; };
@@ -273,6 +269,7 @@
 		CG0100032F00000100000001 /* CompositionGuidelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = CG0100012F00000100000001 /* CompositionGuidelines.swift */; };
 		CHATDIV00001BUILD0001 /* ChatDateDivider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CHATDIV00001FILEREF01 /* ChatDateDivider.swift */; };
 		CHATLIST0001BUILD0001 /* ChatListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CHATLIST0001FILEREF01 /* ChatListItem.swift */; };
+		CSAUTODUR01BUILD0001 /* CueSetting+CreateSessionDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSAUTODUR01FILE00001 /* CueSetting+CreateSessionDuration.swift */; };
 		D121646E130CBB80FF65EA97 /* GlassEffectModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B6DD32FB36DFDA5BBBB03BD /* GlassEffectModifier.swift */; };
 		D15A264EE305CE17EA83A8CB /* StatsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C78C44A92E02E6C34E38A19 /* StatsServiceProtocol.swift */; };
 		D1E469405DD4CB9F4128B17E /* ClearCacheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14637BFCD03A764F52B09EBE /* ClearCacheView.swift */; };
@@ -327,6 +324,7 @@
 		KB0100012FFF000100000001 /* ChatKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = KB0100022FFF000100000001 /* ChatKeyboardController.swift */; };
 		LEGACY_CONTINUE_BTN_BLD01 /* LegacyContinueButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */; };
 		MPA1C0MP2F00000100000002 /* MeditationPackage+AICompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */; };
+		MRNGAIPRMPT01BUILD01 /* MorningTimelyMeditationPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */; };
 		ONBOARDING_ANSWERS_BLD01 /* OnboardingAnswers.swift in Sources */ = {isa = PBXBuildFile; fileRef = ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */; };
 		PATH_ENGAGEMENT_MGR_BLD01 /* PathEngagementManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */; };
 		PE1234567890ABCDEF1234567 /* PromptEducationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PE1234567890ABCDEF1234568 /* PromptEducationView.swift */; };
@@ -337,6 +335,8 @@
 		PSP200020002000200020001 /* PostSessionPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PSP200020002000200020002 /* PostSessionPromptView.swift */; };
 		Q9876543210FEDCBA98765432 /* QuestionOptionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q9876543210FEDCBA98765433 /* QuestionOptionsView.swift */; };
 		S1234567890ABCDEF12345678 /* SenseiCTAView.swift in Sources */ = {isa = PBXBuildFile; fileRef = S1234567890ABCDEF12345679 /* SenseiCTAView.swift */; };
+		SMEDBP01BUILD00001 /* SenseiMeditationBlueprintID.swift in Sources */ = {isa = PBXBuildFile; fileRef = SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */; };
+		TMELYPLCY01BUILD00001 /* TimelyRecommendationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */; };
 		TOPFADEMASK123456789012 /* TopFadeMaskModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOPFADEMASK123456789013 /* TopFadeMaskModifier.swift */; };
 		TYPO2026BUILD0001000001 /* OnboardingTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = TYPO2026FILE00010000001 /* OnboardingTypography.swift */; };
 		UNIFDHDR12345678901234 /* UnifiedHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UNIFDHDR12345678901235 /* UnifiedHeaderView.swift */; };
@@ -473,9 +473,6 @@
 		56F506C6429DCDD88B4C7053 /* SenseiAnimator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiAnimator.swift; sourceTree = "<group>"; };
 		5B6DD32FB36DFDA5BBBB03BD /* GlassEffectModifier.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlassEffectModifier.swift; sourceTree = "<group>"; };
 		603BCEA44DBCAF746AD66477 /* ExploreRecommendationManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExploreRecommendationManager.swift; sourceTree = "<group>"; };
-		TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimelyRecommendationPolicy.swift; sourceTree = "<group>"; };
-		MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningTimelyMeditationPrompt.swift; sourceTree = "<group>"; };
-		SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiMeditationBlueprintID.swift; sourceTree = "<group>"; };
 		6403F55772AE3E2AA8F914AB /* Last7DaysChartView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = Last7DaysChartView.swift; path = imagine/Features/Insights/Last7DaysChartView.swift; sourceTree = SOURCE_ROOT; };
 		6694B8E099A652B2D47D7336 /* SenseiStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiStyle.swift; sourceTree = "<group>"; };
 		6CB71ED255650E85F9E83427 /* OnboardingResponses.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingResponses.swift; sourceTree = "<group>"; };
@@ -549,7 +546,6 @@
 		A56A5DFF2D6D961C00508EB1 /* CueConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueConfigurationView.swift; sourceTree = "<group>"; };
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
-		CSAUTODUR01FILE00001 /* CueSetting+CreateSessionDuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CueSetting+CreateSessionDuration.swift"; sourceTree = "<group>"; };
 		A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationConfiguration.swift; sourceTree = "<group>"; };
 		A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationView.swift; sourceTree = "<group>"; };
 		A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
@@ -676,6 +672,7 @@
 		CG0100012F00000100000001 /* CompositionGuidelines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionGuidelines.swift; sourceTree = "<group>"; };
 		CHATDIV00001FILEREF01 /* ChatDateDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatDateDivider.swift; sourceTree = "<group>"; };
 		CHATLIST0001FILEREF01 /* ChatListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListItem.swift; sourceTree = "<group>"; };
+		CSAUTODUR01FILE00001 /* CueSetting+CreateSessionDuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CueSetting+CreateSessionDuration.swift"; sourceTree = "<group>"; };
 		D0E1BD1F2AFCD528ECDD3E07 /* SenseiView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiView.swift; sourceTree = "<group>"; };
 		D4FA7E92E449BFD14971098A /* EmailValidationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmailValidationService.swift; sourceTree = "<group>"; };
 		D500A878EDC2D150B003D811 /* WatchAnalyticsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchAnalyticsManager.swift; path = imagine/Features/Insights/WatchAnalyticsManager.swift; sourceTree = SOURCE_ROOT; };
@@ -727,6 +724,7 @@
 		KB0100022FFF000100000001 /* ChatKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatKeyboardController.swift; sourceTree = "<group>"; };
 		LEGACY_CONTINUE_BTN_REF01 /* LegacyContinueButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyContinueButton.swift; sourceTree = "<group>"; };
 		MPA1C0MP2F00000100000001 /* MeditationPackage+AICompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MeditationPackage+AICompat.swift"; sourceTree = "<group>"; };
+		MRNGAIPRMPT01FILE001 /* MorningTimelyMeditationPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MorningTimelyMeditationPrompt.swift; sourceTree = "<group>"; };
 		ONBOARDING_ANSWERS_REF01 /* OnboardingAnswers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAnswers.swift; sourceTree = "<group>"; };
 		PATH_ENGAGEMENT_MGR_REF01 /* PathEngagementManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathEngagementManager.swift; sourceTree = "<group>"; };
 		PE1234567890ABCDEF1234568 /* PromptEducationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptEducationView.swift; sourceTree = "<group>"; };
@@ -737,6 +735,8 @@
 		PSP200020002000200020002 /* PostSessionPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostSessionPromptView.swift; sourceTree = "<group>"; };
 		Q9876543210FEDCBA98765433 /* QuestionOptionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionOptionsView.swift; sourceTree = "<group>"; };
 		S1234567890ABCDEF12345679 /* SenseiCTAView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SenseiCTAView.swift; sourceTree = "<group>"; };
+		SMEDBP01FILE00001 /* SenseiMeditationBlueprintID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SenseiMeditationBlueprintID.swift; sourceTree = "<group>"; };
+		TMELYPLCY01FILE00001 /* TimelyRecommendationPolicy.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimelyRecommendationPolicy.swift; sourceTree = "<group>"; };
 		TOPFADEMASK123456789013 /* TopFadeMaskModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopFadeMaskModifier.swift; sourceTree = "<group>"; };
 		TYPO2026FILE00010000001 /* OnboardingTypography.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingTypography.swift; sourceTree = "<group>"; };
 		UNIFDHDR12345678901235 /* UnifiedHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedHeaderView.swift; sourceTree = "<group>"; };
@@ -2870,7 +2870,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 241;
+				CURRENT_PROJECT_VERSION = 242;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -2914,7 +2914,7 @@
 				CODE_SIGN_ENTITLEMENTS = imagine/Resources/imagine.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 241;
+				CURRENT_PROJECT_VERSION = 242;
 				DEVELOPMENT_TEAM = A38R4W4XYJ;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;

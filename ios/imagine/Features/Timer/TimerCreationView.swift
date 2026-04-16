@@ -27,6 +27,7 @@ struct TimerView: View {
     @Environment(\.toggleMenu) private var toggleMenu
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     @StateObject private var catalogsManager = CatalogsManager.shared
+    @State private var disableCreateVerticalScroll = false
 
     /// Practice length derived from fractional module durations (and reconciled cue triggers).
     private var sessionPracticeMinutes: Int {
@@ -53,13 +54,17 @@ struct TimerView: View {
                     Spacer().frame(height: 5)
                     SessionLengthReadout(
                         practiceMinutes: sessionPracticeMinutes,
-                        hasIntroFractional: cueSettings.contains { $0.cue.id == "INT_FRAC" }
+                        stepCount: cueSettings.count
                     )
                     .padding(.top, 4)
 
                     DividerView()
 
-                    CueConfigurationView(practiceMinutes: sessionPracticeMinutes, cueSettings: $cueSettings)
+                    CueConfigurationView(
+                        practiceMinutes: sessionPracticeMinutes,
+                        cueSettings: $cueSettings,
+                        disableParentVerticalScroll: $disableCreateVerticalScroll
+                    )
 
                     DividerView()
 
@@ -98,6 +103,7 @@ struct TimerView: View {
                 .padding(.horizontal, 26)
                 .padding(.bottom, 120)
             }
+            .scrollDisabled(disableCreateVerticalScroll)
             .topFadeMask(height: 5)
         }
         .onAppear {
@@ -372,7 +378,18 @@ struct TimerView: View {
 /// Practice length driven by module durations on the create screen (read-only).
 private struct SessionLengthReadout: View {
     let practiceMinutes: Int
-    let hasIntroFractional: Bool
+    let stepCount: Int
+
+    private var stepsLabel: String {
+        switch stepCount {
+        case 0:
+            return "Add Steps"
+        case 1:
+            return "1 Step"
+        default:
+            return "\(stepCount) Steps"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
@@ -383,20 +400,11 @@ private struct SessionLengthReadout: View {
                 .monospacedDigit()
                 .multilineTextAlignment(.center)
 
-            Text("Add steps")
+            Text(stepsLabel)
                 .nunitoFont(size: 14, style: .regular)
                 .foregroundColor(.foregroundLightGray.opacity(0.92))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-
-            if hasIntroFractional {
-                let totalSec = IntroPrefixTimeline.playbackSeconds(practiceMinutes: practiceMinutes, hasIntroFrac: true)
-                Text("With Dojo intro on your timeline: about \(totalSec / 60)m \(totalSec % 60)s total.")
-                    .nunitoFont(size: 13, style: .regular)
-                    .foregroundColor(.foregroundLightGray.opacity(0.85))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, 8)
