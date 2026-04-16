@@ -14,7 +14,9 @@ struct PracticeOverviewSection: View {
     var onExpand: (() -> Void)? = nil
     var onCustomize: (() -> Void)? = nil
     @State private var isExpanded: Bool = false
-    
+    /// Default: module-level timeline only. Dev: triple-tap Instructions toggles to every playback clip (and back).
+    @State private var showsModuleInstructionTimeline = true
+
     init(session: TimerMeditationSession, initiallyExpanded: Bool = false, onExpand: (() -> Void)? = nil, onCustomize: (() -> Void)? = nil) {
         self.session = session
         self.initiallyExpanded = initiallyExpanded
@@ -30,6 +32,15 @@ struct PracticeOverviewSection: View {
     /// Chronological order on the playback timeline (expanded server cues + manual rows).
     private var orderedCueSettings: [CueSetting] {
         config.cueSettings.sorted { sessionSecondForSort($0) < sessionSecondForSort($1) }
+    }
+
+    /// Same ordering as `orderedCueSettings`, but optionally uses collapsed fractional modules (timer editor shape).
+    private var orderedInstructionCueSettings: [CueSetting] {
+        if showsModuleInstructionTimeline {
+            return config.cueSettingsForTimerEditor()
+                .sorted { sessionSecondForSort($0) < sessionSecondForSort($1) }
+        }
+        return orderedCueSettings
     }
 
     private func sessionSecondForSort(_ setting: CueSetting) -> Int {
@@ -93,20 +104,24 @@ struct PracticeOverviewSection: View {
                             Text("Instructions")
                                 .nunitoFont(size: 14, style: .semiBold)
                                 .foregroundColor(.white.opacity(0.7))
-                            
-                            ForEach(orderedCueSettings, id: \.id) { cueSetting in
+
+                            ForEach(orderedInstructionCueSettings, id: \.id) { cueSetting in
                                 HStack {
                                     Text(cueSetting.cue.name)
                                         .nunitoFont(size: 14, style: .regular)
                                         .foregroundColor(.white.opacity(0.9))
-                                    
+
                                     Spacer()
-                                    
+
                                     Text(cueTimingText(for: cueSetting))
                                         .nunitoFont(size: 14, style: .regular)
                                         .foregroundColor(.white.opacity(0.6))
                                 }
                             }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 3) {
+                            showsModuleInstructionTimeline.toggle()
                         }
                     }
                     
