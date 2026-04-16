@@ -9,8 +9,6 @@ import SwiftUI
 import UIKit
 
 struct TimerView: View {
-    @State private var selectedMinutes: Int = 5
-    @State private var navigateToCountdown = false
     @State private var selectedBackgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: "")
     @State private var cueSettings: [CueSetting] = []
     @State private var selectedBinauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
@@ -30,10 +28,14 @@ struct TimerView: View {
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     @StateObject private var catalogsManager = CatalogsManager.shared
 
+    /// Practice length derived from fractional module durations (and reconciled cue triggers).
+    private var sessionPracticeMinutes: Int {
+        cueSettings.computedPracticeMinutesForCreateScreen()
+    }
+
     var body: some View {
         DojoScreenContainer(
             headerTitle: "Create",
-            headerSubtitle: "Design a meditation that fits you",
             backgroundImageName: "timerBackground",
             backAction: {
                 if isDeepLinked {
@@ -49,13 +51,15 @@ struct TimerView: View {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 14) {
                     Spacer().frame(height: 5)
-                    CountdownPicker(minutes: $selectedMinutes)
-                        .frame(height: 200)
-                        .clipped()
+                    SessionLengthReadout(
+                        practiceMinutes: sessionPracticeMinutes,
+                        hasIntroFractional: cueSettings.contains { $0.cue.id == "INT_FRAC" }
+                    )
+                    .padding(.top, 4)
 
                     DividerView()
 
-                    CueConfigurationView(selectedMinutes: $selectedMinutes, cueSettings: $cueSettings)
+                    CueConfigurationView(practiceMinutes: sessionPracticeMinutes, cueSettings: $cueSettings)
 
                     DividerView()
 
@@ -119,8 +123,8 @@ struct TimerView: View {
             
             // Check if data is already loaded
             checkDataLoaded()
-            
-            // Generate initial share link
+
+            // Generate initial share link (also reconciles cue rows to the derived session length).
             updateShareLink()
         }
         // Re-add the onReceive handler for deepLinkedMeditationConfiguration as a backup
@@ -154,10 +158,6 @@ struct TimerView: View {
             }
         }
 
-        .onChange(of: selectedMinutes) { _, _ in
-            clampFractionalDurationsToSessionCap()
-            updateShareLink()
-        }
         .onChange(of: selectedBackgroundSound) { _, _ in
             updateShareLink()
         }
@@ -165,13 +165,16 @@ struct TimerView: View {
             updateShareLink()
         }
     }
+
+    private func syncSessionFromCues() {
+        cueSettings.reconcileCreateScreenAutoSession()
+    }
     
     // MARK: - Persistence Helpers
     
     private func processDeepLinkSettings(_ timerSetting: MeditationConfiguration) {
         print("🎛️ TimerView: Processing deep link settings - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
         DispatchQueue.main.async {
-            selectedMinutes = timerSetting.duration
             selectedBackgroundSound = timerSetting.backgroundSound
             cueSettings = timerSetting.cueSettings
             meditationTitle = timerSetting.title
@@ -192,25 +195,14 @@ struct TimerView: View {
             print("🎛️ TimerView: Successfully applied deep linked timer settings")
             logger.eventMessage("TimerView: Applied deep linked timer setting - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
 
-            clampFractionalDurationsToSessionCap()
             // Update share link after applying deep link settings
             updateShareLink()
-        }
-    }
-
-    /// Keeps fractional module duration ≤ session length so server-side expansion fits the relax-phase window.
-    private func clampFractionalDurationsToSessionCap() {
-        let cap = max(1, selectedMinutes)
-        for i in cueSettings.indices where cueSettings[i].allowsManualFractionalDuration {
-            if let fd = cueSettings[i].fractionalDuration, fd > cap {
-                cueSettings[i].fractionalDuration = cap
-            }
         }
     }
     
     private func currentTimerSetting() -> MeditationConfiguration {
         return MeditationConfiguration(
-            duration: selectedMinutes,
+            duration: sessionPracticeMinutes,
             backgroundSound: selectedBackgroundSound,
             cueSettings: cueSettings,
             title: nil,
@@ -219,6 +211,7 @@ struct TimerView: View {
     }
     
     private func saveConfiguration() {
+        syncSessionFromCues()
         let setting = currentTimerSetting()
         SharedUserStorage.save(value: setting, forKey: .timerSettings)
         logger.eventMessage("TimerView: Saved timer configuration: \(setting)")
@@ -229,7 +222,6 @@ struct TimerView: View {
     
     private func loadSavedConfiguration() {
         if let savedSetting = SharedUserStorage.retrieve(forKey: .timerSettings, as: MeditationConfiguration.self) {
-            selectedMinutes = savedSetting.duration
             selectedBackgroundSound = savedSetting.backgroundSound
             cueSettings = savedSetting.cueSettings
             // Restore binaural beat if present in saved config; otherwise keep current
@@ -238,7 +230,6 @@ struct TimerView: View {
             }
             logger.eventMessage("TimerView: Loaded saved timer configuration: \(savedSetting)")
 
-            clampFractionalDurationsToSessionCap()
             // Update share link after loading configuration
             updateShareLink()
         }
@@ -248,6 +239,7 @@ struct TimerView: View {
     
     // Add a method to update the share link whenever timer settings change
     private func updateShareLink() {
+        syncSessionFromCues()
         shareLink = generateShareLink()
         if let link = shareLink {
             logger.eventMessage("Share link updated: \(link.absoluteString)")
@@ -257,7 +249,7 @@ struct TimerView: View {
     private func generateShareLink() -> URL? {
         let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
         let timerConfig = MeditationConfiguration.makeTimerSessionConfig(
-            durationMinutes: selectedMinutes,
+            durationMinutes: sessionPracticeMinutes,
             backgroundSound: selectedBackgroundSound,
             binauralBeat: selectedBinauralBeat,
             cueSettings: cueSettings,
@@ -274,7 +266,7 @@ struct TimerView: View {
     }
     
     private var shareMessage: String {
-        "Try this custom \(selectedMinutes)m meditation I made for you."
+        "Try this custom \(sessionPracticeMinutes)m meditation I made for you."
     }
 
     // MARK: - Play Flow Helpers
@@ -285,7 +277,7 @@ struct TimerView: View {
         print("[TimerCreationView] buildLocalTimerConfig offline voiceId=\(voiceId) cueCount=\(cueSettings.count)")
         #endif
         return MeditationConfiguration.makeTimerSessionConfig(
-            durationMinutes: selectedMinutes,
+            durationMinutes: sessionPracticeMinutes,
             backgroundSound: selectedBackgroundSound,
             binauralBeat: selectedBinauralBeat,
             cueSettings: cueSettings,
@@ -337,6 +329,7 @@ struct TimerView: View {
             navigationCoordinator.navigateTo(.subscription)
             return
         }
+        syncSessionFromCues()
         GeneralBackgroundMusicController.shared.fadeOutForPractice()
         if !ConnectivityHelper.isConnectedToInternet() {
             performPlayWithConfig(buildLocalTimerConfig())
@@ -344,7 +337,7 @@ struct TimerView: View {
             Task {
                 do {
                     let package = try await MeditationsService.shared.createMeditationManual(
-                        duration: selectedMinutes,
+                        duration: sessionPracticeMinutes,
                         backgroundSoundId: selectedBackgroundSound.id,
                         binauralBeatId: selectedBinauralBeat.id == "None" ? nil : selectedBinauralBeat.id,
                         cueSettings: cueSettings,
@@ -376,9 +369,58 @@ struct TimerView: View {
     }
 }
 
-struct TimerView_Previews: PreviewProvider {
-    static var previews: some View {
+/// Practice length driven by module durations on the create screen (read-only).
+private struct SessionLengthReadout: View {
+    let practiceMinutes: Int
+    let hasIntroFractional: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(practiceMinutes) min")
+                .nunitoFont(size: 42, style: .bold)
+                .foregroundColor(.white)
+                .monospacedDigit()
+
+            Text("Add steps")
+                .nunitoFont(size: 14, style: .regular)
+                .foregroundColor(.foregroundLightGray.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if hasIntroFractional {
+                let totalSec = IntroPrefixTimeline.playbackSeconds(practiceMinutes: practiceMinutes, hasIntroFrac: true)
+                Text("With Dojo intro on your timeline: about \(totalSec / 60)m \(totalSec % 60)s total.")
+                    .nunitoFont(size: 13, style: .regular)
+                    .foregroundColor(.foregroundLightGray.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+    }
+}
+
+/// Sets `SharedUserStorage.useDevServer` so `Config` URLs match the selected preview tab (imaginedev vs production).
+private struct TimerViewPreviewShell: View {
+    let useDevServer: Bool
+
+    var body: some View {
         TimerView()
             .environmentObject(NavigationCoordinator())
+            .environment(\.toggleMenu, {})
+            .task(id: useDevServer) {
+                SharedUserStorage.save(value: useDevServer, forKey: .useDevServer)
+            }
+    }
+}
+
+struct TimerView_Previews: PreviewProvider {
+    static var previews: some View {
+        TabView {
+            TimerViewPreviewShell(useDevServer: true)
+                .tabItem { Text("Dev") }
+
+            TimerViewPreviewShell(useDevServer: false)
+                .tabItem { Text("Prod") }
+        }
     }
 }

@@ -9,7 +9,8 @@ import SwiftUI
 
 /// This view lets the user add up to 5 cues-each with a scheduled trigger (Start, End, or a minute value) and a selected cue sound.
 struct CueConfigurationView: View {
-    @Binding var selectedMinutes: Int
+    /// Practice length from the create screen (derived from module durations).
+    let practiceMinutes: Int
     @Binding var cueSettings: [CueSetting]
     
     private let maxCues = 10
@@ -106,9 +107,11 @@ struct CueConfigurationView: View {
                             cueSettings[index].triggerType = .start
                             cueSettings[index].minute = nil
                         } else {
-                            let cap = max(1, selectedMinutes)
+                            let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+                            let defaultChunk = max(1, min(10, [CueSetting].createFlowMaxPracticeMinutes - sumOthers))
+                            let cap = max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
                             let prior = cueSettings[index].fractionalDuration
-                            cueSettings[index].fractionalDuration = min(prior ?? selectedMinutes, cap)
+                            cueSettings[index].fractionalDuration = min(prior ?? defaultChunk, cap)
                         }
                     } else {
                         cueSettings[index].fractionalDuration = nil
@@ -137,15 +140,17 @@ struct CueConfigurationView: View {
                 .foregroundColor(.foregroundLightGray)
         } else {
             if cueSettings[index].allowsManualFractionalDuration {
+                let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+                let maxForThis = max(1, min([CueSetting].createFlowMaxPracticeMinutes, [CueSetting].createFlowMaxPracticeMinutes - sumOthers))
                 FractionalDurationStepper(
                     duration: Binding(
                         get: {
-                            let cap = max(1, selectedMinutes)
+                            let cap = maxForThis
                             return min(cueSettings[index].fractionalDuration ?? cap, cap)
                         },
-                        set: { cueSettings[index].fractionalDuration = min($0, max(1, selectedMinutes)) }
+                        set: { cueSettings[index].fractionalDuration = min($0, maxForThis) }
                     ),
-                    range: 1...min(20, max(1, selectedMinutes))
+                    range: 1...maxForThis
                 )
 
                 Text("at")
@@ -189,7 +194,7 @@ struct CueConfigurationView: View {
             .disabled(isStartTaken)
             .foregroundColor(isStartTaken ? Color.black : Color.primary)
 
-            ForEach(1..<selectedMinutes, id: \.self) { value in
+            ForEach(practiceMinutes > 1 ? Array(1..<practiceMinutes) : [], id: \.self) { value in
                 let isMinuteTaken = cueSettings.enumerated().contains { (i, cs) in
                     i != index && cs.triggerType == .minute && cs.minute == value
                 }
@@ -239,7 +244,17 @@ struct CueConfigurationView: View {
         }
         
         // 2. Else, try to assign the smallest available minute value.
-        for minute in 1..<selectedMinutes {
+        guard practiceMinutes > 1 else {
+            if !cueSettings.contains(where: { $0.triggerType == .end }) {
+                let newCueSetting = CueSetting(triggerType: .end, minute: nil, cue: defaultCue)
+                cueSettings.append(newCueSetting)
+            } else {
+                let fallbackCueSetting = CueSetting(triggerType: .minute, minute: nil, cue: defaultCue)
+                cueSettings.append(fallbackCueSetting)
+            }
+            return
+        }
+        for minute in 1..<practiceMinutes {
             if !cueSettings.contains(where: { $0.triggerType == .minute && $0.minute == minute }) {
                 let newCueSetting = CueSetting(triggerType: .minute, minute: minute, cue: defaultCue)
                 cueSettings.append(newCueSetting)
@@ -267,7 +282,6 @@ struct CueConfigurationView: View {
 }
 
 struct CueConfigurationView_Previews: PreviewProvider {
-    @State static var selectedMinutes = 20
     @State static var cueSettings: [CueSetting] = [
         CueSetting(triggerType: .minute, minute: 5, cue: Cue(id: "GB", name: "Gentle Bell", url: "gs://..."))
     ]
@@ -275,7 +289,7 @@ struct CueConfigurationView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
             Color.backgroundDarkPurple.ignoresSafeArea()
-            CueConfigurationView(selectedMinutes: $selectedMinutes, cueSettings: $cueSettings)
+            CueConfigurationView(practiceMinutes: 20, cueSettings: $cueSettings)
                 .padding()
         }
     }
