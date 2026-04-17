@@ -26,6 +26,7 @@ import {
 } from "./introFractionalPlan";
 import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
+import { supportContactHttps } from "./supportContact";
 
 admin.initializeApp();
 
@@ -1543,3 +1544,15 @@ export const postFractionalPlan = functions.https.onRequest(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// supportContact — HTTPS POST for marketing site support form (Workspace SMTP)
+// ---------------------------------------------------------------------------
+
+export const supportContact = functions.runWith({
+  secrets: [
+    "WORKSPACE_SMTP_USER",
+    "WORKSPACE_SMTP_APP_PASSWORD",
+    "SUPPORT_INBOX_EMAIL",
+  ],
+}).https.onRequest(supportContactHttps);

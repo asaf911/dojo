@@ -65,6 +65,37 @@ firebase use default && firebase deploy --only hosting  # production
 
 **First-time setup:** run `firebase login` on the machine that deploys. The first successful Hosting deploy attaches the default Hosting site to the selected project. After deploy to dev, the site is available at `https://imaginedev-e5fd3.web.app` (and `https://imaginedev-e5fd3.firebaseapp.com`).
 
+### Support form (`/support/`) and `/api/support`
+
+The marketing support page POSTs to **`/api/support`**. Firebase Hosting rewrites that path to the **`supportContact`** Cloud Function, which sends mail through **Google Workspace SMTP** (Gmail: `smtp.gmail.com`) using a **relay Workspace user** with a Gmail **App Password** (not your normal password). Messages are delivered to **`SUPPORT_INBOX_EMAIL`** (e.g. `support@medidojo.com`); the visitor’s address is set as **`Reply-To`**.
+
+**Secrets** (create in Google Cloud Secret Manager for each Firebase project that should send mail; bind on deploy):
+
+| Secret | Example value |
+|--------|----------------|
+| `WORKSPACE_SMTP_USER` | Full email of the relay user (e.g. `website@medidojo.com`) |
+| `WORKSPACE_SMTP_APP_PASSWORD` | 16-character App Password for that user |
+| `SUPPORT_INBOX_EMAIL` | `support@medidojo.com` |
+
+Set from repo root (replace project if needed):
+
+```bash
+firebase use dev
+echo -n 'website@medidojo.com' | firebase functions:secrets:set WORKSPACE_SMTP_USER --data-file=-
+echo -n 'xxxx xxxx xxxx xxxx' | firebase functions:secrets:set WORKSPACE_SMTP_APP_PASSWORD --data-file=-
+echo -n 'support@medidojo.com' | firebase functions:secrets:set SUPPORT_INBOX_EMAIL --data-file=-
+```
+
+Then deploy functions (and hosting if the form or rewrite changed): `firebase deploy --only functions,hosting`.
+
+**Local Vite:** `web/vite.config.ts` proxies `POST /api/support` to `https://imaginedev-e5fd3.web.app` so the form can be tested from `npm run dev` after dev Hosting + functions are deployed with secrets.
+
+**Rate limiting:** `supportContact` uses a small **in-memory** limit per Cloud Function instance (no Firestore). It reduces accidental bursts; for stronger abuse protection, add reCAPTCHA or similar later.
+
+**Dev placeholders:** If `WORKSPACE_SMTP_USER` / `WORKSPACE_SMTP_APP_PASSWORD` are still placeholder values, the endpoint returns HTTP 500 with “Could not send message” until you set real Workspace App Password secrets and redeploy `supportContact`.
+
+**Production:** repeat `firebase functions:secrets:set` for the **`default`** (`imagine-c6162`) project before deploying prod hosting, or the form will return a configuration error from the function.
+
 **Production cutover:** when the site is ready, run `npm run deploy:hosting:prod` (or the manual prod command above). Add a **custom domain** under Firebase Console → Hosting for the prod project; at GoDaddy, add the DNS records Firebase displays.
 
 **CI note:** If you add automated Hosting deploys, align the runner’s Node version with local development so `npm ci` / Vite builds behave consistently.

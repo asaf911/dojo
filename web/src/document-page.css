@@ -102,6 +102,30 @@
   margin-top: 0.25rem;
 }
 
+.support-form__status {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.support-form__status--info {
+  color: var(--color-text-muted);
+}
+
+.support-form__status--success {
+  color: #7ae2c9;
+}
+
+.support-form__status--error {
+  color: #ffb4a9;
+}
+
+.support-form button[type="submit"]:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  filter: none;
+}
+
 .support-form button[type="submit"] {
   font-family: var(--font-copy);
   font-weight: 600;

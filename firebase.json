@@ -18,6 +18,12 @@
     "predeploy": [
       "npm --prefix web ci --cache .npm-cache",
       "npm --prefix web run build"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/support",
+        "function": "supportContact"
+      }
     ]
   }
 }

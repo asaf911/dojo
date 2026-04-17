@@ -76,27 +76,58 @@ if (typeof mql.addEventListener === "function") {
 if (mql.matches) setNavOpen(false);
 
 const supportForm = document.querySelector<HTMLFormElement>("#support-form");
+const supportFormStatus = document.querySelector<HTMLParagraphElement>("#support-form-status");
+
+function setSupportFormStatus(message: string, kind: "error" | "success" | "info") {
+  if (!supportFormStatus) return;
+  supportFormStatus.hidden = false;
+  supportFormStatus.textContent = message;
+  supportFormStatus.classList.remove(
+    "support-form__status--error",
+    "support-form__status--success",
+    "support-form__status--info",
+  );
+  supportFormStatus.classList.add(`support-form__status--${kind}`);
+}
+
 supportForm?.addEventListener("submit", (e) => {
   e.preventDefault();
-  const fd = new FormData(supportForm);
-  const name = String(fd.get("name") ?? "").trim();
-  const email = String(fd.get("email") ?? "").trim();
-  const message = String(fd.get("message") ?? "").trim();
+  void (async () => {
+    const fd = new FormData(supportForm);
+    const name = String(fd.get("name") ?? "").trim();
+    const email = String(fd.get("email") ?? "").trim();
+    const message = String(fd.get("message") ?? "").trim();
 
-  if (!email) {
-    const input = supportForm.querySelector<HTMLInputElement>("#support-email");
-    input?.focus();
-    return;
-  }
+    if (!email) {
+      const input = supportForm.querySelector<HTMLInputElement>("#support-email");
+      input?.focus();
+      setSupportFormStatus("Please enter your email address.", "error");
+      return;
+    }
 
-  const lines = [
-    name ? `Name: ${name}` : null,
-    `Email: ${email}`,
-    "",
-    message || "(No message provided)",
-  ].filter((line) => line !== null) as string[];
+    const submitBtn = supportForm.querySelector<HTMLButtonElement>('button[type="submit"]');
+    submitBtn?.setAttribute("disabled", "disabled");
+    setSupportFormStatus("Sending…", "info");
 
-  const subject = encodeURIComponent("Dojo support request");
-  const bodyText = encodeURIComponent(lines.join("\n"));
-  window.location.href = `mailto:asaf@medidojo.com?subject=${subject}&body=${bodyText}`;
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
+
+      if (!res.ok) {
+        setSupportFormStatus(data.error ?? "Something went wrong. Please try again.", "error");
+        return;
+      }
+
+      setSupportFormStatus("Message sent. We will get back to you soon.", "success");
+      supportForm.reset();
+    } catch {
+      setSupportFormStatus("Could not reach the server. Check your connection and try again.", "error");
+    } finally {
+      submitBtn?.removeAttribute("disabled");
+    }
+  })();
 });

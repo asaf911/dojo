@@ -73,6 +73,15 @@ export default defineConfig(({ mode }) => {
   return {
     root: ".",
     publicDir: "public",
+    server: {
+      proxy: {
+        "/api/support": {
+          target: "https://imaginedev-e5fd3.web.app",
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    },
     plugins: [
       {
         name: "inject-head-marketing",

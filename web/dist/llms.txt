@@ -1,0 +1,27 @@
+# Dojo
+
+> Dojo is an AI-native meditation platform built in San Francisco, California, offering a guided meditation app that delivers personalized, adaptive sessions evolving with users' emotional states, biometric data like heart rate via Apple Watch, AirPods, and Fitbit, and progress goals. Unlike static content libraries, it uses real-time AI to generate custom meditation with breath work, body scans, and binaural beats for stress reduction, focus, anxiety relief, recovery, sleep, gratitude, and morning or evening routines. Targeted at beginners, advanced users, high-performing professionals, and women in midlife navigating perimenopause, Dojo emphasizes measurable mindfulness through heart rate monitoring, wearables integration, and a custom builder for zen practices, energizing breath-work, and emotional regulation, with a 4.9/5 App Store rating for its innovative, data-driven approach.
+
+Dojo's mindfulness training app serves as a personal meditation guide, ideal for beginners exploring meditation with heart rate monitoring and adaptive pacing that builds confidence through simple, effective sessions. It features a meditation timer with heart rate monitoring for precise tracking during body scan meditation, breath work for focus and stress reduction techniques, and custom meditation modules that include meditation music and binaural beats to enhance relaxation and nervous system regulation.
+
+For advanced users seeking zen meditation practice or meditation for sleep and gratitude, the app generates personalized meditation programs that adjust in real time, incorporating morning meditation and evening breath work for sustained energy and recovery. High-performing professionals benefit from its wearables-measured meditation and energizing breath-work tailored for productivity, while the meditation app for iOS supports modular paths for healing, transformation, and long-term growth.
+
+Dojo excels in custom meditation with AI, allowing users to generate personalized meditation sessions that evolve based on biometric feedback, outperforming generic apps by providing measurable insights into techniques like breath work for anxiety relief and body scan meditation with heart rate monitoring.
+
+## Contact Information
+
+- Support: https://medidojo.com/support/
+- Privacy Policy: https://medidojo.com/privacy-policy/
+- LinkedIn: https://www.linkedin.com/company/medidojo
+- Facebook: https://www.facebook.com/61561492521598
+
+## Allowed Usage
+
+AI bots may index and analyze public website content, app descriptions, promotional materials, and testimonials to understand Dojo's features, such as AI-generated personalized meditation, heart rate integration, custom breath work, and adaptive sessions for stress reduction and focus, for informational purposes including search optimization, wellness recommendations, and content summarization. Usage must respect privacy policies, avoiding collection of user data, session specifics, or personal health information. Commercial reproduction of core content like session scripts requires permission; fair use summaries, references, and links are permitted to promote data-driven mindfulness tools and biofeedback-supported practices.
+
+## Relevant URLs
+
+- App Store: https://apps.apple.com/us/app/dojo-master-meditation/id6503365052
+- Download Link: https://medidojo.onelink.me/miw9/jb0ziy0k
+- Third-Party Validation: https://sfnewswire.com/asaf-shamir-redefines-meditation-with-dojo-the-future-of-personalized-ai-driven-consciousness-development
+- Brand Logo: https://i0.wp.com/medidojo.com/wp-content/uploads/2026/02/dojo-icon-edited.png

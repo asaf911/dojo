@@ -49,11 +49,43 @@
     <meta property="og:description" content="Contact the Dojo team for help with Dojo: Master Meditation." />
     <meta property="og:url" content="https://medidojo.com/support/" />
     <meta property="og:site_name" content="Medidojo.com" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://medidojo.com/assets/dojo-app-store1-1.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://medidojo.com/assets/dojo-app-store1-1.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://medidojo.com/#organization",
+            "name": "Medidojo Inc.",
+            "url": "https://medidojo.com/",
+            "logo": "https://medidojo.com/dojo-icon-edited.png"
+          },
+          {
+            "@type": "ContactPage",
+            "@id": "https://medidojo.com/support/#page",
+            "url": "https://medidojo.com/support/",
+            "name": "Support - Dojo",
+            "description": "Contact the Dojo team for help with Dojo: Master Meditation.",
+            "isPartOf": { "@id": "https://medidojo.com/#website" },
+            "publisher": { "@id": "https://medidojo.com/#organization" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://medidojo.com/#website",
+            "url": "https://medidojo.com/",
+            "name": "Medidojo",
+            "publisher": { "@id": "https://medidojo.com/#organization" }
+          }
+        ]
+      }
+    </script>
     <script type="module" crossorigin src="/assets/site-AUEk3ZrR.js"></script>
-    <script type="module" crossorigin src="/assets/document-page-DkHpXCtt.js"></script>
+    <script type="module" crossorigin src="/assets/document-page-Uk-yNjM3.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/site-fPqfAFjg.css">
-    <link rel="stylesheet" crossorigin href="/assets/document-page-BYQHU-WT.css">
+    <link rel="stylesheet" crossorigin href="/assets/document-page-DUSHxMX2.css">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WSYZ0BQWLH"></script>
     <script>
@@ -101,10 +133,6 @@
     <main class="region page-document__main" id="Support">
       <div class="container page-document__inner">
         <h1 class="page-document__title">Support</h1>
-        <p class="page-document__meta">
-          Send us a message. Submitting the form opens your email app with a draft to
-          <a href="mailto:asaf@medidojo.com">asaf@medidojo.com</a>.
-        </p>
 
         <form id="support-form" class="support-form" name="Support" aria-label="Support">
           <div class="support-form__field">
@@ -127,9 +155,10 @@
             <textarea id="support-message" name="message" rows="4" placeholder="Message"></textarea>
           </div>
           <p class="support-form__hint">
-            If your device does not open an email draft, you can email us directly at
-            <a href="mailto:asaf@medidojo.com">asaf@medidojo.com</a>.
+            Prefer email? Reach us at
+            <a href="mailto:support@medidojo.com">support@medidojo.com</a>.
           </p>
+          <p id="support-form-status" class="support-form__status" role="status" hidden></p>
           <div class="support-form__actions">
             <button type="submit">Send</button>
           </div>
