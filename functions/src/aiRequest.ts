@@ -13,6 +13,7 @@ import {
 } from "./fractionalComposer";
 import { normalizeFractionalSurfaceCueIdsForProd } from "./fractionalSurfaceCueNormalize";
 import { useFractionalModulesInCatalogsAndAI } from "./deploymentMode";
+import { shouldForceMeditationIntent } from "./aiRequestIntentRouting";
 
 const TAG = "[Server][AI]";
 
@@ -555,8 +556,21 @@ export async function processAIRequest(
 
   functions.logger.info(`${TAG} request received promptLen=${prompt.length} historyLen=${conversationHistory.length}`);
 
-  const intent = await classifyIntent(prompt, conversationHistory, apiKey);
-  functions.logger.info(`${TAG} classified intent=${intent}`);
+  const rawIntent = await classifyIntent(prompt, conversationHistory, apiKey);
+  const forceMeditation = shouldForceMeditationIntent({
+    blueprintId: context.blueprintId,
+    meditationThemes: context.meditationThemes,
+    prompt,
+    historyLen: conversationHistory.length,
+  });
+  const intent = forceMeditation ? "meditation" : rawIntent;
+  if (forceMeditation && rawIntent !== "meditation") {
+    functions.logger.info(
+      `${TAG} intent override raw=${rawIntent} -> meditation (blueprint or structured timely create)`
+    );
+  } else {
+    functions.logger.info(`${TAG} classified intent=${intent}`);
+  }
 
   if (intent === "history") {
     const historyQueryType = await classifyHistorySubIntent(prompt, conversationHistory, apiKey);

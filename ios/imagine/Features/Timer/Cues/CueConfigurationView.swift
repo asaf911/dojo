@@ -12,6 +12,8 @@ private enum CreateStepRowMetrics {
     static let rowHeight: CGFloat = 60
     static let horizontalInset: CGFloat = 8
     static let dragHandleHorizontalPadding: CGFloat = 8
+    /// Matches `CreateStepDragHandleIcon` width + `.padding(.horizontal, dragHandleHorizontalPadding)` for column alignment.
+    static let dragHandleColumnWidth: CGFloat = (4 + 3 + 4) + 2 * dragHandleHorizontalPadding
     static let moduleToTrailingMinGap: CGFloat = 12
     static let trailingControlGap: CGFloat = 8
     static let interRowSpacing: CGFloat = 4
@@ -104,6 +106,11 @@ struct CueConfigurationView: View {
         return CGFloat(n) * CreateStepRowMetrics.rowHeight + CGFloat(n - 1) * CreateStepRowMetrics.interRowSpacing
     }
 
+    /// First row is fixed when it is Intro (`INT_FRAC`); reorder applies only to steps after it.
+    private var movableSectionStartIndex: Int {
+        (cueSettings.first?.cue.id == "INT_FRAC") ? 1 : 0
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Steps")
@@ -112,13 +119,21 @@ struct CueConfigurationView: View {
                 .padding(.horizontal, 8)
 
             List {
-                ForEach(Array(cueSettings.enumerated()), id: \.element.id) { index, _ in
-                    cueStepRow(at: index)
+                if cueSettings.first?.cue.id == "INT_FRAC" {
+                    cueStepRow(at: 0, showsDragHandle: false)
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                 }
-                .onMove(perform: moveCueSteps)
+                if cueSettings.count > movableSectionStartIndex {
+                    ForEach(Array(cueSettings.enumerated().filter { $0.offset >= movableSectionStartIndex }), id: \.element.id) { index, _ in
+                        cueStepRow(at: index, showsDragHandle: true)
+                            .listRowInsets(EdgeInsets())
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    .onMove(perform: moveMovableCueSteps)
+                }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -180,9 +195,13 @@ struct CueConfigurationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .onAppear {
+            ensureIntroPinnedToHead()
             if ConnectivityHelper.isConnectedToInternet() {
                 catalogsManager.fetchCatalogs(triggerContext: "CueConfigurationView|pull-to-refresh")
             }
+        }
+        .onChange(of: cueSettings.map(\.id)) { _, _ in
+            ensureIntroPinnedToHead()
         }
     }
 
@@ -203,10 +222,15 @@ struct CueConfigurationView: View {
     // MARK: - Row Builders
 
     @ViewBuilder
-    private func cueStepRow(at index: Int) -> some View {
+    private func cueStepRow(at index: Int, showsDragHandle: Bool = true) -> some View {
         HStack(alignment: .center, spacing: 0) {
-            CreateStepDragHandleIcon()
-                .padding(.horizontal, CreateStepRowMetrics.dragHandleHorizontalPadding)
+            if showsDragHandle {
+                CreateStepDragHandleIcon()
+                    .padding(.horizontal, CreateStepRowMetrics.dragHandleHorizontalPadding)
+            } else {
+                Color.clear
+                    .frame(width: CreateStepRowMetrics.dragHandleColumnWidth)
+            }
 
             CreateStepPillLabel(text: cueSettings[index].cue.name)
 
@@ -230,13 +254,28 @@ struct CueConfigurationView: View {
         )
     }
 
-    /// Native `List` reorder (long-press lift + drag), same as system Settings-style lists.
-    private func moveCueSteps(from source: IndexSet, to destination: Int) {
+    /// Keeps Intro (`INT_FRAC`) at index 0 whenever it exists in the list.
+    private func ensureIntroPinnedToHead() {
+        guard let idx = cueSettings.firstIndex(where: { $0.cue.id == "INT_FRAC" }), idx != 0 else { return }
+        var next = cueSettings
+        let intro = next.remove(at: idx)
+        next.insert(intro, at: 0)
+        cueSettings = next
+    }
+
+    /// Reorder only the tail after a pinned Intro row (if any).
+    private func moveMovableCueSteps(from source: IndexSet, to destination: Int) {
+        ensureIntroPinnedToHead()
+        let start = movableSectionStartIndex
+        guard cueSettings.count > start else { return }
         withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
             var next = cueSettings
-            next.move(fromOffsets: source, toOffset: destination)
+            var tail = Array(next[start..<next.endIndex])
+            tail.move(fromOffsets: source, toOffset: destination)
+            next.replaceSubrange(start..<next.endIndex, with: tail)
             cueSettings = next
         }
+        ensureIntroPinnedToHead()
     }
 
     @ViewBuilder
@@ -374,6 +413,7 @@ struct CueConfigurationView: View {
             next[index].fractionalDuration = nil
         }
         cueSettings = next
+        ensureIntroPinnedToHead()
         #if DEBUG
         print("AI_debug [CueAdd] applySelectedCatalogCue done index=\(index) cueId=\(cue.id) count=\(cueSettings.count)")
         #endif
@@ -417,6 +457,7 @@ struct CueConfigurationView: View {
         #endif
         let newIndex = cueSettings.count - 1
         applySelectedCatalogCue(at: newIndex, cue: cue)
+        ensureIntroPinnedToHead()
         #if DEBUG
         print("AI_debug [CueAdd] appendNewStep exit count=\(cueSettings.count)")
         #endif
@@ -427,6 +468,7 @@ struct CueConfigurationView: View {
         var next = cueSettings
         next.remove(at: index)
         cueSettings = next
+        ensureIntroPinnedToHead()
     }
 }
 

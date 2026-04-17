@@ -370,8 +370,12 @@ struct AIChatContainerView: View {
                 print("📊 JOURNEY: [DEV_SKIP] ═══════════════════════════════════════════════════")
                 #endif
                 logger.aiChat("🧠 AI_DEBUG [JOURNEY] no recommendation available")
-                await MainActor.run { removeThinkingMessageIfNeeded() }
                 await MainActor.run {
+                    removeThinkingMessageIfNeeded()
+                    // Greeting may already be visible; avoid a dead-end thread after thinking clears.
+                    conversationState.addAIMessage(
+                        text: "I couldn't line up a practice just now. Ask me for a quick morning meditation below and I'll build one."
+                    )
                     logTimelySkip(reason: "generation_failed")
                     if devOverrideActiveForTask {
                         ExploreRecommendationManager.shared.clearDevTimeOverride()
