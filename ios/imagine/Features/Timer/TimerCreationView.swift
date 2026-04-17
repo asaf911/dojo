@@ -2,11 +2,11 @@
 //  TimerCreationView.swift
 //  Dojo
 //
-//  Create screen: `TimerView` — duration, cues, soundscape, binaural, play/share.
+//  Create screen: `TimerView` — duration, cues, soundscape, binaural, start session.
 //
 
+import Foundation
 import SwiftUI
-import UIKit
 
 /// `true` when this process is an Xcode SwiftUI preview (`XCODE_RUNNING_FOR_PREVIEWS`).
 private enum XcodePreviewRuntime {
@@ -20,15 +20,7 @@ struct TimerView: View {
     @State private var cueSettings: [CueSetting] = []
     @State private var selectedBinauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
     @State private var isDeepLinked: Bool = false  // Only used to pass along the flag
-    @State private var isDataLoaded: Bool = false  // Track if data is loaded
     @State private var meditationTitle: String? = nil  // Title from AI or deep link
-
-    // State for sharing
-    @State private var showShareSheet: Bool = false
-    @State private var shareLink: URL? = nil // Add a state variable to hold the current share link
-    
-
-
 
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.toggleMenu) private var toggleMenu
@@ -76,33 +68,11 @@ struct TimerView: View {
                     BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
                     BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
 
-                    // HStack containing the Share and Play buttons side by side.
-                    HStack(spacing: 14) {
-                        // Share Button: icon only.
-                        Button(action: {
-                            handleShareButtonTap()
-                        }) {
-                            Image(systemName: "square.and.arrow.up")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(isDataLoaded ? Color.dojoTurquoise : Color.gray)
-                                .padding()
-                        }
-                        .disabled(!isDataLoaded)
-
-                        // Play Button - navigates to player immediately, assets prepared on Player screen
-                        Button(action: handlePlayButtonTap) {
-                            Text("Timer_PlayButton")
-                                .nunitoFont(size: 16, style: .bold)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .foregroundColor(.foregroundDarkBlue)
-                                .background(Color.dojoTurquoise)
-                                .cornerRadius(25)
-                        }
-                    }
-
+                    OnboardingPrimaryButton(
+                        text: NSLocalizedString("Timer_PlayButton", bundle: .main, comment: "Create screen primary action"),
+                        style: .primary,
+                        action: handlePlayButtonTap
+                    )
                     .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 26)
@@ -121,7 +91,6 @@ struct TimerView: View {
                 if success {
                     logger.eventMessage("Catalogs loaded successfully")
                 }
-                checkDataLoaded()
             }
             
             // Check for deep link settings immediately on appear
@@ -138,10 +107,7 @@ struct TimerView: View {
                 }
             }
             
-            // Check if data is already loaded
-            checkDataLoaded()
-
-            // Generate initial share link (also reconciles cue rows to the derived session length).
+            // Reconcile cue rows to derived session length and refresh share URL for logs.
             updateShareLink()
         }
         // Re-add the onReceive handler for deepLinkedMeditationConfiguration as a backup
@@ -166,16 +132,6 @@ struct TimerView: View {
             }
         }
         .background(InteractivePopGestureSetter())
-        .sheet(isPresented: $showShareSheet) {
-            if let url = shareLink {
-                // Pass `URL` as its own item so Messages and other targets keep the full link (including long `plan=`).
-                ActivityViewController(activityItems: [shareMessage, url])
-            } else {
-                Text("No share link generated.")
-                    .nunitoFont(size: 16, style: .medium)
-                    .padding()
-            }
-        }
 
         .onChange(of: selectedBackgroundSound) { _, _ in
             updateShareLink()
@@ -265,16 +221,15 @@ struct TimerView: View {
         }
     }
     
-    // MARK: - Share Link Generation and Message
-    
-    // Add a method to update the share link whenever timer settings change
+    // MARK: - Session sync & share URL (for logs)
+
+    /// Reconciles cue rows to the derived session length and regenerates the custom-meditation share URL for logging.
     private func updateShareLink() {
         #if DEBUG
         print("AI_debug [TimerView] updateShareLink enter cueCount=\(cueSettings.count)")
         #endif
         syncSessionFromCues()
-        shareLink = generateShareLink()
-        if let link = shareLink {
+        if let link = generateShareLink() {
             logger.eventMessage("Share link updated: \(link.absoluteString)")
         }
     }
@@ -298,10 +253,6 @@ struct TimerView: View {
         )
     }
     
-    private var shareMessage: String {
-        "Try this custom \(sessionPracticeMinutes)m meditation I made for you."
-    }
-
     // MARK: - Play Flow Helpers
 
     private func buildLocalTimerConfig() -> TimerSessionConfig {
@@ -343,13 +294,6 @@ struct TimerView: View {
         )
     }
 
-    // MARK: - Data Loading
-
-    private func checkDataLoaded() {
-        isDataLoaded = !catalogsManager.sounds.isEmpty && !catalogsManager.cues.isEmpty && !catalogsManager.beats.isEmpty
-        logger.eventMessage("Data loaded status: \(isDataLoaded)")
-    }
-
     // MARK: - Button Actions
 
     private func handlePlayButtonTap() {
@@ -389,17 +333,6 @@ struct TimerView: View {
         }
     }
 
-    private func handleShareButtonTap() {
-        // Ensure share link is up to date
-        updateShareLink()
-        
-        if let link = shareLink {
-            logger.eventMessage("Share button tapped with link: \(link.absoluteString)")
-        } else {
-            logger.errorMessage("No share link generated.")
-        }
-        showShareSheet = true
-    }
 }
 
 /// Practice length driven by module durations on the create screen (read-only).

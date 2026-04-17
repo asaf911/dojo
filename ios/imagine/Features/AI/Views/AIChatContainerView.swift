@@ -1991,6 +1991,9 @@ struct AIChatContainerView: View {
             let prompt = PostSessionPrompt.standard(isPathComplete: isPathComplete)
             let question = "Would you like to keep meditating?"
             self.conversationState.addPostSessionPrompt(question: question, prompt: prompt)
+            AnalyticsManager.shared.logEvent("post_session_prompt_shown", parameters: [
+                "is_path_complete": isPathComplete
+            ])
             #if DEBUG
             print("[PostSessionPrompt] ✅ Prompt displayed")
             #endif
@@ -2007,9 +2010,19 @@ struct AIChatContainerView: View {
         #endif
         logger.aiChat("🤔 [POST_SESSION_PROMPT] Response received wantsMore=\(wantsMore)")
         
-        // Track analytics
+        let isPathCompletePrompt: Bool = {
+            for message in conversationState.conversation.reversed() {
+                if let prompt = message.postSessionPrompt, !prompt.responded {
+                    return prompt.isPathComplete
+                }
+            }
+            return false
+        }()
+        
+        // Track analytics (Mixpanel via AnalyticsManager): pair with post_session_prompt_shown for prompt vs response ratio
         AnalyticsManager.shared.logEvent("post_session_prompt_response", parameters: [
-            "response": wantsMore ? "yes" : "no"
+            "response": wantsMore ? "yes" : "no",
+            "is_path_complete": isPathCompletePrompt
         ])
         
         // Persist the response in the message so buttons stay in final state across re-renders
@@ -2027,6 +2040,9 @@ struct AIChatContainerView: View {
             #endif
             logger.aiChat("🤔 [POST_SESSION_PROMPT] User said YES - fetching recommendation")
             
+            // Match timely/journey flow: show Sensei thinking placeholder while orchestrator runs (AI generation, etc.).
+            handleLoadingChange(true)
+            
             Task {
                 guard let rec = await DualRecommendationOrchestrator.shared.getSingleRecommendation() else {
                     #if DEBUG
@@ -2034,6 +2050,7 @@ struct AIChatContainerView: View {
                     #endif
                     logger.aiChat("🤔 [POST_SESSION_PROMPT] ❌ No recommendation available")
                     await MainActor.run {
+                        self.removeThinkingMessageIfNeeded()
                         self.conversationState.addAIMessage(text: "I don't have a recommendation right now, but feel free to ask me anytime.")
                     }
                     return

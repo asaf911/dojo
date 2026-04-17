@@ -613,7 +613,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Play"
+            "value" : "Start session"
           }
         }
       }

@@ -24,9 +24,10 @@ extension Array where Element == CueSetting {
     }
 
     /// Practice minutes sent to `/meditations` and the player (intro prefix is added separately when `INT_FRAC` is present).
+    /// With no sequential modules, sum is **0** — do not clamp up to 1 (Create screen readout should show `0 min`).
     func computedPracticeMinutesForCreateScreen() -> Int {
         let sum = sumFractionalPracticeMinutes()
-        return Swift.min(Self.createFlowMaxPracticeMinutes, Swift.max(1, sum))
+        return Swift.min(Self.createFlowMaxPracticeMinutes, Swift.max(0, sum))
     }
 
     /// Keeps total fractional time within the cap, assigns timed fractional modules to a **sequential** practice timeline,

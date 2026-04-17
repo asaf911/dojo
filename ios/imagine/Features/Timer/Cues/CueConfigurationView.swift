@@ -20,7 +20,22 @@ private enum CreateStepRowMetrics {
     static let cornerRadius: CGFloat = 10
 }
 
-/// Same look as an unselected `CueIndicatorView` (16pt capsule) but **not** a `Button` — safe as a `Menu` label and for read-only module titles.
+/// Module title on a step row (no capsule).
+private struct CreateStepModuleNameLabel: View {
+    let name: String
+
+    var body: some View {
+        Text(name)
+            .font(Font.custom("Nunito", size: 16).weight(.heavy))
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(name)
+    }
+}
+
+/// Capsule style for `Menu` labels and “+ Add Step” (not the step module title).
 private struct CreateStepPillLabel: View {
     let text: String
 
@@ -232,7 +247,7 @@ struct CueConfigurationView: View {
                     .frame(width: CreateStepRowMetrics.dragHandleColumnWidth)
             }
 
-            CreateStepPillLabel(text: cueSettings[index].cue.name)
+            CreateStepModuleNameLabel(name: cueSettings[index].cue.name)
 
             Spacer(minLength: CreateStepRowMetrics.moduleToTrailingMinGap)
 
