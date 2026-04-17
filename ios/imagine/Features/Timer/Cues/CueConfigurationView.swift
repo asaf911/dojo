@@ -8,6 +8,11 @@
 import SwiftUI
 import UIKit
 
+/// Horizontal inset shared with padded blocks in `TimerCreationView` (session readout, dividers, etc.).
+private enum CreateTimerScreenLayout {
+    static let screenHorizontalGutter: CGFloat = 26
+}
+
 /// Create-screen step row layout (matches design spec: full-width card, fixed height, insets).
 private enum CreateStepRowMetrics {
     static let rowHeight: CGFloat = 60
@@ -66,6 +71,18 @@ private struct CreateStepDragHandleIcon: View {
     }
 }
 
+/// Row chrome lives in `listRowBackground` so UIKit’s reorder lift snapshot matches the resting card (not a system opaque fill).
+private struct CreateStepCardChrome: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
+            .fill(Color.foregroundLightGray.opacity(0.08))
+            .overlay(
+                RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+            )
+    }
+}
+
 /// Steps: modules play in list order (durations stack on the practice timeline). Bells/other cues still pick Start / minute / End.
 struct CueConfigurationView: View {
     /// Practice length from the create screen (derived from module durations).
@@ -110,14 +127,19 @@ struct CueConfigurationView: View {
             Text("Steps")
                 .nunitoFont(size: 18, style: .medium)
                 .foregroundColor(.foregroundLightGray)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, CreateTimerScreenLayout.screenHorizontalGutter + CreateStepRowMetrics.horizontalInset)
 
             List {
                 ForEach(Array(cueSettings.enumerated()), id: \.element.id) { index, _ in
                     cueStepRow(at: index)
-                        .listRowInsets(EdgeInsets())
+                        .listRowInsets(EdgeInsets(
+                            top: 0,
+                            leading: CreateTimerScreenLayout.screenHorizontalGutter,
+                            bottom: 0,
+                            trailing: CreateTimerScreenLayout.screenHorizontalGutter
+                        ))
                         .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        .listRowBackground(CreateStepCardChrome())
                 }
                 .onMove(perform: moveCueSteps)
             }
@@ -176,7 +198,7 @@ struct CueConfigurationView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, cueSettings.isEmpty ? 8 : CreateStepRowMetrics.interRowSpacing)
-                .padding(.horizontal, CreateStepRowMetrics.horizontalInset)
+                .padding(.horizontal, CreateTimerScreenLayout.screenHorizontalGutter + CreateStepRowMetrics.horizontalInset)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -222,14 +244,6 @@ struct CueConfigurationView: View {
         .padding(.horizontal, CreateStepRowMetrics.horizontalInset)
         .frame(height: CreateStepRowMetrics.rowHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
-                .fill(Color.foregroundLightGray.opacity(0.08))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
-        )
     }
 
     /// Native `List` reorder (long-press lift + drag), same as system Settings-style lists.
@@ -432,7 +446,8 @@ struct CueConfigurationView: View {
     }
 }
 
-/// SwiftUI `List` uses a `UITableView` whose `clipsToBounds` (and cell clipping) crops the reorder lift snapshot on the first frame.
+/// SwiftUI `List` is a `UITableView`; internal wrapper views + ancestors often keep `clipsToBounds`,
+/// which crops the reorder lift snapshot on the first frame until the preview reparents/updates.
 private struct StepsListReorderUnclipWorkaround: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -450,29 +465,78 @@ private struct StepsListReorderUnclipWorkaround: UIViewRepresentable {
     }
 
     final class Coordinator {
-        private var workItem: DispatchWorkItem?
+        private struct SuperviewClipSnapshot {
+            weak var view: UIView?
+            var wasClipping: Bool
+        }
+
+        private var workItems: [DispatchWorkItem] = []
         private weak var patchedTable: UITableView?
+        private var superviewClipSnapshots: [SuperviewClipSnapshot] = []
 
         func schedulePatch(from anchor: UIView) {
-            workItem?.cancel()
-            let item = DispatchWorkItem { [weak self] in
-                guard let self else { return }
-                guard let table = Self.findEmbeddingTableView(from: anchor) else { return }
+            workItems.forEach { $0.cancel() }
+            workItems.removeAll()
 
-                if self.patchedTable !== table {
-                    self.restoreClipDefaults(on: self.patchedTable)
-                    self.patchedTable = table
+            let delays: [TimeInterval] = [0, 0.02, 0.06, 0.12]
+            for delay in delays {
+                let item = DispatchWorkItem { [weak self] in
+                    self?.applyPatch(from: anchor)
                 }
-
-                table.clipsToBounds = false
-                for cell in table.visibleCells {
-                    cell.clipsToBounds = false
-                    cell.contentView.clipsToBounds = false
-                    cell.backgroundView?.clipsToBounds = false
+                workItems.append(item)
+                if delay == 0 {
+                    DispatchQueue.main.async(execute: item)
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
                 }
             }
-            workItem = item
-            DispatchQueue.main.async(execute: item)
+        }
+
+        private func applyPatch(from anchor: UIView) {
+            guard let table = Self.findEmbeddingTableView(from: anchor) else { return }
+
+            if patchedTable !== table {
+                restoreAll()
+                patchedTable = table
+                captureAndClearSuperviewClipping(around: table)
+            } else if superviewClipSnapshots.isEmpty {
+                // First async passes can run before the table is fully attached; capture ancestors then.
+                captureAndClearSuperviewClipping(around: table)
+            }
+
+            Self.unclipReorderSubtree(root: table, maxDepth: 6)
+            for cell in table.visibleCells {
+                Self.unclipReorderSubtree(root: cell, maxDepth: 5)
+            }
+            Self.applyStableReorderChrome(to: table)
+        }
+
+        /// Hosting / scroll containers above the table often clip the lift preview horizontally.
+        private func captureAndClearSuperviewClipping(around table: UITableView) {
+            restoreSuperviewClippingOnly()
+            superviewClipSnapshots.removeAll()
+
+            var node: UIView? = table.superview
+            var steps = 0
+            while let cur = node, steps < 18 {
+                superviewClipSnapshots.append(SuperviewClipSnapshot(view: cur, wasClipping: cur.clipsToBounds))
+                cur.clipsToBounds = false
+                node = cur.superview
+                steps += 1
+            }
+        }
+
+        private func restoreSuperviewClippingOnly() {
+            for snap in superviewClipSnapshots {
+                snap.view?.clipsToBounds = snap.wasClipping
+            }
+            superviewClipSnapshots.removeAll()
+        }
+
+        private func restoreAll() {
+            restoreSuperviewClippingOnly()
+            restoreClipDefaults(on: patchedTable)
+            patchedTable = nil
         }
 
         private func restoreClipDefaults(on table: UITableView?) {
@@ -486,14 +550,57 @@ private struct StepsListReorderUnclipWorkaround: UIViewRepresentable {
         }
 
         deinit {
-            workItem?.cancel()
+            workItems.forEach { $0.cancel() }
+            workItems.removeAll()
             let table = patchedTable
+            let snaps = superviewClipSnapshots
             DispatchQueue.main.async {
-                table?.clipsToBounds = true
-                table?.visibleCells.forEach { cell in
+                for snap in snaps {
+                    snap.view?.clipsToBounds = snap.wasClipping
+                }
+                guard let table else { return }
+                table.clipsToBounds = true
+                table.visibleCells.forEach { cell in
                     cell.clipsToBounds = true
                     cell.contentView.clipsToBounds = true
                     cell.backgroundView?.clipsToBounds = true
+                }
+            }
+        }
+
+        private static func unclipReorderSubtree(root: UIView, maxDepth: Int) {
+            var queue: [(UIView, Int)] = [(root, 0)]
+            var index = 0
+            while index < queue.count {
+                let (view, depth) = queue[index]
+                index += 1
+                view.clipsToBounds = false
+                guard depth < maxDepth else { continue }
+                for sub in view.subviews {
+                    queue.append((sub, depth + 1))
+                }
+            }
+        }
+
+        /// Avoids the default selected / lift appearance (often opaque) so the row keeps the `listRowBackground` look.
+        private static func applyStableReorderChrome(to table: UITableView) {
+            table.backgroundColor = .clear
+            table.isOpaque = false
+            table.separatorStyle = .none
+
+            for case let cell as UITableViewCell in table.visibleCells {
+                cell.backgroundColor = .clear
+                cell.contentView.backgroundColor = .clear
+                cell.isOpaque = false
+                cell.selectionStyle = .none
+
+                let clear = UIView()
+                clear.backgroundColor = .clear
+                cell.selectedBackgroundView = clear
+                cell.multipleSelectionBackgroundView = clear
+
+                if #available(iOS 17.0, *) {
+                    cell.focusEffect = nil
                 }
             }
         }

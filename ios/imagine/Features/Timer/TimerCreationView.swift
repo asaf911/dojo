@@ -57,55 +57,62 @@ struct TimerView: View {
         ) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Spacer().frame(height: 5)
-                    SessionLengthReadout(
-                        practiceMinutes: sessionPracticeMinutes,
-                        stepCount: cueSettings.count
-                    )
-                    .padding(.top, 4)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Spacer().frame(height: 5)
+                        SessionLengthReadout(
+                            practiceMinutes: sessionPracticeMinutes,
+                            stepCount: cueSettings.count
+                        )
+                        .padding(.top, 4)
 
-                    DividerView()
+                        DividerView()
+                    }
+                    .padding(.horizontal, 26)
 
+                    // Full horizontal width: `List` is a `UITableView`; padding on a parent clips reorder lift
+                    // previews exactly at the padded bounds (same as dividers). Inset rows via `listRowInsets`.
                     CueConfigurationView(
                         practiceMinutes: sessionPracticeMinutes,
                         cueSettings: $cueSettings
                     )
 
-                    DividerView()
+                    VStack(alignment: .leading, spacing: 14) {
+                        DividerView()
 
-                    BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
-                    BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
-                    
-                    // HStack containing the Share and Play buttons side by side.
-                    HStack(spacing: 14) {
-                        // Share Button: icon only.
-                        Button(action: {
-                            handleShareButtonTap()
-                        }) {
-                            Image(systemName: "square.and.arrow.up")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(isDataLoaded ? Color.dojoTurquoise : Color.gray)
-                                .padding()
+                        BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
+                        BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
+
+                        // HStack containing the Share and Play buttons side by side.
+                        HStack(spacing: 14) {
+                            // Share Button: icon only.
+                            Button(action: {
+                                handleShareButtonTap()
+                            }) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 24, height: 24)
+                                    .foregroundColor(isDataLoaded ? Color.dojoTurquoise : Color.gray)
+                                    .padding()
+                            }
+                            .disabled(!isDataLoaded)
+
+                            // Play Button - navigates to player immediately, assets prepared on Player screen
+                            Button(action: handlePlayButtonTap) {
+                                Text("Timer_PlayButton")
+                                    .nunitoFont(size: 16, style: .bold)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 48)
+                                    .foregroundColor(.foregroundDarkBlue)
+                                    .background(Color.dojoTurquoise)
+                                    .cornerRadius(25)
+                            }
                         }
-                        .disabled(!isDataLoaded)
-                        
-                        // Play Button - navigates to player immediately, assets prepared on Player screen
-                        Button(action: handlePlayButtonTap) {
-                            Text("Timer_PlayButton")
-                                .nunitoFont(size: 16, style: .bold)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .foregroundColor(.foregroundDarkBlue)
-                            .background(Color.dojoTurquoise)
-                            .cornerRadius(25)
-                        }
+
+                        .padding(.vertical, 12)
                     }
-                    
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 26)
                 }
-                .padding(.horizontal, 26)
                 .padding(.bottom, 120)
             }
             // Lets nested `List` reorder previews extend past the scroll view during the initial lift.
