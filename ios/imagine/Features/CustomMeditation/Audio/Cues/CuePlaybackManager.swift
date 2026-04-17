@@ -10,6 +10,9 @@ import AVFoundation
 
 class CuePlaybackManager {
     static let shared = CuePlaybackManager()
+
+    /// Create-flow step: timed practice segment with no voice audio (background music continues).
+    static let quietTimeCueId = "QUIET_FRAC"
     
     // MARK: - AVAudioEngine Playback
     
@@ -81,13 +84,34 @@ class CuePlaybackManager {
     
     /// ID of the currently playing cue
     private(set) var currentCueId: String?
+
+    /// When non-nil, minute/seek logic should match this `CueSetting.id` (multiple `QUIET_FRAC` rows share `cue.id`).
+    private(set) var activePlaybackSettingId: UUID?
     
     /// When the current cue started playing (session elapsed time in seconds)
     private(set) var cueStartSessionTime: TimeInterval = 0
+
+    // MARK: - Quiet-time virtual segment (no audio file)
+
+    private var quietDurationBySettingId: [UUID: TimeInterval] = [:]
+    private var quietSegmentDuration: TimeInterval = 0
+    private var quietPositionInSegment: TimeInterval = 0
+    /// When non-nil, logical quiet position is `Date().timeIntervalSince(anchor)` (capped by segment duration).
+    private var quietPlaybackAnchorWallClock: Date?
+    private var quietWorkItem: DispatchWorkItem?
+    private var quietIsPaused: Bool = false
+
+    private var isQuietVirtualActive: Bool {
+        currentCueId == Self.quietTimeCueId && currentAudioFile == nil && !playbackFinished && quietSegmentDuration > 0
+    }
     
     /// Whether a cue is currently playing (voice and/or parallel SFX).
     var isPlaying: Bool {
-        !playbackFinished && (playerNode.isPlaying || sfxPlayerNode.isPlaying)
+        guard !playbackFinished else { return false }
+        if isQuietVirtualActive {
+            return !quietIsPaused
+        }
+        return playerNode.isPlaying || sfxPlayerNode.isPlaying
     }
     
     /// Duration of the currently loaded primary cue audio (voice track).
@@ -108,6 +132,12 @@ class CuePlaybackManager {
     
     /// Current playback position within the cue
     var currentPosition: TimeInterval {
+        if isQuietVirtualActive {
+            if let anchor = quietPlaybackAnchorWallClock {
+                return min(quietSegmentDuration, max(0, Date().timeIntervalSince(anchor)))
+            }
+            return quietPositionInSegment
+        }
         guard currentCueId != nil,
               let nodeTime = playerNode.lastRenderTime,
               nodeTime.isSampleTimeValid,
@@ -286,6 +316,91 @@ class CuePlaybackManager {
         case (nil, nil): return nil
         }
     }
+
+    /// Per-step duration for timeline windows (quiet blocks use `CueSetting.id`, not shared `cue.id`).
+    func registerQuietTimeline(from settings: [CueSetting]) {
+        quietDurationBySettingId.removeAll()
+        for cs in settings where cs.cue.id == Self.quietTimeCueId {
+            let minutes = max(1, cs.fractionalDuration ?? 1)
+            quietDurationBySettingId[cs.id] = TimeInterval(minutes * 60)
+        }
+    }
+
+    /// Duration used by the timer session for seek/skip windows (`QUIET_FRAC` uses registered minutes).
+    func playbackDuration(for setting: CueSetting) -> TimeInterval? {
+        if setting.cue.id == Self.quietTimeCueId, let d = quietDurationBySettingId[setting.id] {
+            return d
+        }
+        return getPreloadedDuration(for: setting.cue)
+    }
+
+    /// Starts a quiet-time segment (no voice audio; blocks overlapping cues until the segment ends or stops).
+    func playQuiet(setting: CueSetting, positionInSegment: TimeInterval, sessionElapsedAtCueStart: TimeInterval, startPaused: Bool) {
+        guard setting.cue.id == Self.quietTimeCueId,
+              let total = quietDurationBySettingId[setting.id], total > 0 else {
+            print("🧠 AI_DEBUG [CUE] playQuiet: missing duration for setting \(setting.id)")
+            return
+        }
+
+        quietWorkItem?.cancel()
+        quietWorkItem = nil
+        playerNode.stop()
+        sfxPlayerNode.stop()
+        currentAudioFile = nil
+        currentSfxAudioFile = nil
+
+        let clampedPosition = max(0, min(positionInSegment, total))
+        quietPositionInSegment = clampedPosition
+        quietSegmentDuration = total
+        activePlaybackSettingId = setting.id
+        currentCueId = setting.cue.id
+        cueStartSessionTime = sessionElapsedAtCueStart
+        playbackFinished = false
+        playbackGeneration += 1
+        let generation = playbackGeneration
+        quietIsPaused = startPaused
+
+        print("🧠 AI_DEBUG [CUE] Quiet segment \(setting.cue.id) setting=\(setting.id) window=\(String(format: "%.1f", total))s at session \(String(format: "%.1f", sessionElapsedAtCueStart))s pos=\(String(format: "%.1f", clampedPosition))s paused=\(startPaused)")
+
+        guard !startPaused else { return }
+
+        quietPlaybackAnchorWallClock = Date().addingTimeInterval(-clampedPosition)
+        let remaining = max(0.05, total - clampedPosition)
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard self.playbackGeneration == generation else { return }
+            self.playbackFinished = true
+            self.playbackGeneration += 1
+            self.clearQuietVirtualState()
+            self.clearCueState()
+        }
+        quietWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + remaining, execute: work)
+    }
+
+    private func clearQuietVirtualState() {
+        quietWorkItem?.cancel()
+        quietWorkItem = nil
+        quietSegmentDuration = 0
+        quietPositionInSegment = 0
+        quietPlaybackAnchorWallClock = nil
+        quietIsPaused = false
+        activePlaybackSettingId = nil
+    }
+
+    private func scheduleQuietCompletionRemaining(_ remaining: TimeInterval, generation: Int) {
+        quietWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard self.playbackGeneration == generation else { return }
+            self.playbackFinished = true
+            self.playbackGeneration += 1
+            self.clearQuietVirtualState()
+            self.clearCueState()
+        }
+        quietWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.05, remaining), execute: work)
+    }
     
     // MARK: - Playback Methods
     
@@ -341,6 +456,8 @@ class CuePlaybackManager {
     /// Internal method to play from a local URL using AVAudioEngine.
     private func playFromLocalURL(_ localURL: URL, cue: Cue, sessionElapsedTime: TimeInterval, startPaused: Bool = false) {
         do {
+            clearQuietVirtualState()
+            activePlaybackSettingId = nil
             playerNode.stop()
             sfxPlayerNode.stop()
             currentSfxAudioFile = nil
@@ -517,6 +634,24 @@ class CuePlaybackManager {
     /// Seeks within the currently playing cue to a specific position.
     /// - Parameter time: The position within the cue to seek to (in seconds).
     func seek(to time: TimeInterval) {
+        if isQuietVirtualActive {
+            quietWorkItem?.cancel()
+            quietWorkItem = nil
+            let clamped = max(0, min(time, quietSegmentDuration))
+            quietPositionInSegment = clamped
+            playbackFinished = false
+            let generation = playbackGeneration
+            if quietIsPaused {
+                quietPlaybackAnchorWallClock = nil
+                print("🧠 AI_DEBUG [CUE] Seeked quiet segment to \(String(format: "%.2f", clamped))s / \(String(format: "%.2f", quietSegmentDuration))s (paused)")
+                return
+            }
+            quietPlaybackAnchorWallClock = Date().addingTimeInterval(-clamped)
+            let remaining = max(0.05, quietSegmentDuration - clamped)
+            scheduleQuietCompletionRemaining(remaining, generation: generation)
+            print("🧠 AI_DEBUG [CUE] Seeked quiet segment to \(String(format: "%.2f", clamped))s / \(String(format: "%.2f", quietSegmentDuration))s")
+            return
+        }
         guard let audioFile = currentAudioFile else {
             print("🧠 AI_DEBUG [CUE] Cannot seek - no cue loaded")
             return
@@ -600,6 +735,7 @@ class CuePlaybackManager {
     func stop() {
         let wasPlaying = currentCueId
         playbackGeneration += 1
+        clearQuietVirtualState()
         playerNode.stop()
         sfxPlayerNode.stop()
         currentAudioFile = nil
@@ -612,6 +748,9 @@ class CuePlaybackManager {
     /// Gets info about the currently playing cue.
     /// - Returns: Tuple with cue ID, start time, and duration, or nil if no cue is playing.
     func getCurrentCueInfo() -> (id: String, startTime: TimeInterval, duration: TimeInterval)? {
+        if isQuietVirtualActive, let cueId = currentCueId {
+            return (id: cueId, startTime: cueStartSessionTime, duration: quietSegmentDuration)
+        }
         guard let cueId = currentCueId, currentAudioFile != nil else {
             return nil
         }
@@ -629,6 +768,10 @@ class CuePlaybackManager {
     /// Fades out the currently playing cue sound over the specified duration.
     /// - Parameter fadeDuration: The duration over which to fade out the cue.
     func fadeOutCurrentCue(withDuration fadeDuration: TimeInterval = 1.0) {
+        if isQuietVirtualActive {
+            stop()
+            return
+        }
         guard currentCueId != nil, !playbackFinished else { return }
         let fadeSteps = Int(fadeDuration / 0.1)
         let startVolume = engine.mainMixerNode.outputVolume
@@ -655,6 +798,17 @@ class CuePlaybackManager {
     
     /// Pauses the currently playing cue sound.
     func pause() {
+        if isQuietVirtualActive {
+            quietWorkItem?.cancel()
+            quietWorkItem = nil
+            if let anchor = quietPlaybackAnchorWallClock {
+                quietPositionInSegment = min(quietSegmentDuration, max(0, Date().timeIntervalSince(anchor)))
+            }
+            quietPlaybackAnchorWallClock = nil
+            quietIsPaused = true
+            print("🧠 AI_DEBUG [CUE] pause() quiet segment — timer cancelled, paused")
+            return
+        }
         let shouldPause = currentCueId != nil && !playbackFinished
         print("🧠 AI_DEBUG [CUE] pause() called - cueId=\(currentCueId ?? "none"), playbackFinished=\(playbackFinished), playerNode.isPlaying=\(playerNode.isPlaying) -> \(shouldPause ? "PAUSING" : "skipped (no active cue)")")
         if shouldPause {
@@ -665,8 +819,19 @@ class CuePlaybackManager {
     }
     
     /// Resumes the cue sound from where it was paused.
-    func resume() {
+    /// - Parameter sessionElapsed: Wall-clock elapsed seconds in the session (required to reschedule quiet segments after pause).
+    func resume(sessionElapsed: TimeInterval) {
         print("🧠 AI_DEBUG [CUE] resume() called - cueId=\(currentCueId ?? "none"), position=\(String(format: "%.1f", currentPosition))s")
+        if isQuietVirtualActive, quietIsPaused {
+            quietIsPaused = false
+            let pos = max(0, min(quietSegmentDuration, sessionElapsed - cueStartSessionTime))
+            quietPositionInSegment = pos
+            quietPlaybackAnchorWallClock = Date().addingTimeInterval(-pos)
+            let remaining = max(0.05, quietSegmentDuration - pos)
+            scheduleQuietCompletionRemaining(remaining, generation: playbackGeneration)
+            print("🧠 AI_DEBUG [CUE] Resumed quiet segment from \(String(format: "%.1f", pos))s, remaining=\(String(format: "%.1f", remaining))s")
+            return
+        }
         if currentAudioFile != nil && !playbackFinished {
             if !engine.isRunning {
                 try? engine.start()

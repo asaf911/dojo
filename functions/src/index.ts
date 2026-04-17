@@ -719,6 +719,15 @@ function loadCatalogs(): LoadedCatalogs {
     });
   }
 
+  // Create flow: timed span with no voice audio (client + postMeditations validate against catalog).
+  if (!seen.has("QUIET_FRAC")) {
+    cues.push({
+      id: "QUIET_FRAC",
+      name: "Quiet time",
+      url: "",
+    });
+  }
+
   return {
     backgroundSounds,
     binauralBeats,

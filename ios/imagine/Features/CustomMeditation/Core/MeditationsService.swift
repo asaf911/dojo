@@ -223,7 +223,7 @@ private struct PostMeditationsAIRequestBody: Encodable {
 struct MeditationsService {
     /// Create a meditation via POST /meditations (manual path).
     /// Throws on network or decode error; caller handles offline fallback.
-    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|Create tapped").
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "CreateView|Create tapped").
     var createMeditationManual: (
         _ duration: Int,
         _ backgroundSoundId: String,
@@ -249,7 +249,7 @@ struct MeditationsService {
 
 extension MeditationsService {
     /// Create a meditation from app CueSettings. Converts to request format internally.
-    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|Create tapped").
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "CreateView|Create tapped").
     ///
     /// **Manual POST `/meditations` contract:** `CueRequestItem` only encodes `start` / `end` / minute indices.
     /// Editor cues with `.second` triggers (e.g. after intro shifting) are sent as `.start` so the server

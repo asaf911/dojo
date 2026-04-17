@@ -1,8 +1,8 @@
 //
-//  TimerCreationView.swift
+//  CreateView.swift
 //  Dojo
 //
-//  Create screen: `TimerView` — duration, cues, soundscape, binaural, start session.
+//  Create tab: custom session builder — duration, steps, soundscape, binaural, start practice.
 //
 
 import Foundation
@@ -15,7 +15,7 @@ private enum XcodePreviewRuntime {
     }
 }
 
-struct TimerView: View {
+struct CreateView: View {
     @State private var selectedBackgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: "")
     @State private var cueSettings: [CueSetting] = []
     @State private var selectedBinauralBeat: BinauralBeat = BinauralBeat(id: "None", name: "None", url: "", description: nil)
@@ -32,10 +32,49 @@ struct TimerView: View {
         cueSettings.computedPracticeMinutesForCreateScreen()
     }
 
+    /// Editor card inset from screen edges (matches `AIChatContainerView.chatContainer` stacking).
+    @ViewBuilder
+    private var createEditorContainer: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 14) {
+                Spacer().frame(height: 5)
+                SessionLengthReadout(
+                    practiceMinutes: sessionPracticeMinutes,
+                    stepCount: cueSettings.count
+                )
+                .padding(.top, 4)
+
+                DividerView()
+
+                CueConfigurationView(
+                    practiceMinutes: sessionPracticeMinutes,
+                    cueSettings: $cueSettings
+                )
+
+                DividerView()
+
+                BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
+                BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
+            }
+            .padding(.horizontal, 26)
+            .padding(.bottom, 28)
+        }
+        // Lets nested `List` reorder previews extend past the scroll view during the initial lift.
+        .scrollClipDisabled(true)
+        .topFadeMask(height: 5)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .surfaceBackground(cornerRadius: 16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.planBorder.opacity(0.2), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 16)
+    }
+
     var body: some View {
         DojoScreenContainer(
             headerTitle: "Create",
-            backgroundImageName: "timerBackground",
+            backgroundImageName: "CreateBackground",
             backAction: {
                 if isDeepLinked {
                     // Just do nothing for deep links as we're already in the MainContainerView
@@ -45,49 +84,29 @@ struct TimerView: View {
             },
             showBackButton: false,
             menuAction: toggleMenu,
-            showMenuButton: true
+            showMenuButton: true,
+            showFooter: false
         ) {
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Spacer().frame(height: 5)
-                    SessionLengthReadout(
-                        practiceMinutes: sessionPracticeMinutes,
-                        stepCount: cueSettings.count
-                    )
-                    .padding(.top, 4)
+            VStack(spacing: 0) {
+                createEditorContainer
 
-                    DividerView()
+                Spacer().frame(height: 16)
 
-                    CueConfigurationView(
-                        practiceMinutes: sessionPracticeMinutes,
-                        cueSettings: $cueSettings
-                    )
-
-                    DividerView()
-
-                    BackgroundSoundSelectionView(selectedSound: $selectedBackgroundSound)
-                    BinauralBeatSelectionView(selectedBeat: $selectedBinauralBeat)
-
-                    OnboardingPrimaryButton(
-                        text: NSLocalizedString("Timer_PlayButton", bundle: .main, comment: "Create screen primary action"),
-                        style: .primary,
-                        action: handlePlayButtonTap
-                    )
-                    .padding(.vertical, 12)
-                }
-                .padding(.horizontal, 26)
-                .padding(.bottom, 120)
+                OnboardingPrimaryButton(
+                    text: NSLocalizedString("Timer_PlayButton", bundle: .main, comment: "Create screen primary action"),
+                    style: .primary,
+                    action: handlePlayButtonTap
+                )
+                .padding(.horizontal, 24)
             }
-            // Lets nested `List` reorder previews extend past the scroll view during the initial lift.
-            .scrollClipDisabled(true)
-            .topFadeMask(height: 5)
+            .safeAreaPadding(.bottom, 16)
         }
         .onAppear {
             if XcodePreviewRuntime.isActive {
                 SharedUserStorage.save(value: true, forKey: .useDevServer)
             }
             // Always fetch fresh catalogs when online; fetchCatalogs falls back to cache when offline
-            catalogsManager.fetchCatalogs(triggerContext: "TimerCreationView|onAppear preload") { success in
+            catalogsManager.fetchCatalogs(triggerContext: "CreateView|onAppear preload") { success in
                 if success {
                     logger.eventMessage("Catalogs loaded successfully")
                 }
@@ -95,12 +114,12 @@ struct TimerView: View {
             
             // Check for deep link settings immediately on appear
             if let timerSetting = navigationCoordinator.deepLinkedMeditationConfiguration {
-                print("🎛️ TimerView onAppear: Found deep linked meditation configuration - duration: \(timerSetting.duration)")
-                logger.eventMessage("TimerView onAppear: Found deep linked meditation configuration")
+                print("🎛️ CreateView onAppear: Found deep linked meditation configuration - duration: \(timerSetting.duration)")
+                logger.eventMessage("CreateView onAppear: Found deep linked meditation configuration")
                 processDeepLinkSettings(timerSetting)
             } else {
-                print("🎛️ TimerView onAppear: No deep linked meditation configuration found")
-                logger.eventMessage("TimerView onAppear: No deep linked meditation configuration found")
+                print("🎛️ CreateView onAppear: No deep linked meditation configuration found")
+                logger.eventMessage("CreateView onAppear: No deep linked meditation configuration found")
                 // Previews: skip persisted timer rows (stale prod/local sessions) and always use dev catalogs.
                 if !XcodePreviewRuntime.isActive {
                     loadSavedConfiguration()
@@ -114,7 +133,7 @@ struct TimerView: View {
         // in case the settings are set after the view appears
         .onReceive(navigationCoordinator.$deepLinkedMeditationConfiguration) { timerSetting in
             if let timerSetting = timerSetting {
-                logger.eventMessage("TimerView onReceive: Received deep linked meditation configuration")
+                logger.eventMessage("CreateView onReceive: Received deep linked meditation configuration")
                 processDeepLinkSettings(timerSetting)
             }
         }
@@ -138,9 +157,13 @@ struct TimerView: View {
         }
         .onChange(of: cueSettings) { _, newValue in
             #if DEBUG
-            print("AI_debug [TimerView] onChange cueSettings count=\(newValue.count) cueIds=\(newValue.map(\.cue.id).joined(separator: ","))")
+            print("AI_debug [CreateView] onChange cueSettings count=\(newValue.count) cueIds=\(newValue.map(\.cue.id).joined(separator: ","))")
             #endif
-            updateShareLink()
+            // Defer past the current view update so `CueConfigurationView` rows are not evaluated with a
+            // stale `index` while `syncSessionFromCues()` mutates `cueSettings` (e.g. fractional stepper).
+            Task { @MainActor in
+                updateShareLink()
+            }
         }
     }
 
@@ -152,41 +175,41 @@ struct TimerView: View {
         next.reconcileCreateScreenAutoSession()
         cueSettings = next
         #if DEBUG
-        print("AI_debug [TimerView] syncSessionFromCues before=\(before) after=\(cueSettings.count)")
+        print("AI_debug [CreateView] syncSessionFromCues before=\(before) after=\(cueSettings.count)")
         #endif
     }
     
     // MARK: - Persistence Helpers
     
     private func processDeepLinkSettings(_ timerSetting: MeditationConfiguration) {
-        print("🎛️ TimerView: Processing deep link settings - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
+        print("🎛️ CreateView: Processing deep link settings - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
         DispatchQueue.main.async {
             selectedBackgroundSound = timerSetting.backgroundSound
             cueSettings = timerSetting.cueSettings
             meditationTitle = timerSetting.title
             if let beat = timerSetting.binauralBeat {
                 selectedBinauralBeat = beat
-                logger.eventMessage("TimerView: Applied deep link binaural beat: \(beat.name)")
+                logger.eventMessage("CreateView: Applied deep link binaural beat: \(beat.name)")
             } else {
                 let forced = navigationCoordinator.timerBinauralBeat
                 if forced.id != "None" {
                     selectedBinauralBeat = forced
-                    logger.eventMessage("TimerView: Applied forced navigation binaural beat: \(forced.name)")
+                    logger.eventMessage("CreateView: Applied forced navigation binaural beat: \(forced.name)")
                 } else {
-                    logger.eventMessage("TimerView: No binaural beat found in deep link; keeping current selection: \(selectedBinauralBeat.name)")
+                    logger.eventMessage("CreateView: No binaural beat found in deep link; keeping current selection: \(selectedBinauralBeat.name)")
                 }
             }
             navigationCoordinator.deepLinkedMeditationConfiguration = nil
             isDeepLinked = true
-            print("🎛️ TimerView: Successfully applied deep linked timer settings")
-            logger.eventMessage("TimerView: Applied deep linked timer setting - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
+            print("🎛️ CreateView: Successfully applied deep linked timer settings")
+            logger.eventMessage("CreateView: Applied deep linked timer setting - duration: \(timerSetting.duration), sound: \(timerSetting.backgroundSound.name), title: \(timerSetting.title ?? "nil")")
 
             // Update share link after applying deep link settings
             updateShareLink()
         }
     }
     
-    private func currentTimerSetting() -> MeditationConfiguration {
+    private func currentSessionConfiguration() -> MeditationConfiguration {
         return MeditationConfiguration(
             duration: sessionPracticeMinutes,
             backgroundSound: selectedBackgroundSound,
@@ -198,9 +221,9 @@ struct TimerView: View {
     
     private func saveConfiguration() {
         syncSessionFromCues()
-        let setting = currentTimerSetting()
+        let setting = currentSessionConfiguration()
         SharedUserStorage.save(value: setting, forKey: .timerSettings)
-        logger.eventMessage("TimerView: Saved timer configuration: \(setting)")
+        logger.eventMessage("CreateView: Saved timer configuration: \(setting)")
         
         // Update share link after saving configuration
         updateShareLink()
@@ -214,7 +237,7 @@ struct TimerView: View {
             if let beat = savedSetting.binauralBeat {
                 selectedBinauralBeat = beat
             }
-            logger.eventMessage("TimerView: Loaded saved timer configuration: \(savedSetting)")
+            logger.eventMessage("CreateView: Loaded saved timer configuration: \(savedSetting)")
 
             // Update share link after loading configuration
             updateShareLink()
@@ -226,7 +249,7 @@ struct TimerView: View {
     /// Reconciles cue rows to the derived session length and regenerates the custom-meditation share URL for logging.
     private func updateShareLink() {
         #if DEBUG
-        print("AI_debug [TimerView] updateShareLink enter cueCount=\(cueSettings.count)")
+        print("AI_debug [CreateView] updateShareLink enter cueCount=\(cueSettings.count)")
         #endif
         syncSessionFromCues()
         if let link = generateShareLink() {
@@ -255,10 +278,10 @@ struct TimerView: View {
     
     // MARK: - Play Flow Helpers
 
-    private func buildLocalTimerConfig() -> TimerSessionConfig {
+    private func buildLocalPlaySessionConfiguration() -> TimerSessionConfig {
         let voiceId = SharedUserStorage.retrieve(forKey: .narrationVoiceId, as: String.self, defaultValue: "Asaf")
         #if DEBUG
-        print("[TimerCreationView] buildLocalTimerConfig offline voiceId=\(voiceId) cueCount=\(cueSettings.count)")
+        print("[CreateView] buildLocalPlaySessionConfiguration offline voiceId=\(voiceId) cueCount=\(cueSettings.count)")
         #endif
         return MeditationConfiguration.makeTimerSessionConfig(
             durationMinutes: sessionPracticeMinutes,
@@ -300,7 +323,7 @@ struct TimerView: View {
         if SubscriptionManager.shared.shouldGatePlay {
             SubscriptionManager.shared.logGateState()
             #if DEBUG
-            print("📊 [SUBSCRIPTION_GATE] Play blocked — source=TimerCreationView")
+            print("📊 [SUBSCRIPTION_GATE] Play blocked — source=CreateView")
             #endif
             navigationCoordinator.subscriptionSource = .createScreen
             navigationCoordinator.navigateTo(.subscription)
@@ -309,7 +332,7 @@ struct TimerView: View {
         syncSessionFromCues()
         GeneralBackgroundMusicController.shared.fadeOutForPractice()
         if !ConnectivityHelper.isConnectedToInternet() {
-            performPlayWithConfig(buildLocalTimerConfig())
+            performPlayWithConfig(buildLocalPlaySessionConfiguration())
         } else {
             Task {
                 do {
@@ -318,15 +341,15 @@ struct TimerView: View {
                         backgroundSoundId: selectedBackgroundSound.id,
                         binauralBeatId: selectedBinauralBeat.id == "None" ? nil : selectedBinauralBeat.id,
                         cueSettings: cueSettings,
-                        triggerContext: "TimerCreationView|Create tapped"
+                        triggerContext: "CreateView|Create tapped"
                     )
                     await MainActor.run {
                         performPlayWithConfig(package.toTimerSessionConfig(isDeepLinked: isDeepLinked))
                     }
                 } catch {
-                    print("[Server][Meditations] createMeditationManual: failure trigger=TimerCreationView|Create tapped offline fallback - \(error.localizedDescription)")
+                    print("[Server][Meditations] createMeditationManual: failure trigger=CreateView|Create tapped offline fallback - \(error.localizedDescription)")
                     await MainActor.run {
-                        performPlayWithConfig(buildLocalTimerConfig())
+                        performPlayWithConfig(buildLocalPlaySessionConfiguration())
                     }
                 }
             }
@@ -372,21 +395,21 @@ private struct SessionLengthReadout: View {
 }
 
 /// Create screen preview: **dev server only** (synchronous) so `Config` / catalogs never use production for the first frame.
-private struct TimerViewPreviewShell: View {
+private struct CreateViewPreviewShell: View {
     init() {
         SharedUserStorage.save(value: true, forKey: .useDevServer)
     }
 
     var body: some View {
-        TimerView()
+        CreateView()
             .environmentObject(NavigationCoordinator())
             .environment(\.toggleMenu, {})
     }
 }
 
-struct TimerView_Previews: PreviewProvider {
+struct CreateView_Previews: PreviewProvider {
     static var previews: some View {
-        TimerViewPreviewShell()
+        CreateViewPreviewShell()
             .previewDisplayName("Create")
     }
 }

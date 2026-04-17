@@ -10,7 +10,7 @@ The AI Meditation Creator is a new feature that allows users to describe their m
 - **`AIMeditationService.swift`** - Core AI service that interfaces with OpenAI API
 - **`CustomMeditationManager.swift`** - State management and user interaction logic  
 - **`AIMeditationView.swift`** - SwiftUI interface for the AI meditation creator
-- **`TimerView.swift`** - Updated to include AI meditation creator button
+- **`CreateView.swift`** (Create tab) - Updated to include AI meditation creator button
 
 ## 🏗 Architecture
 

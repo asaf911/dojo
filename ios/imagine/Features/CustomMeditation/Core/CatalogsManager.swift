@@ -61,11 +61,12 @@ final class CatalogsManager: ObservableObject {
 
     private init() {
         loadCachedCatalogs()
+        cues = Self.normalizedCatalogCues(cues)
     }
 
     /// Fetch catalogs from GET /catalogs. On success, updates all properties and caches locally.
     /// On failure (e.g. offline), attempts to load from cache. Completion reports whether fresh data was fetched.
-    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "TimerCreationView|onAppear preload").
+    /// - Parameter triggerContext: Optional identifier for QA tracing (e.g. "CreateView|onAppear preload").
     func fetchCatalogs(triggerContext: String? = nil, completion: ((Bool) -> Void)? = nil) {
         let trigger = triggerContext ?? "unknown"
         guard ConnectivityHelper.isConnectedToInternet() else {
@@ -223,6 +224,11 @@ final class CatalogsManager: ObservableObject {
             }
         } else {
             out.append(Cue(id: pbFracId, name: "Perfect Breath", url: perfectBreathFallbackUrl))
+        }
+
+        let quietId = "QUIET_FRAC"
+        if !out.contains(where: { $0.id == quietId }) {
+            out.append(Cue(id: quietId, name: "Quiet time", url: ""))
         }
 
         return out

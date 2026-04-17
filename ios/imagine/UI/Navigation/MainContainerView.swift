@@ -150,7 +150,7 @@ struct MainContainerView: View {
                 )
                 
             case .timer:
-                TimerView()
+                CreateView()
                 
             case .history:
                 HistoryContainerView()

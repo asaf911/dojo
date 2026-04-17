@@ -26,6 +26,7 @@ extension FractionalModules {
         "RT": "Retrospection",
         "GB": "Gentle Bell",
         "OH": "Open Heart",
+        "QUIET_FRAC": "Quiet time",
     ]
 
     static func displayTitle(forModuleId id: String) -> String {

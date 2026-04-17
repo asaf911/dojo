@@ -9,15 +9,23 @@ import SwiftUI
 
 /// Create-screen step row layout (matches design spec: full-width card, fixed height, insets).
 private enum CreateStepRowMetrics {
-    static let rowHeight: CGFloat = 60
+    /// Inner band height: space for **two** lines of module title at `Nunito` 16 heavy (default size). Every row uses this height so single-line titles match wrapped titles.
+    static let innerContentHeight: CGFloat = 48
+    static let verticalPadding: CGFloat = 16
+    /// Card height: two-line title band + 16pt top + 16pt bottom.
+    static let rowHeight: CGFloat = innerContentHeight + verticalPadding * 2
     static let horizontalInset: CGFloat = 8
     static let dragHandleHorizontalPadding: CGFloat = 8
     /// Matches `CreateStepDragHandleIcon` width + `.padding(.horizontal, dragHandleHorizontalPadding)` for column alignment.
     static let dragHandleColumnWidth: CGFloat = (4 + 3 + 4) + 2 * dragHandleHorizontalPadding
     static let moduleToTrailingMinGap: CGFloat = 12
-    static let trailingControlGap: CGFloat = 8
+    /// Space between duration capsule / trigger UI and the delete control.
+    static let trailingControlGap: CGFloat = 14
     static let interRowSpacing: CGFloat = 4
     static let cornerRadius: CGFloat = 10
+    /// Leading edge accent; matches `CreateStepModuleNameLabel` text color.
+    static let leadingBorderWidth: CGFloat = 2
+    static let moduleTitleForeground: Color = .white
 }
 
 /// Module title on a step row (no capsule).
@@ -27,8 +35,9 @@ private struct CreateStepModuleNameLabel: View {
     var body: some View {
         Text(name)
             .font(Font.custom("Nunito", size: 16).weight(.heavy))
-            .foregroundColor(.white)
-            .lineLimit(1)
+            .foregroundColor(CreateStepRowMetrics.moduleTitleForeground)
+            .lineLimit(2)
+            .multilineTextAlignment(.leading)
             .truncationMode(.tail)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             .accessibilityLabel(name)
@@ -58,6 +67,41 @@ private struct CreateStepPillLabel: View {
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
             .accessibilityLabel(text)
+    }
+}
+
+/// Full-width “+ Add step” (Create screen): same glass capsule as `FractionalDurationStepper`, same height as `OnboardingPrimaryButton` (46pt, corner 23).
+private struct CreateAddStepButton: View {
+    let action: () -> Void
+
+    private static let cornerRadius: CGFloat = 23
+    private static let height: CGFloat = 46
+
+    var body: some View {
+        Button(action: action) {
+            Group {
+                if #available(iOS 26.0, *) {
+                    labelCore
+                        .liquidGlass(cornerRadius: Self.cornerRadius, style: .secondary)
+                } else {
+                    labelCore
+                        .background(Color.foregroundLightGray.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .accessibilityLabel("+ Add step")
+    }
+
+    private var labelCore: some View {
+        Text("+ Add step")
+            .onboardingButtonTextStyle()
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.height)
     }
 }
 
@@ -161,46 +205,46 @@ struct CueConfigurationView: View {
             .id(cueSettings.map(\.id))
 
             if cueSettings.count < maxCues {
-                HStack {
+                Group {
                     if catalogsManager.cues.isEmpty {
-                        CueIndicatorView(
-                            text: "+ Add Step",
-                            isSelected: false,
-                            action: { appendNewStep(with: Cue(id: "None", name: "None", url: "")) },
-                            customFontSize: 16,
-                            source: "Cues-Sound",
-                            isMenuButton: false
-                        )
-                        .fixedSize(horizontal: true, vertical: false)
-                        .layoutPriority(2)
+                        CreateAddStepButton {
+                            AnalyticsManager.shared.logEvent("cue_capsule_tap", parameters: [
+                                "cue_content": "+ Add step",
+                                "source": "Cues-Sound"
+                            ])
+                            appendNewStep(with: Cue(id: "None", name: "None", url: ""))
+                        }
                     } else {
                         // `Menu` inside `List` + parent `ScrollView` often drops selections; use system `confirmationDialog` (reliable).
-                        Button {
+                        CreateAddStepButton {
                             #if DEBUG
                             print("AI_debug [CueAdd] +AddStep tapped catalogCount=\(catalogsManager.cues.count) currentSteps=\(cueSettings.count)")
                             #endif
                             addStepModuleDialogPresented = true
-                        } label: {
-                            CreateStepPillLabel(text: "+ Add Step")
-                        }
-                        .buttonStyle(.plain)
-                        .confirmationDialog("Choose module", isPresented: $addStepModuleDialogPresented, titleVisibility: .visible) {
-                            ForEach(catalogsManager.cues) { cue in
-                                Button(cue.name) {
-                                    #if DEBUG
-                                    print("AI_debug [CueAdd] dialog picked cueId=\(cue.id) name=\(cue.name)")
-                                    #endif
-                                    appendNewStep(with: cue)
-                                }
-                            }
-                            Button("Cancel", role: .cancel) {
-                                #if DEBUG
-                                print("AI_debug [CueAdd] dialog cancel")
-                                #endif
-                            }
                         }
                     }
-                    Spacer(minLength: 0)
+                }
+                // Anchor dialog on the container so presentation is not tied to the inner glass `Button` layer.
+                .confirmationDialog("Choose module", isPresented: $addStepModuleDialogPresented, titleVisibility: .visible) {
+                    Button("Quiet time") {
+                        let quietId = CuePlaybackManager.quietTimeCueId
+                        let cue = catalogsManager.cues.first(where: { $0.id == quietId })
+                            ?? Cue(id: quietId, name: "Quiet time", url: "")
+                        appendNewStep(with: cue)
+                    }
+                    ForEach(catalogsManager.cues.filter { $0.id != CuePlaybackManager.quietTimeCueId }) { cue in
+                        Button(cue.name) {
+                            #if DEBUG
+                            print("AI_debug [CueAdd] dialog picked cueId=\(cue.id) name=\(cue.name)")
+                            #endif
+                            appendNewStep(with: cue)
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {
+                        #if DEBUG
+                        print("AI_debug [CueAdd] dialog cancel")
+                        #endif
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, cueSettings.isEmpty ? 8 : CreateStepRowMetrics.interRowSpacing)
@@ -238,6 +282,13 @@ struct CueConfigurationView: View {
 
     @ViewBuilder
     private func cueStepRow(at index: Int, showsDragHandle: Bool = true) -> some View {
+        if cueSettings.indices.contains(index) {
+            cueStepRowContent(at: index, showsDragHandle: showsDragHandle)
+        }
+    }
+
+    @ViewBuilder
+    private func cueStepRowContent(at index: Int, showsDragHandle: Bool) -> some View {
         HStack(alignment: .center, spacing: 0) {
             if showsDragHandle {
                 CreateStepDragHandleIcon()
@@ -257,16 +308,24 @@ struct CueConfigurationView: View {
             }
         }
         .padding(.horizontal, CreateStepRowMetrics.horizontalInset)
-        .frame(height: CreateStepRowMetrics.rowHeight)
+        .frame(height: CreateStepRowMetrics.innerContentHeight)
+        .padding(.vertical, CreateStepRowMetrics.verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
-                .fill(Color.foregroundLightGray.opacity(0.08))
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: CreateStepRowMetrics.cornerRadius,
+                topTrailingRadius: CreateStepRowMetrics.cornerRadius,
+                style: .continuous
+            )
+            .fill(Color(red: 0.11, green: 0.12, blue: 0.22))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
-        )
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(CreateStepRowMetrics.moduleTitleForeground)
+                .frame(width: CreateStepRowMetrics.leadingBorderWidth)
+        }
     }
 
     /// Keeps Intro (`INT_FRAC`) at index 0 whenever it exists in the list.
@@ -295,9 +354,10 @@ struct CueConfigurationView: View {
 
     @ViewBuilder
     private func rowTrailingControls(index: Int) -> some View {
-        if cueSettings[index].isCreateSequentialModule || cueSettings[index].cue.id == "INT_FRAC" {
+        if cueSettings.indices.contains(index),
+           cueSettings[index].isCreateSequentialModule || cueSettings[index].cue.id == "INT_FRAC" {
             fractionalOrAutoRow(index: index)
-        } else {
+        } else if cueSettings.indices.contains(index) {
             standardTriggerRow(index: index)
         }
     }
@@ -316,7 +376,9 @@ struct CueConfigurationView: View {
 
     @ViewBuilder
     private func fractionalOrAutoRow(index: Int) -> some View {
-        if cueSettings[index].cue.id == "INT_FRAC" {
+        if !cueSettings.indices.contains(index) {
+            EmptyView()
+        } else if cueSettings[index].cue.id == "INT_FRAC" {
             // Label is already the module `Menu` (“Intro”); no duplicate text on the trailing side.
             EmptyView()
         } else if cueSettings[index].cue.isMonolithicBodyScanCatalogCue {
@@ -331,10 +393,18 @@ struct CueConfigurationView: View {
             FractionalDurationStepper(
                 duration: Binding(
                     get: {
-                        let cap = maxForThis
+                        guard cueSettings.indices.contains(index) else { return 1 }
+                        let cap = max(1, min([CueSetting].createFlowMaxPracticeMinutes, [CueSetting].createFlowMaxPracticeMinutes - cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)))
                         return min(cueSettings[index].fractionalDuration ?? cap, cap)
                     },
-                    set: { cueSettings[index].fractionalDuration = min($0, maxForThis) }
+                    set: { newValue in
+                        guard cueSettings.indices.contains(index) else { return }
+                        var next = cueSettings
+                        guard next.indices.contains(index) else { return }
+                        let cap = max(1, min([CueSetting].createFlowMaxPracticeMinutes, [CueSetting].createFlowMaxPracticeMinutes - next.sumFractionalPracticeMinutes(excludingIndex: index)))
+                        next[index].fractionalDuration = min(newValue, cap)
+                        cueSettings = next
+                    }
                 ),
                 range: 1...maxForThis
             )

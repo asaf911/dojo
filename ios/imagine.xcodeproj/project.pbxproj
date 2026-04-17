@@ -139,7 +139,7 @@
 		A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */; };
 		A56A5E042D6D9B7400508EB1 /* CueSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */; };
 		A56A60422D71253E00508EB1 /* MeditationConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */; };
-		A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */; };
+		A56B87A72D35E795002BEAD2 /* CreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A62D35E795002BEAD2 /* CreateView.swift */; };
 		A56B87AA2D35EE00002BEAD2 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */; };
 		A56B87AE2D3637FB002BEAD2 /* MeditationSessionTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */; };
 		A56B87B02D363A09002BEAD2 /* SharedUIElements.swift in Sources */ = {isa = PBXBuildFile; fileRef = A56B87AF2D363A09002BEAD2 /* SharedUIElements.swift */; };
@@ -547,7 +547,7 @@
 		A56A5E012D6D964400508EB1 /* CuePlaybackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuePlaybackManager.swift; sourceTree = "<group>"; };
 		A56A5E032D6D9B6A00508EB1 /* CueSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CueSetting.swift; sourceTree = "<group>"; };
 		A56A60412D71253A00508EB1 /* MeditationConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationConfiguration.swift; sourceTree = "<group>"; };
-		A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCreationView.swift; sourceTree = "<group>"; };
+		A56B87A62D35E795002BEAD2 /* CreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateView.swift; sourceTree = "<group>"; };
 		A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
 		A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeditationSessionTimer.swift; sourceTree = "<group>"; };
 		A56B87AF2D363A09002BEAD2 /* SharedUIElements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUIElements.swift; sourceTree = "<group>"; };
@@ -1177,7 +1177,7 @@
 				A5A1D3892E178B1100F45A3F /* AI */,
 				C1E5F1002F12345600AAAAAA /* AIOnboarding */,
 				A5A1D38D2E178DB500F45A3F /* CustomMeditation */,
-				A56B87A82D35EDC3002BEAD2 /* Timer */,
+				A56B87A82D35EDC3002BEAD2 /* Create */,
 				A5EA2E672DAE1C54009505D4 /* Path */,
 				A5EA2E682DAE2041009505D4 /* Explore */,
 				A51431BE2D4DEB8400105271 /* Auth */,
@@ -1328,10 +1328,10 @@
 			path = Cues;
 			sourceTree = "<group>";
 		};
-		A56B87A82D35EDC3002BEAD2 /* Timer */ = {
+		A56B87A82D35EDC3002BEAD2 /* Create */ = {
 			isa = PBXGroup;
 			children = (
-				A56B87A62D35E795002BEAD2 /* TimerCreationView.swift */,
+				A56B87A62D35E795002BEAD2 /* CreateView.swift */,
 				A56B87AD2D3637FB002BEAD2 /* MeditationSessionTimer.swift */,
 				A56B87A92D35EE00002BEAD2 /* DurationPicker.swift */,
 				A56B88622D40C60E002BEAD2 /* CustomWheelPicker.swift */,
@@ -1339,7 +1339,7 @@
 				BBF000012FFF000100000001 /* BinauralBeatSelectionView.swift */,
 				A5A1D3902E178E7900F45A3F /* Cues */,
 			);
-			path = Timer;
+			path = Create;
 			sourceTree = "<group>";
 		};
 		A5888D3D2B3BDECC00CE76C9 /* Core */ = {
@@ -2321,7 +2321,7 @@
 				A5EA2BA22DA99DD8009505D4 /* DojoScreenContainer.swift in Sources */,
 				A5B3A1902DBC4F06004496FF /* PathStepView.swift in Sources */,
 				A59790C52B3E8EED001BA581 /* Models.swift in Sources */,
-				A56B87A72D35E795002BEAD2 /* TimerCreationView.swift in Sources */,
+				A56B87A72D35E795002BEAD2 /* CreateView.swift in Sources */,
 				A54F93802C65696500EB91B7 /* PathView.swift in Sources */,
 				A56A5E022D6D965700508EB1 /* CuePlaybackManager.swift in Sources */,
 				A5BC07D12C3E5071008D7D4D /* FileManagerHelper.swift in Sources */,

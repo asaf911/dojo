@@ -63,6 +63,7 @@ enum OfflineAssetChecker {
     /// Check if all assets for a timer meditation are cached locally
     /// - Parameter config: The TimerSessionConfig to check
     /// - Returns: AssetAvailability indicating which assets are cached
+    /// - Note: `QUIET_FRAC` has no remote URL; `TimerSessionConfig.allTimerAssetRemoteURLStrings()` already omits empty cue URLs.
     static func checkTimerMeditation(_ config: TimerSessionConfig) -> AssetAvailability {
         var missingAssets: [String] = []
         for url in config.allTimerAssetRemoteURLStrings() where !isFileCached(urlString: url) {
