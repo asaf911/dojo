@@ -18,7 +18,7 @@
 
 .page-document__meta {
   margin: 0 0 1.75rem;
-  font-size: 0.95rem;
+  font-size: 15px;
   color: var(--color-text-muted);
 }
 
@@ -94,7 +94,7 @@
 
 .support-form__hint {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 15px;
   color: var(--color-text-muted);
 }
 

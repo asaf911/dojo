@@ -1,0 +1,65 @@
+@layer tokens, primitives, shell, patterns, pages;
+
+@layer tokens {
+  :root {
+    /* System */
+    --sys-primary: #bb86fc;
+    --sys-secondary: #f3f5f9;
+    --sys-text: #e2e2e2;
+    --sys-accent: #03dac5;
+    /* Surfaces */
+    --color-bg-deep: #16162a;
+    --color-bg: #1e1e36;
+    --color-surface: #2a2a48;
+    --color-surface-elevated: #34345a;
+    --color-accent: var(--sys-primary);
+    --color-accent-soft: rgba(187, 134, 252, 0.15);
+    --color-text: var(--sys-text);
+    --color-nav-text: var(--sys-text);
+    --color-text-muted: rgba(226, 226, 226, 0.62);
+    --color-heading-on-dark: #f9f9f9;
+    --color-qr: #2e2e4c;
+    /* Layout */
+    --container-max: 1100px;
+    --header-h: 4.25rem;
+    --radius: 12px;
+    --z-header: 100;
+    --space-gutter: clamp(1rem, 4vw, 1.75rem);
+    --space-section-y: clamp(2.25rem, 5vw + 1rem, 4rem);
+    --space-section-y-tight: clamp(1.75rem, 3vw + 0.75rem, 2.75rem);
+    --space-band-y: clamp(1.75rem, 3vw + 0.5rem, 2.5rem);
+    --gap-stack: clamp(1rem, 2.5vw, 1.75rem);
+    --gap-split: clamp(1.75rem, 4vw, 3rem);
+    /* Reviews grid: gutters + inter-card gap (responsive) */
+    --space-testimonials-x: clamp(5rem, 16vw + 3rem, 11rem);
+    --space-testimonials-y: clamp(2rem, 5vw + 1rem, 3.75rem);
+    --gap-testimonials: clamp(5.4rem, 11vw, 9rem);
+    /* Typography */
+    --font-body: clamp(1rem, 0.35vw + 0.92rem, 1.08rem);
+    --font-sans: Inter, system-ui, -apple-system, sans-serif;
+    --font-copy: "Nunito", var(--font-sans);
+    --font-heading: "Nunito", var(--font-sans);
+    --font-display: "Alleniore", "Times New Roman", serif;
+    --font-alt-serif: "Roboto Slab", Georgia, "Times New Roman", serif;
+    --font-alt-sans: "Work Sans", var(--font-sans);
+    --line-body: 1.6;
+    /* Section backdrops (visible at layer edges when image is loading) */
+    --section-backdrop-fallback: #2a1828;
+    /* Marketing assets */
+    --hero-bg-image: url(/assets/dojobgwebsite.png);
+    --testimonials-bg: url(/assets/dojoimage2withoverlay.png);
+    --closing-bg: url(/assets/curvedpathleadstodojo.png);
+    /* Photo backdrops: cover the layer, zoom as needed, clip overflow (no letterboxing) */
+    --photo-bg-cover-size: cover;
+    --photo-bg-cover-position: center center;
+    /* Hero / top band layers use the same sizing as ::before section photos */
+    --photo-bg-fill-size: var(--photo-bg-cover-size);
+    --photo-bg-fill-position: var(--photo-bg-cover-position);
+    --photo-bg-fill-repeat: no-repeat;
+  }
+  @media (min-width: 40rem) {
+    :root {
+      --header-h: 4.5rem;
+    }
+  }
+}

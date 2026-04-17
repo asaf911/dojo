@@ -1,6 +1,18 @@
 import "./site.css";
-import "./layout-header-over-hero.css";
-import "./appsflyer-smart-script";
+import "./layout-header-over-hero.css"; /* typography + header tweaks; load after layered site bundle */
+import { applyDownloadUiRootClass, subscribeDownloadUiChange } from "./download-ui";
+import { initAppsFlyerSmartScript, syncAppsFlyerDownloadUi } from "./appsflyer-smart-script";
+
+applyDownloadUiRootClass();
+initAppsFlyerSmartScript();
+
+if (typeof window.matchMedia === "function") {
+  const onDownloadUiChange = () => {
+    applyDownloadUiRootClass();
+    syncAppsFlyerDownloadUi(window, document);
+  };
+  subscribeDownloadUiChange(window, onDownloadUiChange);
+}
 
 const wideBpRem = 64.0625;
 const mql = window.matchMedia(`(min-width: ${wideBpRem}rem)`);

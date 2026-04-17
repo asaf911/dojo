@@ -28,10 +28,11 @@
     <meta property="og:description" content="Practice Meditation. See the Change." />
     <meta property="og:url" content="https://medidojo.com/" />
     <meta property="og:site_name" content="Medidojo.com" />
-    <meta property="og:image" content="https://i0.wp.com/medidojo.com/wp-content/uploads/2026/02/dojo-app-store1-1.png" />
+    <meta property="og:image" content="https://medidojo.com/assets/dojo-app-store1-1.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Dojo -" />
     <meta name="twitter:description" content="Practice Meditation. See the Change." />
+    <meta name="twitter:image" content="https://medidojo.com/assets/dojo-app-store1-1.png" />
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -68,19 +69,16 @@
     </header>
 
     <main>
-      <section class="section--hero region region--hero" id="hero" aria-labelledby="hero-title">
+      <section
+        class="mj-section mj-section--hero section--hero region region--hero"
+        id="hero"
+        aria-labelledby="hero-title"
+      >
         <div class="hero__bg" role="presentation"></div>
         <div class="container hero__inner">
           <div class="hero__stack stack">
-            <a
-              class="onelink-btn btn btn--on-hero u-wide-hide btn-block-mobile"
-              href="https://medidojo.onelink.me/miw9?af_js_web=true&amp;af_ss_ver=2_10_0&amp;pid=website&amp;c=homepage&amp;af_channel=site"
-              rel="noopener"
-              target="_blank"
-              >Download from the App store</a
-            >
             <img
-              class="hero__ratings"
+              class="content-ratings"
               src="/ratingsx3.png"
               width="154"
               height="60"
@@ -89,6 +87,13 @@
             />
             <h1 class="hero__title" id="hero-title">Dojo</h1>
             <p class="hero__tagline">Practice Meditation. See the Change.</p>
+            <a
+              class="onelink-btn btn btn--on-hero app-store-cta btn-block-mobile"
+              href="https://medidojo.onelink.me/miw9?af_js_web=true&amp;af_ss_ver=2_10_0&amp;pid=website&amp;c=homepage&amp;af_channel=site"
+              rel="noopener"
+              target="_blank"
+              >Download from the App store</a
+            >
             <div class="af-qr-wrapper af-qr-wrapper--card" aria-hidden="true">
               <div class="af-qr" id="af-qr-hero"></div>
             </div>
@@ -97,7 +102,7 @@
         </div>
       </section>
 
-      <section class="section--about region" id="About" aria-labelledby="about-heading">
+      <section class="mj-section mj-section--about section--about region" id="About" aria-labelledby="about-heading">
         <div class="container split">
           <div class="section__media">
             <img src="/image2.png" width="343" height="222" alt="" loading="lazy" />
@@ -106,24 +111,23 @@
             <h2 id="about-heading">A Practice That Evolves With You</h2>
             <p>
               Dojo is not a library of sessions. It is a living practice. Each session reflects your state and rhythm,
-              keeping your meditation intentional and precise. You are not repeating the same experience. You are
-              building depth.
+              keeping your meditation intentional and precise. You are not repeating the same experience. You are building depth.
             </p>
           </div>
         </div>
       </section>
 
-      <section class="section--band region--band" id="Why-Dojo" aria-labelledby="why-heading">
+      <section class="mj-section mj-section--band section--band region region--band" id="Why-Dojo" aria-labelledby="why-heading">
         <div class="container">
           <h2 id="why-heading">Why Dojo Is Different</h2>
         </div>
       </section>
 
       <section
-        class="section--feature section--personalized-practice region"
+        class="mj-section mj-section--personalized section--feature section--feature-personalized region"
         aria-labelledby="feat-personal-heading"
       >
-        <div class="container feature-row">
+        <div class="container feature-row feature-row--split-align">
           <div class="feature-row__text stack">
             <h3 id="feat-personal-heading">Personalized Practice</h3>
             <p>
@@ -134,7 +138,7 @@
           <div class="feature-row__media feature-row__media--video">
             <video
               class="feature-video"
-              src="https://videos.files.wordpress.com/RTp258KG/dojovideo2a.mov"
+              src="/assets/dojovideo2a.mov"
               autoplay
               muted
               loop
@@ -145,8 +149,21 @@
         </div>
       </section>
 
-      <section class="section--feature section--feature-alt region" aria-labelledby="feat-proof-heading">
-        <div class="container feature-row feature-row--reverse">
+      <section
+        class="mj-section mj-section--proof section--feature section--feature-proof region"
+        aria-labelledby="feat-proof-heading"
+      >
+        <div class="container feature-row feature-row--split-align">
+          <div class="feature-row__media feature-row__media--proof">
+            <img
+              class="feature-proof__img"
+              src="/assets/dojoHRimage.png"
+              width="762"
+              height="1366"
+              alt=""
+              loading="lazy"
+            />
+          </div>
           <div class="feature-row__text stack">
             <h3 id="feat-proof-heading">Proof of Progress</h3>
             <p>
@@ -155,12 +172,14 @@
               seeing it work.
             </p>
           </div>
-          <div class="feature-row__media feature-placeholder" aria-hidden="true"></div>
         </div>
       </section>
 
-      <section class="section--feature region" aria-labelledby="feat-train-heading">
-        <div class="container feature-row">
+      <section
+        class="mj-section mj-section--train section--feature section--feature-train region"
+        aria-labelledby="feat-train-heading"
+      >
+        <div class="container feature-row feature-row--split-align">
           <div class="feature-row__text stack">
             <h3 id="feat-train-heading">Train With Purpose</h3>
             <p>
@@ -169,17 +188,26 @@
               intentional. Growth gains direction.
             </p>
           </div>
-          <div class="feature-row__media feature-placeholder" aria-hidden="true"></div>
+          <div class="feature-row__media feature-row__media--train">
+            <img
+              class="feature-train__img"
+              src="/assets/thepath.png"
+              width="447"
+              height="893"
+              alt=""
+              loading="lazy"
+            />
+          </div>
         </div>
       </section>
 
-      <section class="section--band region--band" aria-labelledby="testimonials-heading">
+      <section class="mj-section mj-section--band section--band region region--band" aria-labelledby="testimonials-heading">
         <div class="container">
           <h3 id="testimonials-heading">For Those Who Take Their Practice Seriously</h3>
         </div>
       </section>
 
-      <section class="section--testimonials region" aria-label="Testimonials">
+      <section class="mj-section mj-section--social section--testimonials region" aria-label="Testimonials">
         <div class="container grid-testimonials">
           <blockquote class="testimonial stack">
             <p>
@@ -208,29 +236,35 @@
         </div>
       </section>
 
-      <section class="section--closing region" aria-labelledby="closing-title">
-        <div class="container stack stack--center">
-          <a
-            class="onelink-btn btn btn--primary u-wide-hide btn-block-mobile"
-            href="https://medidojo.onelink.me/miw9?af_js_web=true&amp;af_ss_ver=2_10_0&amp;pid=website&amp;c=homepage&amp;af_channel=site"
-            rel="noopener"
-            target="_blank"
-            >Download from the App store</a
-          >
-          <img
-            class="hero__ratings"
-            src="/ratingsx3.png"
-            width="154"
-            height="60"
-            alt="5 Star Rating"
-            loading="lazy"
-          />
-          <h2 id="closing-title">Dojo</h2>
-          <p class="closing__tagline"><strong>Your personalized path is waiting</strong></p>
-          <div class="af-qr-wrapper af-qr-wrapper--card" aria-hidden="true">
-            <div class="af-qr" id="af-qr-footer"></div>
+      <section
+        class="mj-section mj-section--closing section--closing region region--hero"
+        aria-labelledby="closing-title"
+      >
+        <div class="hero__bg hero__bg--closing" role="presentation"></div>
+        <div class="container hero__inner hero__inner--closing">
+          <div class="hero__stack stack">
+            <img
+              class="content-ratings"
+              src="/ratingsx3.png"
+              width="154"
+              height="60"
+              alt="5 Star Rating"
+              loading="lazy"
+            />
+            <h2 class="hero__title" id="closing-title">Dojo</h2>
+            <p class="hero__tagline"><strong>Your personalized path is waiting</strong></p>
+            <a
+              class="onelink-btn btn btn--on-hero app-store-cta btn-block-mobile"
+              href="https://medidojo.onelink.me/miw9?af_js_web=true&amp;af_ss_ver=2_10_0&amp;pid=website&amp;c=homepage&amp;af_channel=site"
+              rel="noopener"
+              target="_blank"
+              >Download from the App store</a
+            >
+            <div class="af-qr-wrapper af-qr-wrapper--card" aria-hidden="true">
+              <div class="af-qr" id="af-qr-footer"></div>
+            </div>
+            <p class="scan-hint scan-hint--hero">Scan with iPhone to download</p>
           </div>
-          <p class="scan-hint scan-hint--on-dark">Scan with iPhone to download</p>
         </div>
       </section>
     </main>

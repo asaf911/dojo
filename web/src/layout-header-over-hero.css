@@ -30,9 +30,10 @@ body {
   text-shadow: none;
 }
 
-/* Sub-section titles (Elementor: 22px Nunito, #F9F9F9, margin 22px 0) */
+/* Sub-section titles (Elementor: 22px Nunito, #F9F9F9, margin 22px 0) — same for hero / closing taglines */
 .section__copy h2,
-.feature-row__text h3 {
+.feature-row__text h3,
+.hero__tagline {
   font-family: var(--font-heading);
   font-size: 1.375rem;
   font-weight: 400;
@@ -40,13 +41,18 @@ body {
   letter-spacing: normal;
   color: #f9f9f9;
   margin: 22px 0;
+  text-shadow: none;
+}
+
+.hero__tagline strong {
+  font-weight: inherit;
 }
 
 /* Sub-section body (Elementor: 22px Nunito, #E2E2E2, margin 22px 0) */
 .section__copy p,
 .feature-row__text p {
   font-family: var(--font-copy);
-  font-size: 1.375rem;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.55;
   color: #e2e2e2;
@@ -81,29 +87,7 @@ body {
   letter-spacing: normal;
 }
 
-/* --- Photo overlays (hero bg, personalized band bg, about image) --- */
-
-.hero__bg {
-  isolation: isolate;
-}
-
-.hero__bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: var(--photo-overlay-gradient);
-  mix-blend-mode: darken;
-}
-
-.section--personalized-practice::before {
-  background-image: var(--photo-overlay-gradient), var(--feat-personalized-bg);
-  background-size: cover, cover;
-  background-position: center, center;
-  background-repeat: no-repeat, no-repeat;
-  background-blend-mode: darken;
-}
+/* --- Photo overlay (about inline image only; hero/section BGs have no overlay) --- */
 
 .section--about .section__media {
   --about-media-mw: 343px;
