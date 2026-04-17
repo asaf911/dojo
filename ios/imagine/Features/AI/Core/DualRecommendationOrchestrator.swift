@@ -10,7 +10,8 @@
 //  Step 3 — Select Primary  (mode-specific role)
 //  Step 4 — Select Secondary (deprecated: learn = complementary, personal = contrast)
 //
-//  Personal-mode session selection is delegated to RecommendationContextEngine (custom only).
+//  Personal-mode primary is custom via RecommendationContextEngine, with Explore-backed
+//  fallback in this class when generation yields no session.
 //  Path selection uses PathProgressManager directly in this class.
 //
 
@@ -19,7 +20,8 @@ import Combine
 
 // MARK: - Dual Recommendation Orchestrator
 
-/// Coordinates Sensei recommendation selection for AI chat (Path + custom meditations; no Explore catalog).
+/// Coordinates Sensei recommendation selection for AI chat (Path + custom meditations;
+/// pre-recorded Daily Routines are used only as a fallback when custom generation fails).
 ///
 /// The product path is a **single** recommendation; the legacy dual-card API remains
 /// for compatibility but is deprecated.
@@ -173,7 +175,11 @@ class DualRecommendationOrchestrator: ObservableObject {
         case .learn:
             primary = await selectLearnPrimary(context: context)
         case .personal:
-            primary = await contextEngine.selectContextual(context)
+            if let customPrimary = await contextEngine.selectContextual(context) {
+                primary = customPrimary
+            } else {
+                primary = await selectPersonalExploreFallbackAfterCustomFailure(context: context)
+            }
         }
 
         guard let primary else {
@@ -284,6 +290,46 @@ class DualRecommendationOrchestrator: ObservableObject {
         return RecommendationItem(
             type: .path(pathStep),
             introMessage: primaryMessage,
+            welcomeGreeting: context.welcomeGreeting,
+            isFirstWelcome: context.isFirstWelcome,
+            contextMessage: context.contextMessage
+        )
+    }
+
+    /// When custom meditation generation fails (API error, non-meditation response, etc.),
+    /// offer a time-appropriate Daily Routine from Explore data so timely and post-session
+    /// flows still surface a concrete practice (same eligibility as Library explore).
+    private func selectPersonalExploreFallbackAfterCustomFailure(context: RecommendationContext) async -> RecommendationItem? {
+        let explore = ExploreRecommendationManager.shared
+        guard explore.shouldRecommendExplore() else {
+            logger.aiChat("🎯 DUAL_REC: Custom failed — explore fallback skipped (not eligible)")
+            return nil
+        }
+        guard let session = explore.getTimeAppropriateSession(
+            excluding: context.excludedContentIds,
+            hurdleContext: context.hurdleContext,
+            requireHurdleMatch: false
+        ) else {
+            logger.aiChat("🎯 DUAL_REC: Custom failed — explore fallback skipped (no session)")
+            return nil
+        }
+
+        logger.aiChat("🎯 DUAL_REC: Custom failed — using explore fallback id=\(session.id) title=\(session.title)")
+        AnalyticsManager.shared.logEvent("sensei_custom_failed_explore_fallback", parameters: [
+            "session_id": session.id,
+            "slot": explore.getCurrentSlotKey(),
+            "phase": journeyManager.currentPhase.analyticsName
+        ])
+
+        let timeOfDayName = context.timeOfDay.displayName
+        let intro = await messageService.generateExplorePrimary(
+            sessionTags: session.tags,
+            timeOfDay: timeOfDayName,
+            hurdleContext: context.hurdleContext
+        )
+        return RecommendationItem(
+            type: .explore(session),
+            introMessage: intro,
             welcomeGreeting: context.welcomeGreeting,
             isFirstWelcome: context.isFirstWelcome,
             contextMessage: context.contextMessage

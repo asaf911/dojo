@@ -7,9 +7,9 @@
 //  appropriate session. Whether that session is Explore or Custom is an
 //  implementation detail — the caller only cares about the result.
 //
-//  Three selection roles (Sensei suggestions are **custom meditations only**; Path
-//  recommendations come from PathProgressManager, not this engine. Pre-recorded Explore
-//  sessions are discovered in Library — not suggested here.)
+//  Three selection roles: Path recommendations come from PathProgressManager, not this engine.
+//  Sensei’s normal Personal primary is **custom only** here; pre-recorded Explore sessions
+//  are chosen in ``DualRecommendationOrchestrator`` when custom generation fails.
 //
 //  selectContextual    — Personal Mode primary: always Custom.
 //
@@ -175,8 +175,9 @@ extension RecommendationContextEngine {
                     logger.aiChat("🎯 CTX_ENGINE: ✅ custom generated duration=\(timerResponse.meditationConfiguration.duration)min")
                     return timerResponse
                 }
-                logger.aiChat("🎯 CTX_ENGINE: conversational response instead of meditation — skipping")
+                logger.aiChat("🎯 CTX_ENGINE: conversational response instead of meditation — skipping intent=\(response.intent)")
             } catch {
+                logger.aiChat("🎯 CTX_ENGINE: custom generation API error — \(error.localizedDescription)")
                 logger.errorMessage("🎯 CTX_ENGINE: custom generation failed — \(error.localizedDescription)")
             }
             return nil

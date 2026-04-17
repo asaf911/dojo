@@ -374,7 +374,7 @@ struct AIChatContainerView: View {
                     removeThinkingMessageIfNeeded()
                     // Greeting may already be visible; avoid a dead-end thread after thinking clears.
                     conversationState.addAIMessage(
-                        text: "I couldn't line up a practice just now. Ask me for a quick morning meditation below and I'll build one."
+                        text: Self.timelyRecommendationFailureAssistantMessage()
                     )
                     logTimelySkip(reason: "generation_failed")
                     if devOverrideActiveForTask {
@@ -433,6 +433,23 @@ struct AIChatContainerView: View {
             "slot": ExploreRecommendationManager.shared.getCurrentSlotKey(),
             "phase": ProductJourneyManager.shared.currentPhase.analyticsName
         ])
+    }
+
+    /// Shown when timely fetch runs but neither custom nor explore fallback produced a card.
+    private static func timelyRecommendationFailureAssistantMessage() -> String {
+        let slot = ExploreRecommendationManager.TimeOfDay.current()
+        let hint: String
+        switch slot {
+        case .morning:
+            hint = "a quick morning meditation"
+        case .noon:
+            hint = "a midday reset"
+        case .evening:
+            hint = "an evening wind-down"
+        case .night:
+            hint = "a calming night meditation"
+        }
+        return "I couldn't line up a practice just now. Ask me below for \(hint), and I'll build one."
     }
 
     private func addTimelyGreetingIfNeeded() {
