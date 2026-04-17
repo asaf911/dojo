@@ -8,6 +8,13 @@
 import SwiftUI
 import UIKit
 
+/// `true` when this process is an Xcode SwiftUI preview (`XCODE_RUNNING_FOR_PREVIEWS`).
+private enum XcodePreviewRuntime {
+    static var isActive: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+}
+
 struct TimerView: View {
     @State private var selectedBackgroundSound: BackgroundSound = BackgroundSound(id: "None", name: "None", url: "")
     @State private var cueSettings: [CueSetting] = []
@@ -27,7 +34,6 @@ struct TimerView: View {
     @Environment(\.toggleMenu) private var toggleMenu
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     @StateObject private var catalogsManager = CatalogsManager.shared
-    @State private var disableCreateVerticalScroll = false
 
     /// Practice length derived from fractional module durations (and reconciled cue triggers).
     private var sessionPracticeMinutes: Int {
@@ -62,8 +68,7 @@ struct TimerView: View {
 
                     CueConfigurationView(
                         practiceMinutes: sessionPracticeMinutes,
-                        cueSettings: $cueSettings,
-                        disableParentVerticalScroll: $disableCreateVerticalScroll
+                        cueSettings: $cueSettings
                     )
 
                     DividerView()
@@ -103,10 +108,14 @@ struct TimerView: View {
                 .padding(.horizontal, 26)
                 .padding(.bottom, 120)
             }
-            .scrollDisabled(disableCreateVerticalScroll)
+            // Lets nested `List` reorder previews extend past the scroll view during the initial lift.
+            .scrollClipDisabled(true)
             .topFadeMask(height: 5)
         }
         .onAppear {
+            if XcodePreviewRuntime.isActive {
+                SharedUserStorage.save(value: true, forKey: .useDevServer)
+            }
             // Always fetch fresh catalogs when online; fetchCatalogs falls back to cache when offline
             catalogsManager.fetchCatalogs(triggerContext: "TimerCreationView|onAppear preload") { success in
                 if success {
@@ -123,8 +132,10 @@ struct TimerView: View {
             } else {
                 print("🎛️ TimerView onAppear: No deep linked meditation configuration found")
                 logger.eventMessage("TimerView onAppear: No deep linked meditation configuration found")
-                // Only load saved configuration if no deep-linked setting is pending
-                loadSavedConfiguration()
+                // Previews: skip persisted timer rows (stale prod/local sessions) and always use dev catalogs.
+                if !XcodePreviewRuntime.isActive {
+                    loadSavedConfiguration()
+                }
             }
             
             // Check if data is already loaded
@@ -142,7 +153,9 @@ struct TimerView: View {
             }
         }
         .onDisappear {
-            saveConfiguration()
+            if !XcodePreviewRuntime.isActive {
+                saveConfiguration()
+            }
         }
         .navigationBarBackButtonHidden(true)
         .swipeBackEntireScreen {
@@ -167,13 +180,24 @@ struct TimerView: View {
         .onChange(of: selectedBackgroundSound) { _, _ in
             updateShareLink()
         }
-        .onChange(of: cueSettings) { _, _ in
+        .onChange(of: cueSettings) { _, newValue in
+            #if DEBUG
+            print("AI_debug [TimerView] onChange cueSettings count=\(newValue.count) cueIds=\(newValue.map(\.cue.id).joined(separator: ","))")
+            #endif
             updateShareLink()
         }
     }
 
     private func syncSessionFromCues() {
-        cueSettings.reconcileCreateScreenAutoSession()
+        #if DEBUG
+        let before = cueSettings.count
+        #endif
+        var next = cueSettings
+        next.reconcileCreateScreenAutoSession()
+        cueSettings = next
+        #if DEBUG
+        print("AI_debug [TimerView] syncSessionFromCues before=\(before) after=\(cueSettings.count)")
+        #endif
     }
     
     // MARK: - Persistence Helpers
@@ -245,6 +269,9 @@ struct TimerView: View {
     
     // Add a method to update the share link whenever timer settings change
     private func updateShareLink() {
+        #if DEBUG
+        print("AI_debug [TimerView] updateShareLink enter cueCount=\(cueSettings.count)")
+        #endif
         syncSessionFromCues()
         shareLink = generateShareLink()
         if let link = shareLink {
@@ -411,28 +438,22 @@ private struct SessionLengthReadout: View {
     }
 }
 
-/// Sets `SharedUserStorage.useDevServer` so `Config` URLs match the selected preview tab (imaginedev vs production).
+/// Create screen preview: **dev server only** (synchronous) so `Config` / catalogs never use production for the first frame.
 private struct TimerViewPreviewShell: View {
-    let useDevServer: Bool
+    init() {
+        SharedUserStorage.save(value: true, forKey: .useDevServer)
+    }
 
     var body: some View {
         TimerView()
             .environmentObject(NavigationCoordinator())
             .environment(\.toggleMenu, {})
-            .task(id: useDevServer) {
-                SharedUserStorage.save(value: useDevServer, forKey: .useDevServer)
-            }
     }
 }
 
 struct TimerView_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            TimerViewPreviewShell(useDevServer: true)
-                .previewDisplayName("Create (Dev server)")
-
-            TimerViewPreviewShell(useDevServer: false)
-                .previewDisplayName("Create (Production server)")
-        }
+        TimerViewPreviewShell()
+            .previewDisplayName("Create")
     }
 }

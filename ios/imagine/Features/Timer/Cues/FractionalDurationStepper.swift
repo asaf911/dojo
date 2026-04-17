@@ -19,6 +19,7 @@ struct FractionalDurationStepper: View {
                     .foregroundColor(duration > range.lowerBound ? .white : .white.opacity(0.25))
                     .frame(width: 32, height: 32)
             }
+            .buttonStyle(.borderless)
             .disabled(duration <= range.lowerBound)
 
             Text("\(duration)m")
@@ -35,6 +36,7 @@ struct FractionalDurationStepper: View {
                     .foregroundColor(duration < range.upperBound ? .white : .white.opacity(0.25))
                     .frame(width: 32, height: 32)
             }
+            .buttonStyle(.borderless)
             .disabled(duration >= range.upperBound)
         }
         .background(Color.foregroundLightGray.opacity(0.12))

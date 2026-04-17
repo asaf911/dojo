@@ -6,24 +6,64 @@
 //
 
 import SwiftUI
-
-private enum RowFramePreferenceKey: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
-
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { $1 })
-    }
-}
+import UIKit
 
 /// Create-screen step row layout (matches design spec: full-width card, fixed height, insets).
 private enum CreateStepRowMetrics {
     static let rowHeight: CGFloat = 60
     static let horizontalInset: CGFloat = 8
-    static let handleSide: CGFloat = 24
-    static let handleToModuleGap: CGFloat = 8
+    static let dragHandleHorizontalPadding: CGFloat = 8
+    static let moduleToTrailingMinGap: CGFloat = 12
     static let trailingControlGap: CGFloat = 8
     static let interRowSpacing: CGFloat = 4
     static let cornerRadius: CGFloat = 10
+}
+
+/// Same look as an unselected `CueIndicatorView` (16pt capsule) but **not** a `Button` — safe as a `Menu` label and for read-only module titles.
+private struct CreateStepPillLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .nunitoFont(size: 16, style: .regular)
+            .kerning(0.07)
+            .multilineTextAlignment(.center)
+            .foregroundColor(.white)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 13)
+            .frame(minWidth: 63)
+            .background(Color.backgroundDarkPurple.opacity(0.5))
+            .cornerRadius(23)
+            .overlay(
+                RoundedRectangle(cornerRadius: 23)
+                    .inset(by: 0.5)
+                    .stroke(.white.opacity(0.32), lineWidth: 1)
+            )
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .accessibilityLabel(text)
+    }
+}
+
+/// Reorder affordance (six dots); row reorder still uses the list’s long-press drag gesture.
+private struct CreateStepDragHandleIcon: View {
+    private let dotSize: CGFloat = 4
+    private let dotGap: CGFloat = 3
+
+    var body: some View {
+        VStack(spacing: dotGap) {
+            HStack(spacing: dotGap) { dot; dot }
+            HStack(spacing: dotGap) { dot; dot }
+            HStack(spacing: dotGap) { dot; dot }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var dot: some View {
+        Circle()
+            .fill(Color.white.opacity(0.42))
+            .frame(width: dotSize, height: dotSize)
+    }
 }
 
 /// Steps: modules play in list order (durations stack on the practice timeline). Bells/other cues still pick Start / minute / End.
@@ -31,26 +71,10 @@ struct CueConfigurationView: View {
     /// Practice length from the create screen (derived from module durations).
     let practiceMinutes: Int
     @Binding var cueSettings: [CueSetting]
-    /// While dragging a step handle, disables the parent `ScrollView` so the drag wins over vertical scrolling.
-    @Binding var disableParentVerticalScroll: Bool
-
-    @State private var dragSourceIndex: Int?
-    @State private var dragTranslation: CGSize = .zero
-    @State private var rowFramesByIndex: [Int: CGRect] = [:]
-    @State private var rowFramesAtDragStart: [Int: CGRect] = [:]
 
     private let maxCues = 10
     @ObservedObject var catalogsManager = CatalogsManager.shared
-
-    init(
-        practiceMinutes: Int,
-        cueSettings: Binding<[CueSetting]>,
-        disableParentVerticalScroll: Binding<Bool> = .constant(false)
-    ) {
-        self.practiceMinutes = practiceMinutes
-        self._cueSettings = cueSettings
-        self._disableParentVerticalScroll = disableParentVerticalScroll
-    }
+    @State private var addStepModuleDialogPresented = false
 
     // Helper function to display the current trigger as text.
     private func displayText(for setting: CueSetting) -> String {
@@ -74,7 +98,12 @@ struct CueConfigurationView: View {
         }
     }
     
-    private static let reorderCoordinateSpaceName = "CueReorderSpace"
+    /// `List` + `.fixedSize(vertical: true)` caches intrinsic height at first layout — new rows stay off-screen. Drive height from `count` instead.
+    private var stepsListLayoutHeight: CGFloat {
+        let n = cueSettings.count
+        guard n > 0 else { return 0 }
+        return CGFloat(n) * CreateStepRowMetrics.rowHeight + CGFloat(n - 1) * CreateStepRowMetrics.interRowSpacing
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -83,27 +112,63 @@ struct CueConfigurationView: View {
                 .foregroundColor(.foregroundLightGray)
                 .padding(.horizontal, 8)
 
-            VStack(alignment: .leading, spacing: CreateStepRowMetrics.interRowSpacing) {
+            List {
                 ForEach(Array(cueSettings.enumerated()), id: \.element.id) { index, _ in
                     cueStepRow(at: index)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
+                .onMove(perform: moveCueSteps)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
+            .scrollDisabled(true)
+            .listRowSpacing(CreateStepRowMetrics.interRowSpacing)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .coordinateSpace(name: Self.reorderCoordinateSpaceName)
-            .onPreferenceChange(RowFramePreferenceKey.self) { rowFramesByIndex = $0 }
+            .frame(height: stepsListLayoutHeight)
+            .environment(\.defaultMinListRowHeight, CreateStepRowMetrics.rowHeight)
+            .id(cueSettings.map(\.id))
+            .background(StepsListReorderUnclipWorkaround())
 
             if cueSettings.count < maxCues {
                 HStack {
-                    Group {
-                        if catalogsManager.cues.isEmpty {
-                            addStepIndicatorView(menuLabel: false)
-                        } else {
-                            Menu {
-                                catalogCueMenuButtons { cue in
+                    if catalogsManager.cues.isEmpty {
+                        CueIndicatorView(
+                            text: "+ Add Step",
+                            isSelected: false,
+                            action: { appendNewStep(with: Cue(id: "None", name: "None", url: "")) },
+                            customFontSize: 16,
+                            source: "Cues-Sound",
+                            isMenuButton: false
+                        )
+                        .fixedSize(horizontal: true, vertical: false)
+                        .layoutPriority(2)
+                    } else {
+                        // `Menu` inside `List` + parent `ScrollView` often drops selections; use system `confirmationDialog` (reliable).
+                        Button {
+                            #if DEBUG
+                            print("AI_debug [CueAdd] +AddStep tapped catalogCount=\(catalogsManager.cues.count) currentSteps=\(cueSettings.count)")
+                            #endif
+                            addStepModuleDialogPresented = true
+                        } label: {
+                            CreateStepPillLabel(text: "+ Add Step")
+                        }
+                        .buttonStyle(.plain)
+                        .confirmationDialog("Choose module", isPresented: $addStepModuleDialogPresented, titleVisibility: .visible) {
+                            ForEach(catalogsManager.cues) { cue in
+                                Button(cue.name) {
+                                    #if DEBUG
+                                    print("AI_debug [CueAdd] dialog picked cueId=\(cue.id) name=\(cue.name)")
+                                    #endif
                                     appendNewStep(with: cue)
                                 }
-                            } label: {
-                                addStepIndicatorView(menuLabel: true)
+                            }
+                            Button("Cancel", role: .cancel) {
+                                #if DEBUG
+                                print("AI_debug [CueAdd] dialog cancel")
+                                #endif
                             }
                         }
                     }
@@ -139,48 +204,15 @@ struct CueConfigurationView: View {
     
     // MARK: - Row Builders
 
-    /// Same capsule as the per-row sound `Menu` (`CueIndicatorView` + `Cues-Sound`). `menuLabel: true` for `Menu` label only (no nested `Button`).
-    @ViewBuilder
-    private func addStepIndicatorView(menuLabel: Bool) -> some View {
-        CueIndicatorView(
-            text: "+ Add Step",
-            isSelected: false,
-            action: menuLabel ? nil : {
-                appendNewStep(with: Cue(id: "None", name: "None", url: ""))
-            },
-            customFontSize: 16,
-            source: "Cues-Sound",
-            isMenuButton: menuLabel
-        )
-        .fixedSize(horizontal: true, vertical: false)
-        .layoutPriority(2)
-    }
-
-    /// Catalog entries for a sound `Menu` (existing row or add step).
-    @ViewBuilder
-    private func catalogCueMenuButtons(onSelect: @escaping (Cue) -> Void) -> some View {
-        ForEach(catalogsManager.cues) { cue in
-            Button(cue.name) {
-                onSelect(cue)
-            }
-        }
-    }
-
     @ViewBuilder
     private func cueStepRow(at index: Int) -> some View {
-        let isDraggingThisRow = dragSourceIndex == index
         HStack(alignment: .center, spacing: 0) {
-            HStack(alignment: .center, spacing: CreateStepRowMetrics.handleToModuleGap) {
-                StepDragHandleView()
-                    .frame(width: CreateStepRowMetrics.handleSide, height: CreateStepRowMetrics.handleSide)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(reorderDragGesture(sourceRowIndex: index))
-                    .accessibilityLabel("Reorder step")
+            CreateStepDragHandleIcon()
+                .padding(.horizontal, CreateStepRowMetrics.dragHandleHorizontalPadding)
 
-                cueNameMenu(index: index)
-            }
+            CreateStepPillLabel(text: cueSettings[index].cue.name)
 
-            Spacer(minLength: CreateStepRowMetrics.handleToModuleGap)
+            Spacer(minLength: CreateStepRowMetrics.moduleToTrailingMinGap)
 
             HStack(alignment: .center, spacing: CreateStepRowMetrics.trailingControlGap) {
                 rowTrailingControls(index: index)
@@ -198,18 +230,15 @@ struct CueConfigurationView: View {
             RoundedRectangle(cornerRadius: CreateStepRowMetrics.cornerRadius, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
         )
-        .offset(y: isDraggingThisRow ? dragTranslation.height : 0)
-        .zIndex(isDraggingThisRow ? 1 : 0)
-        .shadow(color: .black.opacity(isDraggingThisRow ? 0.35 : 0), radius: isDraggingThisRow ? 10 : 0, y: isDraggingThisRow ? 4 : 0)
-        .background(
-            GeometryReader { geo in
-                Color.clear.preference(
-                    key: RowFramePreferenceKey.self,
-                    value: [index: geo.frame(in: .named(Self.reorderCoordinateSpaceName))]
-                )
-            }
-            .allowsHitTesting(false)
-        )
+    }
+
+    /// Native `List` reorder (long-press lift + drag), same as system Settings-style lists.
+    private func moveCueSteps(from source: IndexSet, to destination: Int) {
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.88)) {
+            var next = cueSettings
+            next.move(fromOffsets: source, toOffset: destination)
+            cueSettings = next
+        }
     }
 
     @ViewBuilder
@@ -229,83 +258,8 @@ struct CueConfigurationView: View {
                 .nunitoFont(size: 18, style: .medium)
                 .foregroundColor(.white)
         }
+        .buttonStyle(.borderless)
         .fixedSize()
-    }
-
-    private func reorderDragGesture(sourceRowIndex: Int) -> some Gesture {
-        DragGesture(minimumDistance: 14, coordinateSpace: .named(Self.reorderCoordinateSpaceName))
-            .onChanged { value in
-                if dragSourceIndex == nil {
-                    dragSourceIndex = sourceRowIndex
-                    rowFramesAtDragStart = rowFramesByIndex
-                    disableParentVerticalScroll = true
-                }
-                dragTranslation = value.translation
-            }
-            .onEnded { value in
-                let fromIndex = dragSourceIndex ?? sourceRowIndex
-                let location = value.location
-                let frames = rowFramesAtDragStart
-                let destination = reorderTargetIndex(
-                    for: location,
-                    frames: frames,
-                    rowCount: cueSettings.count,
-                    fallback: fromIndex
-                )
-                dragSourceIndex = nil
-                dragTranslation = .zero
-                disableParentVerticalScroll = false
-
-                guard fromIndex != destination,
-                      cueSettings.indices.contains(fromIndex),
-                      cueSettings.indices.contains(destination)
-                else { return }
-                reorderSteps(from: fromIndex, to: destination)
-            }
-    }
-
-    /// Picks the row under the release point; falls back to the nearest row by midY, then `fallback`.
-    private func reorderTargetIndex(for location: CGPoint, frames: [Int: CGRect], rowCount: Int, fallback: Int) -> Int {
-        guard rowCount > 0 else { return 0 }
-        if let hit = frames.first(where: { $0.value.contains(location) })?.key,
-           hit >= 0, hit < rowCount {
-            return hit
-        }
-        guard !frames.isEmpty else { return min(max(0, fallback), rowCount - 1) }
-        let nearest = frames.min(by: { a, b in
-            abs(a.value.midY - location.y) < abs(b.value.midY - location.y)
-        })
-        return min(max(0, nearest?.key ?? fallback), rowCount - 1)
-    }
-
-    private func reorderSteps(from fromIndex: Int, to toIndex: Int) {
-        guard fromIndex != toIndex,
-              cueSettings.indices.contains(fromIndex),
-              cueSettings.indices.contains(toIndex)
-        else { return }
-        withAnimation(.spring(response: 0.52, dampingFraction: 0.86)) {
-            cueSettings.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex)
-        }
-    }
-
-    @ViewBuilder
-    private func cueNameMenu(index: Int) -> some View {
-        Menu {
-            catalogCueMenuButtons { cue in
-                applySelectedCatalogCue(at: index, cue: cue)
-            }
-        } label: {
-            CueIndicatorView(
-                text: cueSettings[index].cue.name,
-                isSelected: false,
-                action: nil,
-                customFontSize: 16,
-                source: "Cues-Sound",
-                isMenuButton: true
-            )
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(2)
-        }
     }
 
     @ViewBuilder
@@ -380,45 +334,51 @@ struct CueConfigurationView: View {
             .disabled(isEndTaken)
             .foregroundColor(isEndTaken ? Color.black : Color.primary)
         } label: {
-            CueIndicatorView(
-                text: displayText(for: cueSettings[index]),
-                isSelected: false,
-                action: nil,
-                customFontSize: 16,
-                source: "Cues-Trigger",
-                isMenuButton: true
-            )
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(2)
+            CreateStepPillLabel(text: displayText(for: cueSettings[index]))
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(2)
         }
+        .buttonStyle(.borderless)
     }
 
     // MARK: - Cue Management
 
-    /// Applies a catalog cue to an existing row (sound `Menu`).
+    /// Applies a catalog cue to an existing row (after add). Writes back a **new array** so `List` + `@Binding` refresh reliably.
     private func applySelectedCatalogCue(at index: Int, cue: Cue) {
-        cueSettings[index].cue = cue
+        guard cueSettings.indices.contains(index) else {
+            #if DEBUG
+            print("AI_debug [CueAdd] applySelectedCatalogCue skip badIndex=\(index) count=\(cueSettings.count)")
+            #endif
+            return
+        }
+        var next = cueSettings
+        next[index].cue = cue
+
         if cue.isMonolithicBodyScanCatalogCue {
             let fromCatalog = CatalogsManager.shared.bodyScanDurations[cue.id]
             let parsed = Int(cue.id.dropFirst(2)).flatMap { $0 > 0 ? $0 : nil }
             let base = fromCatalog ?? parsed ?? 5
-            let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+            let sumOthers = next.sumFractionalPracticeMinutes(excludingIndex: index)
             let cap = Swift.max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
-            cueSettings[index].fractionalDuration = Swift.min(base, cap)
-        } else if CueSetting(cue: cue).isFractional {
+            next[index].fractionalDuration = Swift.min(base, cap)
+        } else if next[index].isFractional {
             if cue.id == "INT_FRAC" {
-                cueSettings[index].fractionalDuration = nil
-                cueSettings[index].triggerType = .start
-                cueSettings[index].minute = nil
+                next[index].fractionalDuration = nil
+                next[index].triggerType = .start
+                next[index].minute = nil
             } else {
-                let sumOthers = cueSettings.sumFractionalPracticeMinutes(excludingIndex: index)
+                let sumOthers = next.sumFractionalPracticeMinutes(excludingIndex: index)
                 let cap = Swift.max(1, [CueSetting].createFlowMaxPracticeMinutes - sumOthers)
                 let reference = referenceFractionalMinutesForNewModule(beforeIndex: index)
-                cueSettings[index].fractionalDuration = Swift.min(Swift.max(1, reference), cap)
+                next[index].fractionalDuration = Swift.min(Swift.max(1, reference), cap)
             }
         } else {
-            cueSettings[index].fractionalDuration = nil
+            next[index].fractionalDuration = nil
         }
+        cueSettings = next
+        #if DEBUG
+        print("AI_debug [CueAdd] applySelectedCatalogCue done index=\(index) cueId=\(cue.id) count=\(cueSettings.count)")
+        #endif
     }
 
     /// Next trigger slot for a new step (same rules as before; cue is chosen separately).
@@ -444,34 +404,119 @@ struct CueConfigurationView: View {
     }
 
     private func appendNewStep(with cue: Cue) {
+        #if DEBUG
+        print("AI_debug [CueAdd] appendNewStep enter cueId=\(cue.id) name=\(cue.name) stepsBefore=\(cueSettings.count) practiceMinutes=\(practiceMinutes)")
+        #endif
         let assign = triggerAssignmentForNewStep()
-        cueSettings.append(CueSetting(triggerType: assign.0, minute: assign.1, cue: cue))
-        applySelectedCatalogCue(at: cueSettings.count - 1, cue: cue)
+        #if DEBUG
+        print("AI_debug [CueAdd] trigger assign trigger=\(String(describing: assign.0)) minute=\(String(describing: assign.1))")
+        #endif
+        var next = cueSettings
+        next.append(CueSetting(triggerType: assign.0, minute: assign.1, cue: cue))
+        cueSettings = next
+        #if DEBUG
+        print("AI_debug [CueAdd] appendNewStep after append count=\(cueSettings.count)")
+        #endif
+        let newIndex = cueSettings.count - 1
+        applySelectedCatalogCue(at: newIndex, cue: cue)
+        #if DEBUG
+        print("AI_debug [CueAdd] appendNewStep exit count=\(cueSettings.count)")
+        #endif
     }
 
     private func removeCue(at index: Int) {
-        if index < cueSettings.count {
-            cueSettings.remove(at: index)
-        }
+        guard cueSettings.indices.contains(index) else { return }
+        var next = cueSettings
+        next.remove(at: index)
+        cueSettings = next
     }
 }
 
-/// Six-dot grip (2×3) sized for a **24×24** create-step drag affordance.
-private struct StepDragHandleView: View {
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<2, id: \.self) { _ in
-                VStack(spacing: 2) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        Circle()
-                            .fill(Color.white.opacity(0.42))
-                            .frame(width: 2.5, height: 2.5)
-                    }
+/// SwiftUI `List` uses a `UITableView` whose `clipsToBounds` (and cell clipping) crops the reorder lift snapshot on the first frame.
+private struct StepsListReorderUnclipWorkaround: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.schedulePatch(from: uiView)
+    }
+
+    final class Coordinator {
+        private var workItem: DispatchWorkItem?
+        private weak var patchedTable: UITableView?
+
+        func schedulePatch(from anchor: UIView) {
+            workItem?.cancel()
+            let item = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                guard let table = Self.findEmbeddingTableView(from: anchor) else { return }
+
+                if self.patchedTable !== table {
+                    self.restoreClipDefaults(on: self.patchedTable)
+                    self.patchedTable = table
+                }
+
+                table.clipsToBounds = false
+                for cell in table.visibleCells {
+                    cell.clipsToBounds = false
+                    cell.contentView.clipsToBounds = false
+                    cell.backgroundView?.clipsToBounds = false
+                }
+            }
+            workItem = item
+            DispatchQueue.main.async(execute: item)
+        }
+
+        private func restoreClipDefaults(on table: UITableView?) {
+            guard let table else { return }
+            table.clipsToBounds = true
+            for cell in table.visibleCells {
+                cell.clipsToBounds = true
+                cell.contentView.clipsToBounds = true
+                cell.backgroundView?.clipsToBounds = true
+            }
+        }
+
+        deinit {
+            workItem?.cancel()
+            let table = patchedTable
+            DispatchQueue.main.async {
+                table?.clipsToBounds = true
+                table?.visibleCells.forEach { cell in
+                    cell.clipsToBounds = true
+                    cell.contentView.clipsToBounds = true
+                    cell.backgroundView?.clipsToBounds = true
                 }
             }
         }
-        .frame(width: CreateStepRowMetrics.handleSide, height: CreateStepRowMetrics.handleSide)
-        .contentShape(Rectangle())
+
+        private static func findEmbeddingTableView(from anchor: UIView) -> UITableView? {
+            var node: UIView? = anchor
+            var depth = 0
+            while let cur = node, depth < 60 {
+                if let table = cur as? UITableView {
+                    return table
+                }
+                if let parent = cur.superview {
+                    for sub in parent.subviews where sub !== cur {
+                        if let table = sub as? UITableView {
+                            return table
+                        }
+                    }
+                }
+                node = cur.superview
+                depth += 1
+            }
+            return nil
+        }
     }
 }
 
@@ -485,6 +530,11 @@ struct CueConfigurationView_Previews: PreviewProvider {
             Color.backgroundDarkPurple.ignoresSafeArea()
             CueConfigurationView(practiceMinutes: 20, cueSettings: $cueSettings)
                 .padding()
+                .onAppear {
+                    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                        SharedUserStorage.save(value: true, forKey: .useDevServer)
+                    }
+                }
         }
     }
 }
